@@ -2,7 +2,7 @@
 // 列表 / 详情 / Bundle 经 HTTP 拉取；研究直播经 SSE 订阅 events.jsonl 权威流。
 import { defineStore } from 'pinia'
 import { api, eventsUrl } from '../api/client.js'
-import { NODE_TO_TRACK } from '../constants/pipeline.js'
+import { NODE_TO_TRACK, PUBLISHED_TRACK_INDEX } from '../constants/pipeline.js'
 
 // LLM 调用在 started 阶段尚不知实际输出量，按保守估算预留输出额度，
 // settle 时释放同一笔预留、再按实际值结转（与后端 reserve/settle 语义对齐）。
@@ -157,6 +157,8 @@ export const useRunsStore = defineStore('runs', {
         })),
       })
       this._projectDetail(updated)
+      // 选择提交后任务进入后台范围规划，同样接续事件直播。
+      this.maybeStartLive(updated)
       return updated
     },
 
@@ -186,7 +188,7 @@ export const useRunsStore = defineStore('runs', {
       // 确认接口返回完整详情投影。先在同一同步阶段更新详情与列表，
       // 再连接事件流；不能用可能滞后的 GET/列表结果覆盖 202 投影。
       this._projectDetail(resp)
-      if (accepted) this.startLive(runId, { after: 0 })
+      if (accepted) this.maybeStartLive(resp)
       return resp
     },
 
@@ -217,6 +219,19 @@ export const useRunsStore = defineStore('runs', {
     },
 
     /* ---------- 事件直播（SSE） ---------- */
+    // active 且无待确认的执行态任务（含 draft 期的候选发现与范围规划）
+    // 都应订阅事件流；awaiting_confirmation 是 settled 状态，SSE 补发
+    // end 帧收尾后由 _finishLive 刷新详情并切到确认界面。
+    maybeStartLive(detail) {
+      if (
+        detail?.active &&
+        !detail.pending_confirmation &&
+        ['draft', 'researching', 'synthesizing', 'scope_frozen'].includes(detail.status)
+      ) {
+        this.startLive(detail.run_id, { after: 0 })
+      }
+    },
+
     startLive(runId, { after = null } = {}) {
       this.stopLive()
       const resume = after ?? this.live.lastSeq
@@ -298,11 +313,11 @@ export const useRunsStore = defineStore('runs', {
       live.events.unshift(e)
       if (live.events.length > 200) live.events.pop()
 
-      // 主链路推进（validate 无独立事件，6→7 由 run_published 驱动）
+      // 主链路推进（validate 无独立事件，由 run_published 驱动到终点）
       const trackIdx = NODE_TO_TRACK[e.node]
       if (trackIdx != null && trackIdx > live.trackIndex) live.trackIndex = trackIdx
       if (e.event === 'run_published') {
-        live.trackIndex = 7
+        live.trackIndex = PUBLISHED_TRACK_INDEX
       }
 
       // 并行研究单元：从事件流动态发现注册
@@ -405,6 +420,11 @@ export const useRunsStore = defineStore('runs', {
         }
       }
       this._patchProjection(live.runId, patch)
+      // awaiting_confirmation 事件先于 end 帧到达；立即拉取完整确认快照
+      // （候选列表 / 范围提案），让页面直接切到确认界面而不是中间态。
+      if (status === 'awaiting_confirmation') {
+        this.fetchRunDetail(live.runId).catch(() => {})
+      }
     },
 
     async _finishLive() {

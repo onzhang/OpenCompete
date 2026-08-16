@@ -36,13 +36,8 @@ function copyId() {
 onMounted(async () => {
   try {
     const d = await store.fetchRunDetail(runId.value)
-    if (
-      d.active &&
-      ['researching', 'synthesizing', 'scope_frozen'].includes(d.status) &&
-      !d.pending_confirmation
-    ) {
-      store.startLive(runId.value, { after: 0 })
-    }
+    // draft 期间候选发现与范围规划在后台执行，同样订阅事件流直播。
+    store.maybeStartLive(d)
     if (['completed', 'partial'].includes(d.status)) {
       store.fetchBundle(runId.value).catch(() => {})
     }
@@ -384,6 +379,15 @@ const connectionLabel = computed(() => {
           </div>
         </div>
         <div v-if="actionError" class="action-error action-error--live">{{ actionError }}</div>
+        <div v-if="run.status === 'draft'" class="draft-note rise-in">
+          <div class="stale-copy">
+            <b>正在后台准备研究范围：发现并核验候选竞品、生成范围建议</b>
+            <span>
+              下方实时同步模型调用与检索进度；完成后本页会自动切换到候选确认，无需手动刷新。
+              你也可以先离开处理其他事情——全部执行记录已落盘，回到本卷宗即可续看。
+            </span>
+          </div>
+        </div>
         <section class="live-track sheet rise-in" style="animation-delay: 0.06s">
           <div class="live-track-head">
             <span class="overline overline--accent">研究链路</span>
@@ -928,6 +932,18 @@ const connectionLabel = computed(() => {
   padding: 12px 18px;
   background: var(--amber-wash);
   border-left: 3px solid var(--amber);
+  border-radius: var(--radius);
+  font-size: 13px;
+  color: var(--ink-soft);
+  line-height: 1.8;
+}
+
+/* 范围准备期（draft）提示：后台执行候选发现与范围规划 */
+.draft-note {
+  margin-bottom: 16px;
+  padding: 12px 18px;
+  background: var(--paper-dim);
+  border-left: 3px solid var(--slate);
   border-radius: var(--radius);
   font-size: 13px;
   color: var(--ink-soft);

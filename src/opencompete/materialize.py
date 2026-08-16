@@ -405,6 +405,7 @@ async def materialize_bundle(
         sources, evidence = capture_sources(raw_notes, accessed_at=accessed_at)
     original_report = str(upstream_state.get("final_report") or "").strip()
     report_failed = _is_error_report(original_report)
+    report_truncated = bool(original_report) and _looks_truncated(original_report)
     report_markdown = (
         "# 部分报告\n\n最终报告生成失败，已保留可验证的研究产物。"
         if report_failed or not original_report
@@ -459,6 +460,8 @@ async def materialize_bundle(
     limitations = [
         f"提取器未验证提示：{item}" for item in extracted.limitations if item.strip()
     ]
+    if report_truncated:
+        limitations.append("最终报告疑似被输出上限截断，正文可能不完整")
     # 提取调用成功但零产出（常见于输出 token 上限内模型自保输出空结构）
     # 必须显式留痕，不能静默用占位补全掩盖。
     if (
@@ -471,6 +474,7 @@ async def materialize_bundle(
         extracted.execution_failed
         or extracted.cross_level_conclusions
         or claim_limitations
+        or report_truncated
         or any(
             not item.startswith("已为缺少比较覆盖的范围单元")
             for item in comparison_limitations
@@ -665,6 +669,28 @@ def _failed_extract_artifact_urls(
 def _is_error_report(value: str) -> bool:
     normalized = value.casefold()
     return any(normalized.startswith(prefix) for prefix in _ERROR_REPORT_PREFIXES)
+
+
+# 报告正文的正常终结字符：中英句读、引号/括号闭合、列表与代码块装饰。
+_REPORT_TERMINAL_CHARS = set("。！？!?…;；:：）)」』】》>”\"'`*_-.|")
+_REPORT_CODE_FENCE = "```"
+
+
+def _looks_truncated(text: str) -> bool:
+    """启发式检测报告是否被输出上限截断。.
+
+    真实案例：输出恰好顶满 ``final_report_model_max_tokens`` 时正文停在
+    句中（如「Pro 从 $」）。剥离尾部空白与 Markdown 装饰后，末字符
+    既非句读/闭合符也非代码块围栏时判为疑似截断；无标点的列表项结尾
+    可能少量误报，换取截断报告不被当作完整成果发布。
+    """
+    stripped = text.rstrip()
+    if not stripped:
+        return False
+    if stripped.endswith(_REPORT_CODE_FENCE):
+        return False
+    last = stripped[-1]
+    return last not in _REPORT_TERMINAL_CHARS and not last.isspace()
 
 
 def _budget_exhausted(budget: BudgetSnapshot) -> bool:

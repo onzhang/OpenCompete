@@ -284,6 +284,9 @@ async def confirm_candidates(
     """提交候选选择决定，任务推进到范围确认点。."""
     state = _state(request)
     _load_manifest(state, run_id)
+    # 到达确认点的后台执行可能仍在收尾；先等完再做预检与预留，
+    # 避免读到收尾前状态或与用户确认请求竞态返回 409。
+    await state.registry.wait_idle(run_id)
     handle = await _precheck_confirmation(
         state, run_id, body.expected_revision, kind="candidate_selection"
     )
@@ -295,9 +298,6 @@ async def confirm_candidates(
     } - known_candidate_ids
     if unknown_candidate_ids:
         raise DataValidationError("候选选择包含当前确认页没有展示的对象")
-    # 到达确认点的后台执行可能仍在收尾；先等完再预留执行槽，避免与
-    # 用户确认请求竞态返回 409。
-    await state.registry.wait_idle(run_id)
     async with state.registry.inflight(run_id):
         handle = await state.runner.resume_run(run_id, body.to_domain())
     if handle.scope is not None:
@@ -324,12 +324,13 @@ async def confirm_scope(
     """
     state = _state(request)
     _load_manifest(state, run_id)
+    # 同 candidate-selection：先等后台收尾，再预检确认快照。
+    await state.registry.wait_idle(run_id)
     await _precheck_confirmation(
         state, run_id, body.expected_revision, kind="scope_confirmation"
     )
     confirmation = body.to_domain()
     if not confirmation.accepted:
-        await state.registry.wait_idle(run_id)
         async with state.registry.inflight(run_id):
             handle = await state.runner.resume_run(run_id, confirmation)
         return _detail_response(state, run_id, handle=handle)

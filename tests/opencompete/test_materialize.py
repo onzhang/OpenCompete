@@ -1052,3 +1052,53 @@ def test_empty_extraction_with_evidence_records_explicit_limitation() -> None:
         for item in bundle.report.limitations
     )
     # 覆盖缺口由占位如实呈现；状态语义遵循既有「诚实缺口不强制 partial」设计。
+
+
+def test_truncated_final_report_is_flagged_and_partial() -> None:
+    """报告停在句中（输出上限截断）必须标注 limitation 并判 partial。."""
+    record = {
+        "query": "cursor pricing",
+        "status": "success",
+        "summary": "真实摘要内容",
+        "title": "来源",
+        "type": "tavily_search",
+        "url": "https://example.org/real",
+        "version": 1,
+    }
+    claim = Claim(
+        text="Cursor Pro 定价 $20/月",
+        entity_id="entity-a",
+        level=AnalysisLevel.PRODUCT_SERVICE,
+        dimension="pricing",
+        evidence_ids=("invented-evidence",),
+        status=ClaimStatus.SUPPORTED,
+    )
+    comparison = Comparison(
+        entity_ids=("entity-a", "entity-b"),
+        level=AnalysisLevel.PRODUCT_SERVICE,
+        dimension="pricing",
+        claim_ids=(claim.claim_id,),
+    )
+    bundle = asyncio.run(
+        materialize_bundle(
+            run_id="run-truncated-report",
+            scope=_scope(),
+            upstream_state={
+                "raw_notes": [RAW_NOTES],
+                # 结尾停在句中：与真实截断案例「Pro 从 $」同构
+                "final_report": (
+                    _publishable_report(title="报告")[:-1] + "\n\nPro 从 $"
+                ),
+                "supervisor_messages": [_evidence_message([record])],
+            },
+            budget=_budget(),
+            extractor=StaticArtifactExtractor(
+                ArtifactExtraction(claims=(claim,), comparisons=(comparison,))
+            ),
+        )
+    )
+
+    assert any(
+        "疑似被输出上限截断" in item for item in bundle.report.limitations
+    )
+    assert bundle.status is RunStatus.PARTIAL

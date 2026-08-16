@@ -405,6 +405,8 @@ def test_cancel_without_running_task_returns_conflict(
         assert created.status_code == 202
         run_id = created.json()["run_id"]
         _wait_for_background_confirmation(client, run_id)
+        # 确认事件先于后台协程收尾落盘；等收尾后才是「无运行任务」状态。
+        client.portal.call(app.state.registry.wait_idle, run_id)
 
         response = client.post(f"/api/runs/{run_id}/cancel")
 

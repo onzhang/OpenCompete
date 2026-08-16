@@ -67,3 +67,19 @@ tmp/
 temp/
 
 .langgraph_api
+
+# OpenCompete 本地运行数据
+.opencompete-data/
+.opencompete-tools/
+.opencompete-bench-v2-data/
+.benchmarks/
+
+# 本地个人配置（从 opencompete.example.toml 复制）
+opencompete.toml
+
+# live 测试与临时目录
+.tmp-*/
+
+# 个人本地工具与会话状态
+.agents/
+.omo/

@@ -52,6 +52,16 @@ const countOf = computed(() => (v) => {
 function hasReport(run) {
   return ['completed', 'partial'].includes(run.status)
 }
+
+async function deleteRun(run) {
+  const label = run.query || run.run_id
+  if (!window.confirm(`确定彻底删除“${label}”吗？该操作会删除报告、证据、事件与恢复记录，且不可恢复。`)) return
+  try {
+    await store.deleteRun(run.run_id)
+  } catch (err) {
+    window.alert(err.message)
+  }
+}
 </script>
 
 <template>
@@ -140,6 +150,13 @@ function hasReport(run) {
             >
               阅读报告
             </RouterLink>
+            <button
+              v-if="!ACTIVE_SET.includes(run.status)"
+              class="action action--delete"
+              @click="deleteRun(run)"
+            >
+              删除
+            </button>
           </div>
         </div>
       </div>

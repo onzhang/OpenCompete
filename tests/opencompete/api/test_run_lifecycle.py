@@ -9,6 +9,7 @@ from time import perf_counter
 from types import SimpleNamespace
 from typing import Any
 
+import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
@@ -17,6 +18,7 @@ from opencompete.api.meta import RunMetaStore
 from opencompete.api.routes import router
 from opencompete.api.tasks import ResearchTaskRegistry
 from opencompete.application import CommissionRunStartup, RunInspection
+from opencompete.errors import PersistenceError
 from opencompete.models import (
     AnalysisLevel,
     CandidateSelection,
@@ -171,6 +173,9 @@ class _FakeRunner:
         # 替身不做取消落盘；测试场景不取消后台任务。
         del run_id
         return execution
+
+    async def purge_checkpoint(self, run_id: str) -> None:
+        self.inspections.pop(run_id, None)
 
     async def list_runs(self) -> list[object]:
         return []
@@ -425,3 +430,42 @@ def test_unknown_candidate_is_rejected_before_graph_resume(tmp_path: Path) -> No
     assert response.status_code == 409
     assert runner.resume_calls == []
     assert repository.load_manifest(run_id).status is RunStatus.AWAITING_CONFIRMATION
+
+
+def test_delete_inactive_run_removes_artifacts_and_meta(tmp_path: Path) -> None:
+    run_id = "delete-me"
+    inspection = RunInspection(
+        handle=RunHandle(run_id=run_id, status=RunStatus.DRAFT),
+        request=None,
+        has_confirmation_interrupt=False,
+        recoverable=False,
+    )
+    client, _runner, repository = _client(tmp_path, run_id, inspection)
+    client.app.state.meta_store.write(
+        run_id, {"query": "未记录研究问题的遗留任务", "entities": []}
+    )
+
+    response = client.delete(f"/api/runs/{run_id}")
+
+    assert response.status_code == 204
+    assert not (tmp_path / "runs" / run_id).exists()
+    assert client.app.state.meta_store.read(run_id) is None
+    with pytest.raises(PersistenceError):
+        repository.load_manifest(run_id)
+
+
+def test_delete_active_run_returns_conflict(tmp_path: Path) -> None:
+    run_id = "active-delete"
+    inspection = RunInspection(
+        handle=RunHandle(run_id=run_id, status=RunStatus.DRAFT),
+        request=None,
+        has_confirmation_interrupt=False,
+        recoverable=False,
+    )
+    client, _runner, _repository = _client(tmp_path, run_id, inspection)
+    client.app.state.registry.reserve(run_id)
+
+    response = client.delete(f"/api/runs/{run_id}")
+
+    assert response.status_code == 409
+    assert response.json()["error"]["code"] == "run_already_active"

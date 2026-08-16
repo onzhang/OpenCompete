@@ -36,6 +36,19 @@ export const CLAIM_STATUS_LABELS = {
   unknown: '未知',
 }
 
+// 兼容旧任务 Bundle 中保留的内部维度 slug；新 Planner 已输出中文维度。
+export const DIMENSION_LABELS = {
+  capabilities: '核心能力',
+  pricing: '定价',
+  user_experience: '用户体验',
+  technology_integrations: '技术集成',
+  service_support: '服务与支持',
+}
+
+export function fmtDimension(dimension) {
+  return DIMENSION_LABELS[dimension] || dimension
+}
+
 export function shortId(runId) {
   return runId ? runId.slice(0, 8) : ''
 }

@@ -76,8 +76,15 @@ class RunMetaStore:
         except OSError:
             logger.warning("api-meta 写入失败: %s", run_id, exc_info=True)
 
+    def delete(self, run_id: str) -> None:
+        """删除索引文件；不存在或失败只记录日志（展示层缓存数据）。."""
+        try:
+            self._path(run_id).unlink(missing_ok=True)
+        except OSError:
+            logger.warning("api-meta 删除失败: %s", run_id, exc_info=True)
+
     def merge(self, run_id: str, **fields: Any) -> dict[str, Any]:
-        """读取-合并-写回，返回合并后的索引。."""
+        """读取-合并-写回，返回合并后的索引。"""
         merged = {**(self.read(run_id) or _PLACEHOLDER), **fields}
         self.write(run_id, merged)
         return merged

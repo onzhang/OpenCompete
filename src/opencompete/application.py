@@ -519,6 +519,11 @@ class ApplicationRunner:
         """显式继续非确认点的 durable 研究执行。."""
         return await self.resume_run(run_id)
 
+    async def purge_checkpoint(self, run_id: str) -> None:
+        """删除该 run 的 durable Checkpoint thread（用户显式删除任务）。."""
+        async with self._checkpoint_store.open_saver() as saver:
+            await saver.adelete_thread(run_id)
+
     async def _load_or_rebuild_manifest(
         self,
         run_id: str,

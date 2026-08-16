@@ -80,6 +80,8 @@ export const api = {
     request(`/runs/${runId}/resume`, { method: 'POST', timeoutMs: ACTION_TIMEOUT_MS }),
   cancelRun: (runId) =>
     request(`/runs/${runId}/cancel`, { method: 'POST', timeoutMs: ACTION_TIMEOUT_MS }),
+  deleteRun: (runId) =>
+    request(`/runs/${runId}`, { method: 'DELETE', timeoutMs: ACTION_TIMEOUT_MS }),
 }
 
 export function eventsUrl(runId, after = 0) {

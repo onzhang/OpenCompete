@@ -8,6 +8,7 @@ import {
   CLAIM_STATUS_LABELS,
   LEVEL_LABELS,
   fmtDateTime,
+  fmtDimension,
   fmtUsd,
   shortId,
 } from '../utils/format.js'
@@ -297,7 +298,7 @@ function exportMarkdown() {
             <span class="claim-text">{{ claim.text }}</span>
             <span class="claim-meta">
               <b>{{ entityName(claim.entity_id) }}</b>
-              {{ LEVEL_LABELS[claim.level] }} · {{ claim.dimension }}
+              {{ LEVEL_LABELS[claim.level] }} · {{ fmtDimension(claim.dimension) }}
             </span>
             <svg class="claim-chev" viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m4 6 4 4 4-4" /></svg>
           </button>
@@ -334,7 +335,7 @@ function exportMarkdown() {
         <div class="cmp-head">
           <div>
             <div class="overline overline--accent">{{ LEVEL_LABELS[cmp.level] }}</div>
-            <h3 class="cmp-title">{{ cmp.dimension }}</h3>
+            <h3 class="cmp-title">{{ fmtDimension(cmp.dimension) }}</h3>
           </div>
           <div class="cmp-entities">
             <span v-for="eid in cmp.entity_ids" :key="eid" class="cmp-entity">{{ entityName(eid) }}</span>

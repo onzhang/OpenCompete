@@ -5,6 +5,7 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+import shutil
 import tempfile
 import threading
 from collections.abc import Iterable, Mapping
@@ -124,6 +125,19 @@ class RunRepository:
                 f"初始化任务产物目录失败：{manifest.run_id}"
             ) from exc
         return self._summary(manifest)
+
+    def delete_run(self, run_id: str) -> None:
+        """彻底删除一个任务的本地业务产物目录（不可恢复）。.
+
+        仅由用户显式删除请求触发；Checkpoint thread 与索引层的清理
+        由调用方分别执行，本方法只负责 ``runs/<run_id>/`` 目录。
+        """
+        run_dir = self._run_dir(run_id)
+        try:
+            if run_dir.exists():
+                shutil.rmtree(run_dir)
+        except OSError as exc:
+            raise PersistenceError(f"删除任务产物目录失败：{run_id}") from exc
 
     def publish(
         self,

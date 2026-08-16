@@ -12,7 +12,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
-from fastapi import APIRouter, Query, Request
+from fastapi import APIRouter, Query, Request, Response
 from fastapi.responses import JSONResponse
 from sse_starlette.sse import EventSourceResponse
 
@@ -410,6 +410,25 @@ async def cancel_run(request: Request, run_id: str) -> dict[str, Any]:
     with suppress(asyncio.CancelledError, Exception):
         await task
     return _detail_response(state, run_id)
+
+
+@router.delete("/runs/{run_id}", status_code=204)
+async def delete_run(request: Request, run_id: str) -> Response:
+    """彻底删除任务：Checkpoint thread、业务产物目录与展示索引。.
+
+    不可恢复，且只允许删除本进程没有在执行的任务（运行中先停止）。
+    Checkpoint 清理失败不阻断业务目录删除（孤儿 thread 无业务入口）。
+    """
+    state = _state(request)
+    _load_manifest(state, run_id)
+    if state.registry.is_active(run_id):
+        raise RunAlreadyActiveError("任务正在执行，请先停止再删除")
+    with suppress(Exception):
+        await state.runner.purge_checkpoint(run_id)
+    state.repository.delete_run(run_id)
+    state.meta_store.delete(run_id)
+    state.confirmation_cache.pop(run_id, None)
+    return Response(status_code=204)
 
 
 @router.get("/runs/{run_id}/events")

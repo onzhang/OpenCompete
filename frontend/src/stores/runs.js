@@ -209,6 +209,15 @@ export const useRunsStore = defineStore('runs', {
       return detail
     },
 
+    /* ---------- 彻底删除任务（不可恢复） ---------- */
+    async deleteRun(runId) {
+      await api.deleteRun(runId)
+      this.stopLive()
+      delete this.detailByRun[runId]
+      delete this.bundlesByRun[runId]
+      this.runs = this.runs.filter((r) => r.run_id !== runId)
+    },
+
     /* ---------- 详情 / 列表原子投影 ---------- */
     _projectDetail(detail) {
       if (!detail?.run_id) return

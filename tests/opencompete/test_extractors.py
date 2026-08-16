@@ -267,3 +267,87 @@ async def test_langchain_extractor_drops_unknown_comparison_fields(
     assert result.comparisons[0].differences == ("离线能力不同",)
     assert not hasattr(result.comparisons[0], "commonality_gap_note")
     assert result.comparisons[0].comparison_id.startswith("cmp")
+
+
+def test_extraction_output_budget_scales_with_scope_matrix() -> None:
+    from opencompete.extractors import estimated_extraction_output_tokens
+
+    small = ScopeSpec(
+        entities=(ResearchEntity(name="A"),),
+        levels=(AnalysisLevel.PRODUCT_SERVICE,),
+        dimensions={AnalysisLevel.PRODUCT_SERVICE: ("pricing",)},
+        confirmed_at=datetime.now(UTC),
+        revision=1,
+        frozen=True,
+    )
+    big = ScopeSpec(
+        entities=tuple(ResearchEntity(name=f"E{i}") for i in range(8)),
+        levels=(AnalysisLevel.PRODUCT_SERVICE, AnalysisLevel.COMPANY_ORGANIZATION),
+        dimensions={
+            AnalysisLevel.PRODUCT_SERVICE: ("a", "b", "c", "d", "e"),
+            AnalysisLevel.COMPANY_ORGANIZATION: ("x", "y", "z", "w"),
+        },
+        confirmed_at=datetime.now(UTC),
+        revision=1,
+        frozen=True,
+    )
+
+    small_budget = estimated_extraction_output_tokens(small)
+    big_budget = estimated_extraction_output_tokens(big)
+
+    # 8 对象 × 9 维度 = 72 格 vs 1 格；预算随规模显著增长且含固定开销。
+    assert small_budget == 500 + 1 * 220 + 1 * 300
+    assert big_budget == 500 + 72 * 220 + 9 * 300
+    assert big_budget > small_budget * 10
+
+
+@pytest.mark.asyncio
+async def test_extractor_uses_derived_budget_when_scope_exceeds_floor(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """配置是下限：范围推导值更高时，模型调用必须使用推导预算。."""
+    captured: dict[str, Any] = {}
+
+    class FakeStructuredModel:
+        def with_config(self, config: dict[str, Any]) -> "FakeStructuredModel":
+            captured.update(config)
+            return self
+
+        def with_retry(self, **_kwargs: Any) -> "FakeStructuredModel":
+            return self
+
+        async def ainvoke(self, *_args: Any, **_kwargs: Any) -> dict[str, Any]:
+            return {"claims": [], "comparisons": []}
+
+    class FakeModel:
+        def with_structured_output(self, _schema: type[Any]) -> FakeStructuredModel:
+            return FakeStructuredModel()
+
+    monkeypatch.setattr(
+        extractor_module,
+        "init_chat_model",
+        lambda **_kwargs: FakeModel(),
+    )
+    entities = tuple(ResearchEntity(name=f"E{i}") for i in range(8))
+    scope = ScopeSpec(
+        entities=entities,
+        levels=(AnalysisLevel.PRODUCT_SERVICE,),
+        dimensions={
+            AnalysisLevel.PRODUCT_SERVICE: ("d1", "d2", "d3", "d4", "d5")
+        },
+        confirmed_at=datetime.now(UTC),
+        revision=1,
+        frozen=True,
+    )
+
+    await LangChainArtifactExtractor("openai:test", max_tokens=1000).extract(
+        scope=scope,
+        sources=(Source(
+            url="https://example.com/a", title="A", accessed_at=datetime.now(UTC)
+        ),),
+        evidence=(),
+        report_markdown="# 报告",
+    )
+
+    assert captured["max_tokens"] == 500 + 40 * 220 + 5 * 300
+    assert captured["max_tokens"] > 1000

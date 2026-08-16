@@ -74,6 +74,33 @@ class ArtifactExtraction(FrozenModel):
     execution_failed: bool = False
 
 
+# 提取输出预算推导：max_tokens 是上限不是预留，过额不产生费用（按实际输出
+# 计费），不足才会截断——真实运行曾因固定 10000 上限让模型自保返回空结构。
+# 每格 Claim 与每组 Comparison 的系数来自两次真实运行的观测区间
+# （117 条 Claim ≈ 9.8k tokens ≈ 84 token/条），乘 2 以上冗余是刻意的。
+_EXTRACTION_OVERHEAD_TOKENS = 500
+_CLAIM_CELL_BUDGET_TOKENS = 220
+_COMPARISON_BUDGET_TOKENS = 300
+
+
+def estimated_extraction_output_tokens(scope: ScopeSpec) -> int:
+    """按范围矩阵规模推导提取输出的安全上限。.
+
+    需求随（对象 × 层级维度）格数与比较组数线性增长；宽裕估计免费且
+    安全（deepseek-v4-flash 单次输出上限 384K tokens，正常范围矩阵的
+    推导值远低于模型能力）。
+    """
+    comparison_groups = sum(
+        len(scope.dimensions[level]) for level in scope.levels
+    )
+    cells = len(scope.entities) * comparison_groups
+    return (
+        _EXTRACTION_OVERHEAD_TOKENS
+        + cells * _CLAIM_CELL_BUDGET_TOKENS
+        + comparison_groups * _COMPARISON_BUDGET_TOKENS
+    )
+
+
 @runtime_checkable
 class ArtifactExtractor(Protocol):
     """只根据已捕获证据生成 Claim 和 Comparison。."""
@@ -157,9 +184,13 @@ class LangChainArtifactExtractor:
         fallback_attempts = (
             self._fallback_model_attempts if self._fallback_model is not None else 0
         )
+        # 配置值是下限；实际预算随范围矩阵规模推导，超额上限不计费。
+        effective_max_tokens = max(
+            self._max_tokens, estimated_extraction_output_tokens(scope)
+        )
         model_options: dict[str, Any] = {
             "model": self._model,
-            "max_tokens": self._max_tokens,
+            "max_tokens": effective_max_tokens,
             "timeout": self._request_timeout_seconds,
             "max_retries": self._sdk_max_retries,
             "metadata": route_metadata(
@@ -184,7 +215,7 @@ class LangChainArtifactExtractor:
         if self._fallback_model is not None:
             fallback_options = {
                 "model": self._fallback_model,
-                "max_tokens": self._max_tokens,
+                "max_tokens": effective_max_tokens,
                 "timeout": self._request_timeout_seconds,
                 "max_retries": self._sdk_max_retries,
                 "metadata": route_metadata(

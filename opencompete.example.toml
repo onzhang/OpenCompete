@@ -24,6 +24,8 @@ research_model_max_tokens = 10000
 summarization_model_max_tokens = 8192
 compression_model_max_tokens = 8192
 final_report_model_max_tokens = 6000
+# 提取输出预算下限：实际取 max(该值, 按范围矩阵规模推导的动态预算)；
+# 上限超额不计费，不足才会截断提取结果。
 artifact_extraction_model_max_tokens = 10000
 final_report_input_max_chars = 200000
 judge_model_max_tokens = 8192

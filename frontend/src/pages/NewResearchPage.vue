@@ -188,7 +188,7 @@ const pipelinePreview = computed(() => {
             提交后先进行轻量范围规划——<br />范围经你确认冻结后才启动深度研究。
           </div>
           <button type="submit" class="btn btn--primary" :disabled="(submitted && !canSubmit) || submitting">
-            {{ submitting ? '正在理解委托并规划范围…' : '提交委托并草拟范围' }}
+            {{ submitting ? '正在创建任务…' : '提交委托并草拟范围' }}
             <svg v-if="!submitting" viewBox="0 0 16 16" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8h10M9 4l4 4-4 4" /></svg>
           </button>
         </div>

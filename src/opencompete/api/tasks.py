@@ -15,6 +15,7 @@
 from __future__ import annotations
 
 import asyncio
+import contextlib
 import logging
 from collections.abc import AsyncIterator, Coroutine
 from contextlib import asynccontextmanager
@@ -90,13 +91,38 @@ class ResearchTaskRegistry:
         """任务收尾：移除登记并消费异常（落盘已由应用层完成）。."""
         self._tasks.pop(run_id, None)
         if task.cancelled():
-            logger.warning("研究任务被取消（可能留下中间态）: %s", run_id)
+            logger.info("研究任务已按用户请求取消: %s", run_id)
             return
         exc = task.exception()
         if exc is not None:
             logger.error(
                 "研究任务失败: %s (%s)", run_id, type(exc).__name__
             )
+
+    def request_cancel(self, run_id: str) -> asyncio.Task[Any] | None:
+        """请求取消运行中的后台任务；返回该任务供调用方等待收尾。.
+
+        终态落盘由应用层 :meth:`guard_cancellation` 包装完成；不存在
+        运行中的任务时返回 ``None``。
+        """
+        task = self._tasks.get(run_id)
+        if task is None or task.done():
+            return None
+        task.cancel()
+        return task
+
+    async def wait_idle(self, run_id: str, timeout: float = 10.0) -> None:
+        """等待该 run 的后台任务收尾（到达确认点的执行即将结束）。.
+
+        确认事件先于协程收尾落盘是正常时序：确认端点必须在预留执行
+        槽前等完这段窗口，否则用户的确认请求会与收尾竞态并收到 409。
+        任务自身的失败已由应用层落盘，这里吞掉传播。
+        """
+        task = self._tasks.get(run_id)
+        if task is None:
+            return
+        with contextlib.suppress(BaseException):
+            await asyncio.wait_for(asyncio.shield(task), timeout)
 
     @asynccontextmanager
     async def inflight(self, run_id: str) -> AsyncIterator[None]:

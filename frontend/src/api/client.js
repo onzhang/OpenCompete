@@ -78,6 +78,8 @@ export const api = {
     }),
   resumeRun: (runId) =>
     request(`/runs/${runId}/resume`, { method: 'POST', timeoutMs: ACTION_TIMEOUT_MS }),
+  cancelRun: (runId) =>
+    request(`/runs/${runId}/cancel`, { method: 'POST', timeoutMs: ACTION_TIMEOUT_MS }),
 }
 
 export function eventsUrl(runId, after = 0) {

@@ -343,6 +343,9 @@ class ApplicationRunner:
         user_input: CandidateSelection | ScopeConfirmation | None = None,
     ) -> RunHandle:
         """恢复同一 thread_id；确认点无输入时只返回待确认范围。."""
+        # 注意：不在此处拦截 CANCELLED manifest——对账语义允许存活的
+        # awaiting checkpoint 覆盖取消标记（checkpoint 是真相源）；
+        # HTTP 层的取消终态拒绝由 API 路由负责。
         lock = self._lock_for(run_id)
         async with lock:
             prepared = await self._prepare_resume(run_id)
@@ -1185,6 +1188,47 @@ class ApplicationRunner:
             )
         except Exception:
             logger.error("任务失败状态无法写入：%s", run_id)
+
+    async def guard_cancellation(
+        self,
+        run_id: str,
+        execution: Coroutine[Any, Any, RunHandle],
+    ) -> RunHandle:
+        """包装后台执行协程：用户取消时落盘 CANCELLED 终态再传播。.
+
+        CancelledError 会绕过 ``except Exception``；不捕获落盘会让任务
+        留在无法恢复的中间态 manifest。取消是终态，不保留恢复。
+        """
+        try:
+            return await execution
+        except asyncio.CancelledError:
+            await self._record_cancellation(run_id)
+            raise
+
+    async def _record_cancellation(self, run_id: str) -> None:
+        """尽力把用户取消写入 Manifest，但不遮蔽 CancelledError。."""
+        try:
+            current = self._repository.load_manifest(run_id)
+            try:
+                budget = await self._budget_guard(run_id).snapshot()
+            except Exception:
+                budget = current.budget_summary
+            cancelled = current.model_copy(
+                update={
+                    "status": RunStatus.CANCELLED,
+                    "budget_summary": budget,
+                    "file_hashes": {},
+                    "updated_at": utc_now(),
+                }
+            )
+            self._repository.update_manifest(cancelled)
+            self._append_event(
+                run_id,
+                "run_cancelled",
+                status=RunStatus.CANCELLED,
+            )
+        except Exception:
+            logger.error("任务取消状态无法写入：%s", run_id)
 
     def _budget_guard(
         self,

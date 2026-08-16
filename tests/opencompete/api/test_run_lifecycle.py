@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Coroutine
 from datetime import UTC, datetime
 from pathlib import Path
 from time import perf_counter
@@ -163,6 +164,13 @@ class _FakeRunner:
     async def resume_execution(self, run_id: str) -> RunHandle:
         self.resume_execution_calls.append(run_id)
         return self.inspections[run_id].handle
+
+    def guard_cancellation(
+        self, run_id: str, execution: Coroutine[Any, Any, RunHandle]
+    ) -> Coroutine[Any, Any, RunHandle]:
+        # 替身不做取消落盘；测试场景不取消后台任务。
+        del run_id
+        return execution
 
     async def list_runs(self) -> list[object]:
         return []

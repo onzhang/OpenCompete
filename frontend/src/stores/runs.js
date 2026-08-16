@@ -200,6 +200,15 @@ export const useRunsStore = defineStore('runs', {
       return detail
     },
 
+    /* ---------- 停止运行中的研究（终态，不保留恢复） ---------- */
+    async cancelRun(runId) {
+      const detail = await api.cancelRun(runId)
+      this.stopLive()
+      this._projectDetail(detail)
+      await this.fetchRuns().catch(() => {})
+      return detail
+    },
+
     /* ---------- 详情 / 列表原子投影 ---------- */
     _projectDetail(detail) {
       if (!detail?.run_id) return
@@ -398,6 +407,7 @@ export const useRunsStore = defineStore('runs', {
         e.event === 'run_status_changed' ||
         e.event === 'run_published' ||
         e.event === 'run_failed' ||
+        e.event === 'run_cancelled' ||
         e.event === 'budget_exhausted' ||
         e.event === 'awaiting_confirmation'
       const status = statusEvent ? eventStatus(e) : null
@@ -474,6 +484,7 @@ function eventStatus(event) {
   if (event.status) return event.status
   if (event.event === 'run_published') return 'completed'
   if (event.event === 'run_failed') return 'failed'
+  if (event.event === 'run_cancelled') return 'cancelled'
   if (event.event === 'budget_exhausted') return 'partial'
   if (event.event === 'awaiting_confirmation') return 'awaiting_confirmation'
   return null

@@ -157,6 +157,22 @@ async function resumeResearch() {
   await runAction(() => store.resumeRun(runId.value))
 }
 
+/* ---------- 停止研究（两段式确认，终态不可恢复） ---------- */
+const cancelArmed = ref(false)
+let cancelArmTimer = null
+
+function armCancel() {
+  cancelArmed.value = true
+  clearTimeout(cancelArmTimer)
+  cancelArmTimer = setTimeout(() => (cancelArmed.value = false), 3000)
+}
+
+async function stopResearch() {
+  clearTimeout(cancelArmTimer)
+  cancelArmed.value = false
+  await runAction(() => store.cancelRun(runId.value))
+}
+
 async function reloadDetail() {
   if (actionBusy.value) return
   actionBusy.value = true
@@ -379,6 +395,17 @@ const connectionLabel = computed(() => {
           </div>
         </div>
         <div v-if="actionError" class="action-error action-error--live">{{ actionError }}</div>
+        <div v-if="!isStale" class="live-actions rise-in">
+          <button
+            class="btn btn--stop"
+            :class="{ 'btn--stop-armed': cancelArmed }"
+            :disabled="actionBusy"
+            @click="cancelArmed ? stopResearch() : armCancel()"
+          >
+            {{ cancelArmed ? '确认停止？再点一次执行' : '停止研究' }}
+          </button>
+          <span v-if="cancelArmed" class="stop-hint">停止是终态：已产生的调用照常计费，任务不可恢复</span>
+        </div>
         <div v-if="run.status === 'draft'" class="draft-note rise-in">
           <div class="stale-copy">
             <b>正在后台准备研究范围：发现并核验候选竞品、生成范围建议</b>
@@ -948,6 +975,37 @@ const connectionLabel = computed(() => {
   font-size: 13px;
   color: var(--ink-soft);
   line-height: 1.8;
+}
+
+/* 直播视图操作区：停止研究（两段式确认） */
+.live-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+
+.btn--stop {
+  border: 1px solid var(--vermilion);
+  color: var(--vermilion);
+  background: transparent;
+}
+
+.btn--stop:hover:not(:disabled) {
+  background: var(--vermilion);
+  color: var(--paper-raised);
+}
+
+.btn--stop-armed {
+  background: var(--vermilion);
+  color: var(--paper-raised);
+  animation: pulse-ring 1.2s infinite;
+}
+
+.stop-hint {
+  font-size: 12.5px;
+  color: var(--vermilion);
 }
 
 .stale-copy b,

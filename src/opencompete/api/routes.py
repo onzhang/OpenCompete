@@ -6,6 +6,8 @@
 
 from __future__ import annotations
 
+import asyncio
+from contextlib import suppress
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
@@ -14,7 +16,11 @@ from fastapi import APIRouter, Query, Request
 from fastapi.responses import JSONResponse
 from sse_starlette.sse import EventSourceResponse
 
-from opencompete.api.errors import RunAlreadyActiveError, RunNotFoundError
+from opencompete.api.errors import (
+    RunAlreadyActiveError,
+    RunNotActiveError,
+    RunNotFoundError,
+)
 from opencompete.api.events import follow_events
 from opencompete.api.schemas import (
     CandidateSelectionBody,
@@ -218,7 +224,10 @@ async def create_run(request: Request, body: CreateRunBody) -> JSONResponse:
         startup.execution.close()
         raise
     try:
-        state.registry.start_reserved(run_id, startup.execution)
+        state.registry.start_reserved(
+            run_id,
+            state.runner.guard_cancellation(run_id, startup.execution),
+        )
     except Exception:
         state.registry.release(run_id)
         raise
@@ -286,6 +295,9 @@ async def confirm_candidates(
     } - known_candidate_ids
     if unknown_candidate_ids:
         raise DataValidationError("候选选择包含当前确认页没有展示的对象")
+    # 到达确认点的后台执行可能仍在收尾；先等完再预留执行槽，避免与
+    # 用户确认请求竞态返回 409。
+    await state.registry.wait_idle(run_id)
     async with state.registry.inflight(run_id):
         handle = await state.runner.resume_run(run_id, body.to_domain())
     if handle.scope is not None:
@@ -317,6 +329,7 @@ async def confirm_scope(
     )
     confirmation = body.to_domain()
     if not confirmation.accepted:
+        await state.registry.wait_idle(run_id)
         async with state.registry.inflight(run_id):
             handle = await state.runner.resume_run(run_id, confirmation)
         return _detail_response(state, run_id, handle=handle)
@@ -326,7 +339,9 @@ async def confirm_scope(
         state.confirmation_cache.pop(run_id, None)
         state.registry.start_reserved(
             run_id,
-            state.runner.resume_execution(run_id),
+            state.runner.guard_cancellation(
+                run_id, state.runner.resume_execution(run_id)
+            ),
         )
     except Exception:
         state.registry.release(run_id)
@@ -341,7 +356,9 @@ async def confirm_scope(
 async def resume_run(request: Request, run_id: str) -> JSONResponse:
     """显式继续一个非确认点的中断研究，读取接口绝不会调用此路径。."""
     state = _state(request)
-    _load_manifest(state, run_id)
+    manifest = _load_manifest(state, run_id)
+    if manifest.status is RunStatus.CANCELLED:
+        raise DataValidationError("任务已取消，不能恢复执行")
     inspection = await state.runner.inspect_run(run_id)
     if inspection.handle.pending_confirmation:
         raise DataValidationError("任务正在等待用户确认，请先完成对应确认")
@@ -351,7 +368,9 @@ async def resume_run(request: Request, run_id: str) -> JSONResponse:
     try:
         state.registry.start_reserved(
             run_id,
-            state.runner.resume_execution(run_id),
+            state.runner.guard_cancellation(
+                run_id, state.runner.resume_execution(run_id)
+            ),
         )
     except Exception:
         state.registry.release(run_id)
@@ -365,6 +384,31 @@ async def resume_run(request: Request, run_id: str) -> JSONResponse:
             recoverable=False,
         ),
     )
+
+
+@router.post("/runs/{run_id}/cancel")
+async def cancel_run(request: Request, run_id: str) -> dict[str, Any]:
+    """停止运行中的研究；取消是终态，不保留恢复。.
+
+    只作用于本进程正在执行的任务；确认点等待的任务请用对应确认
+    接口拒绝。取消请求会等待后台协程完成终态落盘后返回。
+    """
+    state = _state(request)
+    manifest = _load_manifest(state, run_id)
+    if manifest.status in {
+        RunStatus.COMPLETED,
+        RunStatus.PARTIAL,
+        RunStatus.FAILED,
+        RunStatus.CANCELLED,
+    }:
+        raise RunNotActiveError("任务已结束")
+    task = state.registry.request_cancel(run_id)
+    if task is None:
+        raise RunNotActiveError("没有正在执行的任务")
+    # 取消落盘由 guard_cancellation 在被取消协程内完成；此处只等收尾。
+    with suppress(asyncio.CancelledError, Exception):
+        await task
+    return _detail_response(state, run_id)
 
 
 @router.get("/runs/{run_id}/events")

@@ -52,6 +52,10 @@ class RunAlreadyActiveError(Exception):
     """同一运行已被当前进程受控执行（映射为 409）。."""
 
 
+class RunNotActiveError(Exception):
+    """请求的操作需要运行中的任务，但当前没有（映射为 409）。."""
+
+
 def _error_response(exc: BaseException, status_code: int) -> JSONResponse:
     """把异常脱敏后包装为统一 JSON 错误响应。."""
     record = sanitized_error(exc)
@@ -110,6 +114,23 @@ def register_exception_handlers(app: FastAPI) -> None:
                     "code": "run_already_active",
                     "category": "validation",
                     "message": "本任务已经启动，正在进入研究链路。",
+                    "retryable": False,
+                }
+            },
+        )
+
+    @app.exception_handler(RunNotActiveError)
+    async def handle_not_active(
+        request: Request, exc: RunNotActiveError
+    ) -> JSONResponse:
+        """没有运行中的任务可操作。."""
+        return JSONResponse(
+            status_code=409,
+            content={
+                "error": {
+                    "code": "run_not_active",
+                    "category": "validation",
+                    "message": "该任务当前没有正在执行的进程内任务，无法停止",
                     "retryable": False,
                 }
             },

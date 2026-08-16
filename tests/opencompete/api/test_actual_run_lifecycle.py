@@ -20,6 +20,7 @@ from opencompete.models import (
     AnalysisLevel,
     ResearchCommission,
     ResearchEntity,
+    RunStatus,
     ScopeConfirmation,
     ScopeProposal,
 )
@@ -224,7 +225,7 @@ def test_scope_confirmation_202_durably_freezes_actual_sqlite_checkpoint(
             },
         )
 
-        assert confirmed.status_code == 202
+        assert confirmed.status_code == 202, confirmed.text
         projection = confirmed.json()
         assert projection["status"] == "scope_frozen"
         assert projection["scope_revision"] == 1
@@ -320,3 +321,92 @@ def test_reopened_api_get_is_read_only_and_post_resume_executes_once(
     assert terminal.status_code == 200
     assert terminal.json()["status"] in {"completed", "partial"}
     assert research_calls == ["research"]
+
+
+def test_cancel_stops_running_research_with_durable_terminal_state(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """停止端点取消运行中的研究，落盘 CANCELLED 终态并写取消事件。."""
+    started = threading.Event()
+    release = threading.Event()
+    finished = threading.Event()
+    research_calls: list[str] = []
+    settings = OpenCompeteSettings(data_dir=tmp_path)
+    runners: list[ApplicationRunner] = []
+    app = _production_app(
+        monkeypatch,
+        settings,
+        _research_graph(started, release, finished, research_calls),
+        runners,
+    )
+
+    with TestClient(app) as client:
+        created = client.post(
+            "/api/runs",
+            json={"query": "调研 Trae 的 AI IDE 竞品", "entities": ["Trae"]},
+        )
+        assert created.status_code == 202
+        run_id = created.json()["run_id"]
+        pending = _wait_for_background_confirmation(client, run_id)
+
+        confirmed = client.post(
+            f"/api/runs/{run_id}/scope-confirmation",
+            json={
+                "accepted": True,
+                "expected_revision": pending["expected_revision"],
+                "dimensions": {"product_service": ["团队代码库迁移成本"]},
+            },
+        )
+        assert confirmed.status_code == 202
+        # 研究子图已运行并停驻在受控等待点。
+        assert started.wait(timeout=5)
+
+        cancelled = client.post(f"/api/runs/{run_id}/cancel")
+
+        assert cancelled.status_code == 200
+        assert cancelled.json()["status"] == "cancelled"
+        assert cancelled.json()["active"] is False
+        repository = runners[0]._repository  # noqa: SLF001 - 测试直接核对落盘
+        assert repository.load_manifest(run_id).status is RunStatus.CANCELLED
+        events_path = (
+            tmp_path / "runs" / run_id / "events.jsonl"
+        )
+        events_text = events_path.read_text(encoding="utf-8")
+        assert '"run_cancelled"' in events_text
+        # 取消后研究节点从未走完，恢复被拒绝。
+        release.set()
+        resumed = client.post(f"/api/runs/{run_id}/resume")
+        assert resumed.status_code == 409
+
+
+def test_cancel_without_running_task_returns_conflict(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """没有进程内运行任务的确认点请求停止返回 409。."""
+    started = threading.Event()
+    release = threading.Event()
+    finished = threading.Event()
+    research_calls: list[str] = []
+    settings = OpenCompeteSettings(data_dir=tmp_path)
+    app = _production_app(
+        monkeypatch,
+        settings,
+        _research_graph(started, release, finished, research_calls),
+        [],
+    )
+
+    with TestClient(app) as client:
+        created = client.post(
+            "/api/runs",
+            json={"query": "调研 Trae 的 AI IDE 竞品", "entities": ["Trae"]},
+        )
+        assert created.status_code == 202
+        run_id = created.json()["run_id"]
+        _wait_for_background_confirmation(client, run_id)
+
+        response = client.post(f"/api/runs/{run_id}/cancel")
+
+        assert response.status_code == 409
+        assert response.json()["error"]["code"] == "run_not_active"

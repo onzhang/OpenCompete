@@ -43,6 +43,16 @@ export const DIMENSION_LABELS = {
   user_experience: '用户体验',
   technology_integrations: '技术集成',
   service_support: '服务与支持',
+  positioning_strategy: '定位与战略',
+  business_model: '商业模式',
+  go_to_market: '市场进入策略',
+  operations_capabilities: '运营能力',
+  partnerships_ecosystem: '合作与生态',
+  market_size_growth: '市场规模与增长',
+  customer_segments_demand: '客户细分与需求',
+  competitive_landscape: '竞争格局',
+  regulation_standards: '监管与标准',
+  trends_risks: '趋势与风险',
 }
 
 export function fmtDimension(dimension) {

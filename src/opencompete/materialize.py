@@ -459,6 +459,14 @@ async def materialize_bundle(
     limitations = [
         f"提取器未验证提示：{item}" for item in extracted.limitations if item.strip()
     ]
+    # 提取调用成功但零产出（常见于输出 token 上限内模型自保输出空结构）
+    # 必须显式留痕，不能静默用占位补全掩盖。
+    if (
+        not extracted.claims
+        and not extracted.comparisons
+        and not extracted.execution_failed
+    ):
+        limitations.append("提取器未返回任何结论或比较，范围矩阵已用待核实占位补全")
     structural_degradation = bool(
         extracted.execution_failed
         or extracted.cross_level_conclusions

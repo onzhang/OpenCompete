@@ -1019,3 +1019,36 @@ def test_isolated_researcher_failure_forces_partial_and_keeps_other_results() ->
         "1 个研究单元失败" in limitation
         for limitation in bundle.report.limitations
     )
+
+
+def test_empty_extraction_with_evidence_records_explicit_limitation() -> None:
+    """提取调用成功但零产出（输出上限自保）时不得静默用占位掩盖。."""
+    record = {
+        "query": "cursor pricing",
+        "status": "success",
+        "summary": "真实摘要内容",
+        "title": "来源",
+        "type": "tavily_search",
+        "url": "https://example.org/real",
+        "version": 1,
+    }
+    bundle = asyncio.run(
+        materialize_bundle(
+            run_id="run-empty-extraction-with-evidence",
+            scope=_scope(),
+            upstream_state={
+                "raw_notes": [RAW_NOTES],
+                "final_report": _publishable_report(title="报告"),
+                "supervisor_messages": [_evidence_message([record])],
+            },
+            budget=_budget(),
+            extractor=StaticArtifactExtractor(ArtifactExtraction()),
+        )
+    )
+
+    assert bundle.evidence
+    assert any(
+        "提取器未返回任何结论或比较" in item
+        for item in bundle.report.limitations
+    )
+    # 覆盖缺口由占位如实呈现；状态语义遵循既有「诚实缺口不强制 partial」设计。

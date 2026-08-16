@@ -1,11 +1,15 @@
 """Utility functions and helpers for the Deep Research agent."""
 
 import asyncio
+import ipaddress
+import json
 import logging
 import os
+import re
 import warnings
 from datetime import datetime, timedelta, timezone
-from typing import Annotated, Any, Dict, List, Literal, Optional
+from typing import Annotated, Any, Dict, List, Literal, Optional, cast
+from urllib.parse import parse_qsl, urlsplit, urlunsplit
 
 import aiohttp
 from langchain.chat_models import init_chat_model
@@ -14,9 +18,10 @@ from langchain_core.messages import (
     AIMessage,
     HumanMessage,
     MessageLikeRepresentation,
+    SystemMessage,
     filter_messages,
 )
-from langchain_core.runnables import RunnableConfig
+from langchain_core.runnables import RunnableConfig, RunnableLambda
 from langchain_core.tools import (
     BaseTool,
     InjectedToolArg,
@@ -30,6 +35,10 @@ from mcp import McpError
 from tavily import AsyncTavilyClient
 
 from open_deep_research.configuration import Configuration, SearchAPI
+from open_deep_research.model_routing import (
+    build_resilient_model,
+    route_metadata,
+)
 from open_deep_research.prompts import summarize_webpage_prompt
 from open_deep_research.state import ResearchComplete, Summary
 
@@ -40,13 +49,74 @@ TAVILY_SEARCH_DESCRIPTION = (
     "A search engine optimized for comprehensive, accurate, and trusted results. "
     "Useful for when you need to answer questions about current events."
 )
-@tool(description=TAVILY_SEARCH_DESCRIPTION)
+TAVILY_EXTRACT_DESCRIPTION = (
+    "Extract a short, verifiable excerpt from one or more already selected public "
+    "HTTP/HTTPS URLs. Use basic depth unless advanced extraction is explicitly needed."
+)
+TAVILY_EXTRACT_MAX_URLS_PER_REQUEST = 20
+TAVILY_SEARCH_SNIPPET_MAX_CHARS = 2000
+TAVILY_SEARCH_TITLE_MAX_CHARS = 500
+TAVILY_SUMMARY_FAILURE_MARKER = "[TAVILY_SUMMARY_UNAVAILABLE]"
+RESEARCH_EVIDENCE_ARTIFACT_TYPE = "opencompete_research_evidence"
+RESEARCH_EVIDENCE_ARTIFACT_VERSION = 1
+_EXTRACT_CONTRACT_TYPE = "tavily_extract"
+_FORBIDDEN_HOST_SUFFIXES = (
+    ".internal",
+    ".invalid",
+    ".lan",
+    ".local",
+    ".localhost",
+    ".test",
+)
+_SENSITIVE_QUERY_MARKERS = (
+    "api_key",
+    "apikey",
+    "authorization",
+    "credential",
+    "password",
+    "secret",
+    "signature",
+    "token",
+)
+_SECRET_ENV_MARKERS = (
+    "api_key",
+    "apikey",
+    "authorization",
+    "password",
+    "secret",
+    "token",
+)
+_NON_SECRET_CONTROL_VALUES = {
+    "0",
+    "1",
+    "false",
+    "no",
+    "none",
+    "null",
+    "true",
+    "yes",
+}
+_AUTHORIZATION_PATTERN = re.compile(r"(?im)(authorization\s*[:=]\s*)[^\r\n]+")
+_BEARER_PATTERN = re.compile(r"(?i)\bbearer\s+[A-Za-z0-9._~+/=-]+")
+_SECRET_FIELD_PATTERN = re.compile(
+    r"(?i)((?:api[-_ ]?key|access[-_ ]?token|password|secret)\s*[:=]\s*)[^\s,;]+"
+)
+_PUBLIC_HOST_LABEL_PATTERN = re.compile(
+    r"^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$"
+)
+_REQUEST_ID_PATTERN = re.compile(r"^[A-Za-z0-9._:-]{1,128}$")
+
+
+@tool(
+    description=TAVILY_SEARCH_DESCRIPTION,
+    response_format="content_and_artifact",
+)
 async def tavily_search(
     queries: List[str],
     max_results: Annotated[int, InjectedToolArg] = 5,
     topic: Annotated[Literal["general", "news", "finance"], InjectedToolArg] = "general",
     config: RunnableConfig = None
-) -> str:
+) -> tuple[str, dict[str, Any]]:
     """Fetch and summarize search results from Tavily search API.
 
     Args:
@@ -56,12 +126,19 @@ async def tavily_search(
         config: Runtime configuration for API keys and model settings
 
     Returns:
-        Formatted string containing summarized search results
+        Formatted text plus a bounded structured evidence artifact.
     """
+    configurable = Configuration.from_runnable_config(config)
+    admitted_queries = list(queries[: configurable.tavily_max_queries_per_call])
+    requested_query_count = len(queries)
+
     # Step 1: Execute search queries asynchronously
     search_results = await tavily_search_async(
-        queries,
-        max_results=max_results,
+        admitted_queries,
+        max_results=min(
+            max_results,
+            configurable.tavily_max_results_per_query,
+        ),
         topic=topic,
         include_raw_content=True,
         config=config
@@ -76,44 +153,115 @@ async def tavily_search(
                 unique_results[url] = {**result, "query": response['query']}
     
     # Step 3: Set up the summarization model with configuration
-    configurable = Configuration.from_runnable_config(config)
-    
     # Character limit to stay within model token limits (configurable)
     max_char_to_include = configurable.max_content_length
     
     # Initialize summarization model with retry logic
     model_api_key = get_api_key_for_model(configurable.summarization_model, config)
-    summarization_model = init_chat_model(
-        model=configurable.summarization_model,
-        max_tokens=configurable.summarization_model_max_tokens,
-        api_key=model_api_key,
-        tags=["langsmith:nostream"]
-    ).with_structured_output(Summary).with_retry(
-        stop_after_attempt=configurable.max_structured_output_retries
+    fallback_model = configurable.fallback_model
+    fallback_attempts = (
+        configurable.fallback_model_attempts if fallback_model is not None else 0
+    )
+    primary_options: dict[str, Any] = {
+        "model": configurable.summarization_model,
+        "max_tokens": configurable.summarization_model_max_tokens,
+        "api_key": model_api_key,
+        "timeout": configurable.llm_request_timeout_seconds,
+        "max_retries": configurable.llm_sdk_max_retries,
+        "tags": ["langsmith:nostream"],
+        "metadata": route_metadata(
+            provider=configurable.primary_provider_name,
+            model=configurable.summarization_model,
+            fallback=False,
+            route_attempts=configurable.primary_model_attempts,
+            primary_attempts=configurable.primary_model_attempts,
+            fallback_attempts=fallback_attempts,
+            retry_delays_seconds=configurable.model_retry_delays_seconds,
+            fallback_provider=(
+                configurable.fallback_provider_name
+                if fallback_model is not None
+                else None
+            ),
+            fallback_model=fallback_model,
+        ),
+    }
+    if configurable.model_thinking is not None:
+        primary_options["thinking"] = configurable.model_thinking
+    fallback_options: dict[str, Any] | None = None
+    if fallback_model is not None:
+        fallback_options = {
+            "model": fallback_model,
+            "max_tokens": configurable.summarization_model_max_tokens,
+            "api_key": get_api_key_for_model(fallback_model, config),
+            "timeout": configurable.llm_request_timeout_seconds,
+            "max_retries": configurable.llm_sdk_max_retries,
+            "tags": ["langsmith:nostream"],
+            "metadata": route_metadata(
+                provider=configurable.fallback_provider_name,
+                model=fallback_model,
+                fallback=True,
+                route_attempts=fallback_attempts,
+                primary_attempts=configurable.primary_model_attempts,
+                fallback_attempts=fallback_attempts,
+                retry_delays_seconds=configurable.model_retry_delays_seconds,
+            ),
+        }
+        if configurable.fallback_disable_thinking:
+            fallback_options["thinking"] = {"type": "disabled"}
+        elif configurable.model_thinking is not None:
+            fallback_options["thinking"] = configurable.model_thinking
+    summarization_model = build_resilient_model(
+        init_chat_model(
+            configurable_fields=(
+                "model",
+                "max_tokens",
+                "api_key",
+                "timeout",
+                "max_retries",
+                "thinking",
+            ),
+        ),
+        prepare=lambda runnable: runnable.with_structured_output(Summary),
+        primary_config=cast(RunnableConfig, primary_options),
+        primary_attempts=configurable.primary_model_attempts,
+        fallback_config=(
+            cast(RunnableConfig, fallback_options)
+            if fallback_options is not None
+            else None
+        ),
+        fallback_attempts=fallback_attempts,
+        retry_delays_seconds=configurable.model_retry_delays_seconds,
     )
     
-    # Step 4: Create summarization tasks (skip empty content)
-    async def noop():
-        """No-op function for results without raw content."""
-        return None
-    
-    summarization_tasks = [
-        noop() if not result.get("raw_content") 
-        else summarize_webpage(
-            summarization_model, 
-            result['raw_content'][:max_char_to_include]
-        )
-        for result in unique_results.values()
+    # Step 4: Summarize non-empty pages with the framework concurrency boundary.
+    summaries: list[str | None] = [None] * len(unique_results)
+    indexed_contents = [
+        (index, result["raw_content"][:max_char_to_include])
+        for index, result in enumerate(unique_results.values())
+        if result.get("raw_content")
     ]
-    
-    # Step 5: Execute all summarization tasks in parallel
-    summaries = await asyncio.gather(*summarization_tasks)
+    if indexed_contents:
+        async def summarize_content(content: str) -> str:
+            return await summarize_webpage(summarization_model, content)
+
+        summarizer = RunnableLambda(summarize_content)
+        completed = await summarizer.abatch(
+            [content for _, content in indexed_contents],
+            config={
+                "max_concurrency": configurable.max_concurrent_summarizations,
+            },
+        )
+        for (index, _), summary in zip(indexed_contents, completed):
+            summaries[index] = summary
     
     # Step 6: Combine results with their summaries
     summarized_results = {
         url: {
-            'title': result['title'], 
-            'content': result['content'] if summary is None else summary
+            'title': _safe_search_title(result.get('title')),
+            'query': _safe_output_query(str(result.get('query', ''))),
+            'content': _safe_search_snippet(
+                result.get('content') if summary is None else summary
+            ),
         }
         for url, result, summary in zip(
             unique_results.keys(), 
@@ -123,17 +271,404 @@ async def tavily_search(
     }
     
     # Step 7: Format the final output
+    admission = (
+        "QUERY_ADMISSION: "
+        f"requested={requested_query_count}; "
+        f"sent={len(admitted_queries)}; "
+        f"truncated={requested_query_count - len(admitted_queries)}\n\n"
+    )
     if not summarized_results:
-        return "No valid search results found. Please try different search queries or use a different search API."
+        return (
+            admission
+            + "No valid search results found. Please try different search queries "
+            "or use a different search API.",
+            _research_evidence_artifact([]),
+        )
     
-    formatted_output = "Search results: \n\n"
+    formatted_output = "Search results: \n\n" + admission
     for i, (url, result) in enumerate(summarized_results.items()):
         formatted_output += f"\n\n--- SOURCE {i+1}: {result['title']} ---\n"
-        formatted_output += f"URL: {url}\n\n"
+        formatted_output += f"URL: {url}\n"
+        formatted_output += f"QUERY: {result['query']}\n\n"
         formatted_output += f"SUMMARY:\n{result['content']}\n\n"
         formatted_output += "\n\n" + "-" * 80 + "\n"
     
-    return formatted_output
+    evidence_records: list[dict[str, Any]] = []
+    for url, result in summarized_results.items():
+        if not isinstance(url, str):
+            continue
+        try:
+            safe_url = _validate_public_http_url(url)
+        except ValueError:
+            continue
+        summary = str(result["content"]).strip()
+        if not summary:
+            continue
+        evidence_records.append(
+            {
+                "query": result["query"],
+                "status": "success",
+                "summary": summary,
+                "title": result["title"] or safe_url,
+                "type": "tavily_search",
+                "url": safe_url,
+                "version": 1,
+            }
+        )
+
+    return (
+        (
+            "<untrusted_search_results>\n"
+            f"{formatted_output}"
+            "</untrusted_search_results>"
+        ),
+        _research_evidence_artifact(evidence_records),
+    )
+
+
+@tool(
+    description=TAVILY_EXTRACT_DESCRIPTION,
+    response_format="content_and_artifact",
+)
+async def tavily_extract(
+    urls: List[str],
+    query: str,
+    extract_depth: Literal["basic", "advanced"] = "basic",
+    config: RunnableConfig = None,
+) -> tuple[str, dict[str, Any]]:
+    """Return bounded, source-located excerpts for selected public URLs.
+
+    Args:
+        urls: Public HTTP/HTTPS URLs selected during research.
+        query: Source research query used to choose the relevant excerpt.
+        extract_depth: Official Tavily extraction depth; basic is the default.
+        config: Runtime configuration for the API key and excerpt bound.
+
+    Returns:
+        Versioned JSON-lines text plus the same bounded records as an artifact.
+    """
+    source_query = query.strip()
+    if not source_query:
+        raise ValueError("Tavily Extract requires a non-empty source query")
+    normalized_urls = validated_tavily_extract_urls(urls)
+    configurable = Configuration.from_runnable_config(config)
+    batch_responses = await tavily_extract_async(
+        normalized_urls,
+        extract_depth=extract_depth,
+        config=config,
+    )
+
+    records: list[dict[str, Any]] = []
+    safe_query = _redact_sensitive_text(source_query)[:1000]
+    for batch_index, (batch_urls, response) in enumerate(batch_responses, start=1):
+        request_id = _safe_request_id(response.get("request_id"))
+        usage = _safe_extract_usage(response.get("usage"))
+        successful = _successful_extract_results(response, batch_urls)
+        failed_urls = _failed_extract_urls(response, batch_urls)
+        for url in batch_urls:
+            result = successful.get(url)
+            raw_content = result.get("raw_content") if result is not None else None
+            if isinstance(raw_content, str) and raw_content:
+                excerpt, char_start, char_end = _extract_excerpt(
+                    raw_content,
+                    source_query,
+                    configurable.tavily_extract_excerpt_max_chars,
+                )
+                safe_excerpt = _redact_sensitive_text(excerpt)[
+                    : configurable.tavily_extract_excerpt_max_chars
+                ]
+                records.append(
+                    {
+                        "batch_index": batch_index,
+                        "char_end": char_end,
+                        "char_start": char_start,
+                        "excerpt": safe_excerpt,
+                        "excerpt_redacted": safe_excerpt != excerpt,
+                        "query": safe_query,
+                        "request_id": request_id,
+                        "status": "success",
+                        "type": _EXTRACT_CONTRACT_TYPE,
+                        "url": url,
+                        "usage": usage,
+                        "version": 1,
+                    }
+                )
+                continue
+            error_type = (
+                "extract_failed"
+                if url in failed_urls
+                else "missing_or_empty_result"
+            )
+            records.append(
+                {
+                    "batch_index": batch_index,
+                    "error_type": error_type,
+                    "query": safe_query,
+                    "request_id": request_id,
+                    "status": "failed",
+                    "type": _EXTRACT_CONTRACT_TYPE,
+                    "url": url,
+                    "usage": usage,
+                    "version": 1,
+                }
+            )
+
+    payload = "\n".join(
+        json.dumps(
+            record,
+            ensure_ascii=False,
+            sort_keys=True,
+            separators=(",", ":"),
+        )
+        for record in records
+    )
+    return (
+        (
+            "<untrusted_extract_results>\n"
+            "TAVILY_EXTRACT_JSONL_V1\n"
+            f"{payload}\n"
+            "</untrusted_extract_results>"
+        ),
+        _research_evidence_artifact(records),
+    )
+
+
+async def tavily_extract_async(
+    urls: List[str],
+    *,
+    extract_depth: Literal["basic", "advanced"] = "basic",
+    config: RunnableConfig = None,
+) -> list[tuple[list[str], dict[str, Any]]]:
+    """Call the official Extract client in deterministic batches of twenty URLs."""
+    tavily_client = AsyncTavilyClient(api_key=get_tavily_api_key(config))
+    responses: list[tuple[list[str], dict[str, Any]]] = []
+    for offset in range(0, len(urls), TAVILY_EXTRACT_MAX_URLS_PER_REQUEST):
+        batch = urls[offset : offset + TAVILY_EXTRACT_MAX_URLS_PER_REQUEST]
+        response = await tavily_client.extract(
+            urls=batch,
+            include_images=False,
+            extract_depth=extract_depth,
+            format="markdown",
+            include_usage=True,
+        )
+        if not isinstance(response, dict):
+            raise TypeError("Tavily Extract returned an invalid response")
+        responses.append((batch, response))
+    return responses
+
+
+def validated_tavily_extract_urls(urls: List[str]) -> list[str]:
+    """Validate and deduplicate the URLs admitted to official Tavily Extract."""
+    if not urls:
+        raise ValueError("Tavily Extract requires at least one URL")
+    normalized = [_validate_public_http_url(url) for url in urls]
+    return list(dict.fromkeys(normalized))
+
+
+def _validate_public_http_url(url: str) -> str:
+    value = url.strip()
+    if len(value) > 4096:
+        raise ValueError("URL is too long")
+    try:
+        parsed = urlsplit(value)
+        port = parsed.port
+    except ValueError as exc:
+        raise ValueError("URL is invalid") from exc
+    scheme = parsed.scheme.casefold()
+    if scheme not in {"http", "https"}:
+        raise ValueError("Only public HTTP/HTTPS URLs are allowed")
+    if not parsed.hostname:
+        raise ValueError("A public URL must include a hostname")
+    if parsed.username is not None or parsed.password is not None:
+        raise ValueError("URLs containing credentials are not allowed")
+
+    host = _validate_public_host(parsed.hostname.rstrip(".").casefold())
+    for key, _ in parse_qsl(parsed.query, keep_blank_values=True):
+        normalized_key = key.casefold().replace("-", "_")
+        if any(marker in normalized_key for marker in _SENSITIVE_QUERY_MARKERS):
+            raise ValueError("URLs containing secret query parameters are not allowed")
+    if any(secret in value for secret in _environment_secret_values()):
+        raise ValueError("URLs containing process secrets are not allowed")
+
+    serialized_host = f"[{host}]" if ":" in host else host
+    default_port = (scheme == "http" and port == 80) or (
+        scheme == "https" and port == 443
+    )
+    netloc = (
+        serialized_host
+        if port is None or default_port
+        else f"{serialized_host}:{port}"
+    )
+    return urlunsplit((scheme, netloc, parsed.path, parsed.query, ""))
+
+
+def _validate_public_host(host: str) -> str:
+    if host == "localhost" or host.endswith(_FORBIDDEN_HOST_SUFFIXES):
+        raise ValueError("Local or internal hostnames are not allowed")
+    try:
+        address = ipaddress.ip_address(host)
+    except ValueError:
+        return _validate_public_hostname(host)
+    if not address.is_global:
+        raise ValueError("Non-public IP addresses are not allowed")
+    return address.compressed
+
+
+def _validate_public_hostname(host: str) -> str:
+    try:
+        ascii_host = host.encode("idna").decode("ascii")
+    except UnicodeError as exc:
+        raise ValueError("Hostname is invalid") from exc
+    labels = ascii_host.split(".")
+    if len(ascii_host) > 253 or len(labels) < 2:
+        raise ValueError("A fully qualified public hostname is required")
+    if all(label.isdigit() for label in labels):
+        raise ValueError("Non-standard numeric IP forms are not allowed")
+    if any(not _PUBLIC_HOST_LABEL_PATTERN.fullmatch(label) for label in labels):
+        raise ValueError("Hostname is invalid")
+    return ascii_host
+
+
+def _successful_extract_results(
+    response: dict[str, Any],
+    batch_urls: List[str],
+) -> dict[str, dict[str, Any]]:
+    allowed = set(batch_urls)
+    results: dict[str, dict[str, Any]] = {}
+    values = response.get("results")
+    if not isinstance(values, list):
+        return results
+    for item in values:
+        if not isinstance(item, dict) or not isinstance(item.get("url"), str):
+            continue
+        try:
+            url = _validate_public_http_url(item["url"])
+        except ValueError:
+            continue
+        if url in allowed and url not in results:
+            results[url] = item
+    return results
+
+
+def _failed_extract_urls(
+    response: dict[str, Any],
+    batch_urls: List[str],
+) -> set[str]:
+    allowed = set(batch_urls)
+    failed: set[str] = set()
+    values = response.get("failed_results")
+    if not isinstance(values, list):
+        return failed
+    for item in values:
+        if not isinstance(item, dict) or not isinstance(item.get("url"), str):
+            continue
+        try:
+            url = _validate_public_http_url(item["url"])
+        except ValueError:
+            continue
+        if url in allowed:
+            failed.add(url)
+    return failed
+
+
+def _extract_excerpt(
+    raw_content: str,
+    query: str,
+    max_chars: int,
+) -> tuple[str, int, int]:
+    anchor = 0
+    exact_match = re.search(re.escape(query.strip()), raw_content, re.IGNORECASE)
+    if exact_match is not None:
+        anchor = exact_match.start()
+    else:
+        terms = sorted(
+            {term for term in re.findall(r"[\w-]{3,}", query)},
+            key=len,
+            reverse=True,
+        )
+        for term in terms:
+            match = re.search(re.escape(term), raw_content, re.IGNORECASE)
+            if match is not None:
+                anchor = match.start()
+                break
+    width = min(max_chars, len(raw_content))
+    start = max(0, anchor - width // 3)
+    end = min(len(raw_content), start + width)
+    start = max(0, end - width)
+    return raw_content[start:end], start, end
+
+
+def _safe_request_id(value: Any) -> str | None:
+    if not isinstance(value, str):
+        return None
+    request_id = value.strip()
+    if any(secret in request_id for secret in _environment_secret_values()):
+        return None
+    return request_id if _REQUEST_ID_PATTERN.fullmatch(request_id) else None
+
+
+def _safe_extract_usage(value: Any) -> dict[str, int | float]:
+    if not isinstance(value, dict):
+        return {}
+    credits = value.get("credits")
+    if (
+        isinstance(credits, int | float)
+        and not isinstance(credits, bool)
+        and credits >= 0
+    ):
+        return {"credits": credits}
+    return {}
+
+
+def _environment_secret_values() -> tuple[str, ...]:
+    values = []
+    for key, raw_value in os.environ.items():
+        value = raw_value.strip()
+        if len(value) < 4:
+            continue
+        if value.casefold() in _NON_SECRET_CONTROL_VALUES:
+            continue
+        if any(marker in key.casefold() for marker in _SECRET_ENV_MARKERS):
+            values.append(value)
+    return tuple(dict.fromkeys(values))
+
+
+def _redact_sensitive_text(value: str) -> str:
+    redacted = value
+    for secret in sorted(_environment_secret_values(), key=len, reverse=True):
+        redacted = redacted.replace(secret, "[REDACTED]")
+    redacted = _AUTHORIZATION_PATTERN.sub(r"\1[REDACTED]", redacted)
+    redacted = _BEARER_PATTERN.sub("[REDACTED]", redacted)
+    return _SECRET_FIELD_PATTERN.sub(r"\1[REDACTED]", redacted)
+
+
+def _safe_output_query(value: str) -> str:
+    return " ".join(_redact_sensitive_text(value).split())[:1000]
+
+
+def _safe_search_title(value: Any) -> str:
+    if not isinstance(value, str):
+        return ""
+    return " ".join(_redact_sensitive_text(value).split())[
+        :TAVILY_SEARCH_TITLE_MAX_CHARS
+    ]
+
+
+def _safe_search_snippet(value: Any) -> str:
+    if not isinstance(value, str):
+        return ""
+    return _redact_sensitive_text(value)[:TAVILY_SEARCH_SNIPPET_MAX_CHARS]
+
+
+def _research_evidence_artifact(
+    records: list[dict[str, Any]],
+) -> dict[str, Any]:
+    """Build the only structured artifact persisted from Tavily tool output."""
+    return {
+        "type": RESEARCH_EVIDENCE_ARTIFACT_TYPE,
+        "version": RESEARCH_EVIDENCE_ARTIFACT_VERSION,
+        "records": records,
+    }
 
 async def tavily_search_async(
     search_queries, 
@@ -180,20 +715,22 @@ async def summarize_webpage(model: BaseChatModel, webpage_content: str) -> str:
         webpage_content: Raw webpage content to be summarized
         
     Returns:
-        Formatted summary with key excerpts, or original content if summarization fails
+        Formatted summary with key excerpts, or a stable bounded failure marker
     """
     try:
         # Create prompt with current date context
-        prompt_content = summarize_webpage_prompt.format(
-            webpage_content=webpage_content, 
-            date=get_today_str()
+        prompt_content = summarize_webpage_prompt.format(date=get_today_str())
+        untrusted_content = (
+            "<untrusted_webpage_content>\n"
+            f"{webpage_content}\n"
+            "</untrusted_webpage_content>"
         )
         
-        # Execute summarization with timeout to prevent hanging
-        summary = await asyncio.wait_for(
-            model.ainvoke([HumanMessage(content=prompt_content)]),
-            timeout=60.0  # 60 second timeout for summarization
-        )
+        # The model already carries the configured SDK request timeout.
+        summary = await model.ainvoke([
+                SystemMessage(content=prompt_content),
+                HumanMessage(content=untrusted_content),
+            ])
         
         # Format the summary with structured sections
         formatted_summary = (
@@ -204,13 +741,16 @@ async def summarize_webpage(model: BaseChatModel, webpage_content: str) -> str:
         return formatted_summary
         
     except asyncio.TimeoutError:
-        # Timeout during summarization - return original content
-        logging.warning("Summarization timed out after 60 seconds, returning original content")
-        return webpage_content
+        logging.warning(
+            "Summarization reached the configured request timeout"
+        )
+        return TAVILY_SUMMARY_FAILURE_MARKER
     except Exception as e:
-        # Other errors during summarization - log and return original content
-        logging.warning(f"Summarization failed with error: {str(e)}, returning original content")
-        return webpage_content
+        logging.warning(
+            "Summarization failed (%s)",
+            type(e).__name__,
+        )
+        return TAVILY_SUMMARY_FAILURE_MARKER
 
 ##########################
 # Reflection Tool Utils
@@ -550,14 +1090,20 @@ async def get_search_tool(search_api: SearchAPI):
         return [{"type": "web_search_preview"}]
         
     elif search_api == SearchAPI.TAVILY:
-        # Configure Tavily search tool with metadata
+        # Configure only the official Tavily search and extract tools.
         search_tool = tavily_search
         search_tool.metadata = {
             **(search_tool.metadata or {}), 
             "type": "search", 
             "name": "web_search"
         }
-        return [search_tool]
+        extract_tool = tavily_extract
+        extract_tool.metadata = {
+            **(extract_tool.metadata or {}),
+            "type": "extract",
+            "name": "web_extract",
+        }
+        return [search_tool, extract_tool]
         
     elif search_api == SearchAPI.NONE:
         # No search functionality configured
@@ -604,58 +1150,71 @@ def get_notes_from_tool_calls(messages: list[MessageLikeRepresentation]):
 # Model Provider Native Websearch Utils
 ##########################
 
-def anthropic_websearch_called(response):
-    """Detect if Anthropic's native web search was used in the response.
+def anthropic_websearch_count(response) -> int:
+    """Return the number of Anthropic server-side web search requests.
     
     Args:
         response: The response object from Anthropic's API
         
     Returns:
-        True if web search was called, False otherwise
+        The non-negative request count, or zero for unknown response shapes.
     """
     try:
         # Navigate through the response metadata structure
         usage = response.response_metadata.get("usage")
         if not usage:
-            return False
+            return 0
         
         # Check for server-side tool usage information
         server_tool_use = usage.get("server_tool_use")
         if not server_tool_use:
-            return False
+            return 0
         
         # Look for web search request count
         web_search_requests = server_tool_use.get("web_search_requests")
         if web_search_requests is None:
-            return False
+            return 0
         
-        # Return True if any web search requests were made
-        return web_search_requests > 0
+        if isinstance(web_search_requests, bool):
+            return int(web_search_requests)
+        if isinstance(web_search_requests, int):
+            return max(0, web_search_requests)
+        return 0
         
     except (AttributeError, TypeError):
         # Handle cases where response structure is unexpected
-        return False
+        return 0
 
-def openai_websearch_called(response):
-    """Detect if OpenAI's web search functionality was used in the response.
+
+def anthropic_websearch_called(response):
+    """Detect if Anthropic's native web search was used in the response."""
+    return anthropic_websearch_count(response) > 0
+
+
+def openai_websearch_count(response) -> int:
+    """Return the number of OpenAI native web search call outputs.
     
     Args:
         response: The response object from OpenAI's API
         
     Returns:
-        True if web search was called, False otherwise
+        The non-negative call count, or zero for unknown response shapes.
     """
     # Check for tool outputs in the response metadata
     tool_outputs = response.additional_kwargs.get("tool_outputs")
     if not tool_outputs:
-        return False
+        return 0
     
-    # Look for web search calls in the tool outputs
-    for tool_output in tool_outputs:
-        if tool_output.get("type") == "web_search_call":
-            return True
-    
-    return False
+    return sum(
+        isinstance(tool_output, dict)
+        and tool_output.get("type") == "web_search_call"
+        for tool_output in tool_outputs
+    )
+
+
+def openai_websearch_called(response):
+    """Detect if OpenAI's native web search was used in the response."""
+    return openai_websearch_count(response) > 0
 
 
 ##########################

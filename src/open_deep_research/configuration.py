@@ -113,11 +113,72 @@ class Configuration(BaseModel):
                 "min": 1,
                 "max": 30,
                 "step": 1,
-                "description": "Maximum number of tool calling iterations to make in a single researcher step."
+                "description": "Hard maximum number of model tool-calling turns in a single researcher step."
+            }
+        }
+    )
+    max_supervisor_model_turns: int = Field(
+        default=13,
+        ge=1,
+        description=(
+            "Hard maximum number of supervisor model turns. Already generated "
+            "tool calls are resolved before this limit ends the supervisor."
+        ),
+    )
+    max_research_tool_calls: int = Field(
+        default=5,
+        ge=1,
+        metadata={
+            "x_oap_ui_config": {
+                "type": "slider",
+                "default": 5,
+                "min": 1,
+                "max": 20,
+                "step": 1,
+                "description": "Maximum number of non-control research tool calls for one researcher. Local tools are admitted before execution; provider-native server-side searches are counted from response metadata and stop subsequent turns. Reflection and ResearchComplete do not consume this budget."
             }
         }
     )
     # Model Configuration
+    llm_request_timeout_seconds: float = Field(
+        default=600.0,
+        gt=0,
+        description="Maximum duration in seconds for one model SDK request",
+    )
+    llm_sdk_max_retries: int = Field(
+        default=2,
+        ge=0,
+        description="Model SDK retries below the graph-level retry boundary",
+    )
+    long_form_streaming: bool = Field(
+        default=False,
+        description=(
+            "Stream pure-text compression and final-report responses before "
+            "aggregating them into complete messages"
+        ),
+    )
+    max_concurrent_summarizations: int = Field(
+        default=3,
+        ge=1,
+        description="Maximum concurrent webpage summarization model calls",
+    )
+    model_thinking: dict[str, str] | None = Field(
+        default=None,
+        description="Optional provider-neutral thinking configuration",
+    )
+    fallback_model: str | None = Field(
+        default=None,
+        description="Optional fallback model used only after transient failures",
+    )
+    primary_provider_name: str = Field(default="Primary")
+    fallback_provider_name: str = Field(default="Fallback")
+    primary_model_attempts: int = Field(default=3, ge=1, le=5)
+    fallback_model_attempts: int = Field(default=2, ge=1, le=5)
+    model_retry_delays_seconds: tuple[float, ...] = Field(
+        default=(2.0, 5.0, 10.0, 20.0),
+        min_length=1,
+    )
+    fallback_disable_thinking: bool = Field(default=True)
     summarization_model: str = Field(
         default="openai:gpt-4.1-mini",
         metadata={
@@ -149,6 +210,30 @@ class Configuration(BaseModel):
                 "description": "Maximum character length for webpage content before summarization"
             }
         }
+    )
+    tavily_max_results_per_query: int = Field(
+        default=5,
+        ge=1,
+        le=20,
+        description="Maximum Tavily results retained for each search query",
+    )
+    tavily_max_queries_per_call: int = Field(
+        default=3,
+        ge=1,
+        le=20,
+        description=(
+            "Hard maximum number of Tavily search queries admitted from one "
+            "tool invocation before provider requests are created"
+        ),
+    )
+    tavily_extract_excerpt_max_chars: int = Field(
+        default=1200,
+        ge=200,
+        le=4000,
+        description=(
+            "Maximum extracted source characters returned for one URL; full "
+            "page content remains process-local"
+        ),
     )
     research_model: str = Field(
         default="openai:gpt-4.1",
@@ -209,6 +294,11 @@ class Configuration(BaseModel):
                 "description": "Maximum output tokens for final report model"
             }
         }
+    )
+    final_report_input_max_chars: int = Field(
+        default=200000,
+        ge=1000,
+        description="Maximum combined compressed-research characters for final report",
     )
     # MCP server configuration
     mcp_config: Optional[MCPConfig] = Field(

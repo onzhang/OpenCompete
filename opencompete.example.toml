@@ -1,0 +1,73 @@
+# OpenCompete 非秘密配置示例。复制为 opencompete.toml 后按需修改。
+# API Key 只能通过环境变量或本地 .env 提供，禁止写入本文件。
+
+# 本地持久化目录
+data_dir = ".opencompete-data"
+
+# 模型标识沿用 LangChain init_chat_model 的 provider:model 格式
+research_model = "openai:gpt-4.1"
+summarization_model = "openai:gpt-4.1-mini"
+compression_model = "openai:gpt-4.1"
+final_report_model = "openai:gpt-4.1"
+# 可选备用模型。也可只在 .env 设置 ANTHROPIC_MODEL，加载器会将其规范化为
+# anthropic:<model>；API Key 与 Base URL 仍只使用 ANTHROPIC_* 环境变量。
+# fallback_model = "anthropic:备用模型名"
+primary_provider_name = "OpenAI"
+fallback_provider_name = "DeepSeek"
+primary_model_attempts = 3
+fallback_model_attempts = 2
+model_retry_delays_seconds = [2.0, 5.0, 10.0, 20.0]
+fallback_disable_thinking = true
+# 报告 Judge 默认关闭；只有取消下一行注释并配置模型后才会产生 RACE/FACT 调用费用。
+# judge_model = "openai:gpt-4.1"
+research_model_max_tokens = 10000
+summarization_model_max_tokens = 8192
+compression_model_max_tokens = 8192
+final_report_model_max_tokens = 6000
+artifact_extraction_model_max_tokens = 10000
+final_report_input_max_chars = 200000
+judge_model_max_tokens = 8192
+judge_prompt_version = "opencompete-race-fact-v1"
+
+# 单次模型 HTTP 请求最长等待时间；SDK 隐式重试保持关闭。
+llm_request_timeout_seconds = 300
+llm_sdk_max_retries = 0
+# 只对压缩和最终报告两个纯文本长响应启用流式聚合。
+long_form_streaming = true
+
+# 研究编排与结构化输出限制。该值只控制上游 Researcher 的单次 Search 页大小。
+max_content_length = 50000
+tavily_max_results_per_query = 5
+# 候选发现专用的单次 Tavily Search 相关来源页大小。它不是候选总数、查询总数
+# 或累计来源数上限；覆盖审计发现缺口时会继续追加新的独立检索词。
+discovery_search_results_per_query = 5
+# 候选发现按此正文体积分批绑定来源；不会按候选数量或搜索来源数量截断。
+discovery_binding_max_input_chars = 12000
+# 单次 Search 最多发送 3 条 query；Extract 每个 URL 只返回短摘录。
+tavily_max_queries_per_call = 3
+tavily_extract_excerpt_max_chars = 1200
+max_structured_output_retries = 3
+max_concurrent_research_units = 3
+max_concurrent_summarizations = 3
+max_researcher_iterations = 4
+# Supervisor 最多 4 次委托，并保留反思与显式完成所需模型轮次。
+max_supervisor_model_turns = 9
+# 模型轮次是防死循环硬上限；研究工具额度不包含 think_tool/ResearchComplete。
+max_react_tool_calls = 6
+max_research_tool_calls = 3
+
+# 单个任务的硬预算；不足时停止新增调用并生成 partial 结果
+max_tavily_calls = 30
+max_input_tokens = 500000
+max_output_tokens = 100000
+max_cost_usd = 20.0
+
+# 本地成本预留使用的保守统一费率，不代表供应商最终账单。
+# 更换模型或 Tavily 套餐后应同时更新费率和版本标识。
+llm_input_cost_per_million_usd = 2.0
+llm_output_cost_per_million_usd = 8.0
+tavily_cost_per_call_usd = 0.02
+price_config_version = "local-estimate-2026-07-18-tavily-credit-v2"
+
+# 只控制 OpenCompete 非秘密配置；环境中的 LANGSMITH_TRACING 也应保持 false
+langsmith_tracing = false

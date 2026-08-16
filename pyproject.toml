@@ -1,15 +1,16 @@
 [project]
-name = "open_deep_research"
-version = "0.0.16"
-description = "Planning, research, and report generation."
+name = "opencompete"
+version = "0.1.0"
+description = "Local, evidence-grounded competitive research built on Open Deep Research."
 authors = [
     { name = "Lance Martin" }
 ]
 readme = "README.md"
 license = { text = "MIT" }
-requires-python = ">=3.10"
+requires-python = ">=3.11"
 dependencies = [
-    "langgraph>=0.5.4",
+    "langgraph>=1.2.0,<2.0.0",
+    "langgraph-checkpoint-sqlite>=3.1.0,<4.0.0",
     "langchain-community>=0.3.9",
     "langchain-openai>=0.3.28",
     "langchain-anthropic>=0.3.15",
@@ -28,6 +29,7 @@ dependencies = [
     "requests>=2.32.3",
     "beautifulsoup4==4.14.3",
     "python-dotenv>=1.0.1",
+    "pydantic-settings>=2.14.0,<3.0.0",
     "pytest",
     "httpx>=0.24.0",
     "markdownify>=0.11.6",
@@ -44,27 +46,45 @@ dependencies = [
     "mcp>=1.9.4",
     "langchain-aws>=0.2.28",
     "pandas>=2.3.1",
+    "fastapi>=0.141.1",
+    "sse-starlette>=2.1.3",
+    "uvicorn>=0.34.3",
 ]
 
+[project.scripts]
+opencompete = "opencompete.cli:main"
+opencompete-race = "opencompete.drb_cli:main"
+opencompete-api = "opencompete.api.server:main"
+
 [project.optional-dependencies]
-dev = ["mypy>=1.11.1", "ruff>=0.6.1"]
+dev = [
+    "mypy>=2.3.0,<3.0.0",
+    "pytest-asyncio>=1.3.0,<2.0.0",
+    "ruff>=0.6.1",
+]
 
 [build-system]
 requires = ["setuptools>=73.0.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
-[tool.setuptools]
-packages = ["open_deep_research", "legacy", "tests"]
-
-[tool.setuptools.package-dir]
-"open_deep_research" = "src/open_deep_research"
-"legacy" = "src/legacy"
-"tests" = "tests"
+[tool.setuptools.packages.find]
+where = ["src"]
+include = ["open_deep_research*", "opencompete*", "legacy*"]
 
 [tool.setuptools.package-data]
 "*" = ["py.typed"]
 
 [tool.ruff]
+extend-exclude = [
+    "src/legacy",
+    "src/security",
+    "tests/evaluators.py",
+    "tests/extract_langsmith_data.py",
+    "tests/pairwise_evaluation.py",
+    "tests/prompts.py",
+    "tests/run_evaluate.py",
+    "tests/supervisor_parallel_evaluation.py",
+]
 lint.select = [
     "E",    # pycodestyle
     "F",    # pyflakes
@@ -84,6 +104,7 @@ lint.ignore = [
 
 [tool.ruff.lint.per-file-ignores]
 "tests/*" = ["D", "UP"]
+"src/open_deep_research/utils.py" = ["UP017", "UP041"]
 
 [tool.ruff.lint.pydocstyle]
 convention = "google"

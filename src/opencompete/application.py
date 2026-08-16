@@ -59,6 +59,7 @@ from opencompete.persistence import (
     reconcile,
 )
 from opencompete.providers import DiscoveryProvider, LazyLlmDiscoveryProvider
+from opencompete.research_contracts import estimated_report_output_tokens
 from opencompete.scope_planning import LazyScopePlanner, ScopePlanner
 from opencompete.security import sanitized_error, validate_public_http_url
 from opencompete.settings import OpenCompeteSettings
@@ -354,7 +355,15 @@ class ApplicationRunner:
 
             try:
                 await self._execution_ledger.initialize()
-                return await self._resume_graph(run_id, user_input)
+                inspection = await self.inspect_run(run_id)
+                scope = inspection.handle.scope
+                if (
+                    isinstance(user_input, ScopeConfirmation)
+                    and user_input.accepted
+                    and scope is not None
+                ):
+                    scope = freeze_scope_spec(scope, user_input)
+                return await self._resume_graph(run_id, user_input, scope=scope)
             except Exception as exc:
                 await self._record_failure(run_id, exc)
                 raise
@@ -491,7 +500,7 @@ class ApplicationRunner:
             )
             await self._execution_ledger.initialize()
             budget_guard = self._budget_guard(run_id)
-            config = self._runnable_config(run_id, budget_guard)
+            config = self._runnable_config(run_id, budget_guard, scope=frozen)
             async with self._checkpoint_store.open_saver() as saver:
                 graph = self._build_graph(saver, budget_guard)
                 updated = await graph.aupdate_state(
@@ -818,6 +827,8 @@ class ApplicationRunner:
         self,
         run_id: str,
         user_input: CandidateSelection | ScopeConfirmation | None,
+        *,
+        scope: ScopeSpec | None = None,
     ) -> RunHandle:
         execution_id: str | None = None
         started: float | None = None
@@ -837,14 +848,18 @@ class ApplicationRunner:
                 )
                 started = perf_counter()
                 try:
-                    config = self._runnable_config(run_id, budget_guard)
+                    config = self._runnable_config(
+                        run_id, budget_guard, scope=scope
+                    )
                     graph = self._build_graph(saver, budget_guard)
                     result = await graph.ainvoke(
                         Command(resume=user_input.model_dump(mode="json")),
                         config,
                     )
                 except BudgetExceededError as exc:
-                    config = self._runnable_config(run_id, budget_guard)
+                    config = self._runnable_config(
+                        run_id, budget_guard, scope=scope
+                    )
                     graph = self._build_graph(saver, budget_guard)
                     result = await self._budget_partial_state(
                         graph,
@@ -889,11 +904,15 @@ class ApplicationRunner:
                     )
                     started = perf_counter()
                     try:
-                        config = self._runnable_config(run_id, budget_guard)
+                        config = self._runnable_config(
+                            run_id, budget_guard, scope=scope
+                        )
                         graph = self._build_graph(saver, budget_guard)
                         result = await graph.ainvoke(None, config)
                     except BudgetExceededError as exc:
-                        config = self._runnable_config(run_id, budget_guard)
+                        config = self._runnable_config(
+                            run_id, budget_guard, scope=scope
+                        )
                         graph = self._build_graph(saver, budget_guard)
                         result = await self._budget_partial_state(
                             graph,
@@ -966,7 +985,7 @@ class ApplicationRunner:
             emit_attempt_events=True,
         )
         async with self._checkpoint_store.open_saver() as saver:
-            config = self._runnable_config(run_id, budget_guard)
+            config = self._runnable_config(run_id, budget_guard, scope=scope)
             graph = self._build_graph(saver, budget_guard)
             self._append_event(
                 run_id,
@@ -1266,6 +1285,8 @@ class ApplicationRunner:
         self,
         run_id: str,
         budget_guard: BudgetGuard,
+        *,
+        scope: ScopeSpec | None = None,
     ) -> RunnableConfig:
         config = cast(
             RunnableConfig,
@@ -1274,6 +1295,17 @@ class ApplicationRunner:
                 disable_thinking=self.settings.primary_disable_thinking,
             ),
         )
+        effective_report_tokens = self.settings.final_report_model_max_tokens
+        if scope is not None and scope.frozen:
+            # max_tokens 是输出上限而非预留；范围矩阵越大，完整叙事报告
+            # 所需容量线性增长。配置值只做下限，避免单次事故驱动常数。
+            effective_report_tokens = max(
+                effective_report_tokens,
+                estimated_report_output_tokens(scope),
+            )
+            configurable = dict(config.get("configurable") or {})
+            configurable["final_report_model_max_tokens"] = effective_report_tokens
+            config["configurable"] = configurable
         metadata = dict(config.get("metadata") or {})
         metadata["opencompete_execution_id"] = budget_guard.execution_id
         config["metadata"] = metadata
@@ -1284,7 +1316,7 @@ class ApplicationRunner:
                     self.settings.research_model_max_tokens,
                     self.settings.summarization_model_max_tokens,
                     self.settings.compression_model_max_tokens,
-                    self.settings.final_report_model_max_tokens,
+                    effective_report_tokens,
                     self.settings.artifact_extraction_model_max_tokens,
                 ),
                 llm_input_cost_per_million_usd=(

@@ -405,7 +405,12 @@ async def materialize_bundle(
         sources, evidence = capture_sources(raw_notes, accessed_at=accessed_at)
     original_report = str(upstream_state.get("final_report") or "").strip()
     report_failed = _is_error_report(original_report)
-    report_truncated = bool(original_report) and _looks_truncated(original_report)
+    report_stop_reason = _final_report_stop_reason(upstream_state)
+    report_truncated = bool(original_report) and (
+        report_stop_reason in {"max_tokens", "length"}
+        # 旧 checkpoint 不一定持久化模型元数据；仅此时回退保守启发式。
+        or (report_stop_reason is None and _looks_truncated(original_report))
+    )
     report_markdown = (
         "# 部分报告\n\n最终报告生成失败，已保留可验证的研究产物。"
         if report_failed or not original_report
@@ -562,7 +567,13 @@ async def materialize_bundle(
         evidence=evidence,
         limitations=tuple(limitations),
     )
-    candidate = None if report_failed or not original_report else original_report
+    # 输出顶满上限时原报告是半截文本，不能把它当作完整用户报告发布；
+    # 改用有来源与待核实限制的确定性可读保底。
+    candidate = (
+        None
+        if report_failed or not original_report or report_truncated
+        else original_report
+    )
     # 发布路径：确定性门禁；无修复 LLM 时 fail → fallback + partial
     resolution = resolve_published_report(
         candidate=candidate,
@@ -669,6 +680,29 @@ def _failed_extract_artifact_urls(
 def _is_error_report(value: str) -> bool:
     normalized = value.casefold()
     return any(normalized.startswith(prefix) for prefix in _ERROR_REPORT_PREFIXES)
+
+
+def _final_report_stop_reason(upstream_state: Mapping[str, Any]) -> str | None:
+    """读取最终报告 AIMessage 持久化的供应商无关停止原因。.
+
+    LangChain 将 Anthropic 的 ``stop_reason``、OpenAI 兼容接口的
+    ``finish_reason`` 归入 response_metadata；Checkpoint 可能保存为消息
+    对象或字典。只接受末条带停止原因的消息，避免把研究工具调用误判为报告。
+    """
+    messages = upstream_state.get("messages")
+    if not isinstance(messages, Sequence) or isinstance(messages, str | bytes):
+        return None
+    for message in reversed(messages):
+        if isinstance(message, Mapping):
+            metadata = message.get("response_metadata")
+        else:
+            metadata = getattr(message, "response_metadata", None)
+        if not isinstance(metadata, Mapping):
+            continue
+        reason = metadata.get("stop_reason") or metadata.get("finish_reason")
+        if isinstance(reason, str) and reason.strip():
+            return reason.strip().casefold()
+    return None
 
 
 # 报告正文的正常终结字符：中英句读、引号/括号闭合、列表与代码块装饰。

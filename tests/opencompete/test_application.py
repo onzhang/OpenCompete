@@ -1515,3 +1515,34 @@ async def test_attempt_event_sink_failure_does_not_fail_graph_or_ledger(
     # 失败调用已经发送但缺少实际 usage，账本按预估值保守结算。
     assert completed.bundle.budget.spent.input_tokens == 10
     assert completed.bundle.budget.spent.output_tokens == 12
+
+
+def test_runnable_config_derives_final_report_budget_from_frozen_scope(
+    tmp_path: Path,
+) -> None:
+    runner = _sqlite_runner(tmp_path)
+    request = ResearchRequest(
+        query="比较多款 AI IDE",
+        entities=tuple(ResearchEntity(name=f"工具 {index}") for index in range(8)),
+        levels=(AnalysisLevel.PRODUCT_SERVICE,),
+        dimensions={
+            AnalysisLevel.PRODUCT_SERVICE: ("a", "b", "c", "d", "e")
+        },
+    )
+    draft = build_draft_scope(request)
+    scope = freeze_scope(
+        draft, ScopeConfirmation(accepted=True, expected_revision=draft.revision)
+    )
+    guard = runner._budget_guard("report-budget-test")  # noqa: SLF001 - config contract
+
+    baseline = runner._runnable_config("report-budget-test", guard)  # noqa: SLF001
+    scoped = runner._runnable_config(  # noqa: SLF001
+        "report-budget-test", guard, scope=scope
+    )
+
+    assert baseline["configurable"]["final_report_model_max_tokens"] == 6000
+    groups = sum(len(scope.dimensions[level]) for level in scope.levels)
+    expected = 1_500 + len(scope.entities) * groups * 220 + groups * 300
+    assert scoped["configurable"]["final_report_model_max_tokens"] == expected
+    callback = scoped["callbacks"][0]
+    assert isinstance(callback, BudgetCallback)

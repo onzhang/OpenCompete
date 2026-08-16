@@ -4,7 +4,7 @@ import asyncio
 import json
 from datetime import UTC, datetime
 
-from langchain_core.messages import ToolMessage
+from langchain_core.messages import AIMessage, ToolMessage
 
 from opencompete.extractors import ArtifactExtraction, StaticArtifactExtractor
 from opencompete.materialize import capture_sources, materialize_bundle
@@ -1085,10 +1085,16 @@ def test_truncated_final_report_is_flagged_and_partial() -> None:
             scope=_scope(),
             upstream_state={
                 "raw_notes": [RAW_NOTES],
-                # 结尾停在句中：与真实截断案例「Pro 从 $」同构
+                # 即使文本恰好以句号结束，模型明确标记 max_tokens 时仍是截断。
                 "final_report": (
-                    _publishable_report(title="报告")[:-1] + "\n\nPro 从 $"
+                    _publishable_report(title="报告") + "\n\n仍有后续内容。"
                 ),
+                "messages": [
+                    AIMessage(
+                        content="半截报告",
+                        response_metadata={"stop_reason": "max_tokens"},
+                    )
+                ],
                 "supervisor_messages": [_evidence_message([record])],
             },
             budget=_budget(),
@@ -1102,3 +1108,8 @@ def test_truncated_final_report_is_flagged_and_partial() -> None:
         "疑似被输出上限截断" in item for item in bundle.report.limitations
     )
     assert bundle.status is RunStatus.PARTIAL
+    # 精确 max_tokens 原因不能把半句话原报告发布给用户。
+    assert "仍有后续内容。" not in bundle.report.markdown
+    assert any(
+        "已使用结构化保底报告" in item for item in bundle.report.limitations
+    )

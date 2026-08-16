@@ -225,6 +225,30 @@ def build_prepare_research_message_content(
     )
 
 
+# 最终报告输出预算由冻结范围驱动。上限不是 token 预留，供应商按实际
+# 输出计费；因此应让上限覆盖「每个范围格至少一个可读结论」的需求，
+# 而非以单次运行的截断点标定固定常数。
+_REPORT_BASE_OUTPUT_TOKENS = 1_500
+_REPORT_SCOPE_CELL_TOKENS = 220
+_REPORT_COMPARISON_TOKENS = 300
+
+
+def estimated_report_output_tokens(scope: ScopeSpec) -> int:
+    """按冻结范围的结论格与比较组数推导报告输出上限。.
+
+    每个对象×维度格保留 220 token 的叙事、依据和限制空间；每个横向
+    比较维度保留 300 token。系数是产品输出合同的保守容量，不是基于
+    单次模型运行的精确拟合；模型 ``max_tokens`` 超额不计费。
+    """
+    comparison_groups = sum(len(scope.dimensions[level]) for level in scope.levels)
+    cells = len(scope.entities) * comparison_groups
+    return (
+        _REPORT_BASE_OUTPUT_TOKENS
+        + cells * _REPORT_SCOPE_CELL_TOKENS
+        + comparison_groups * _REPORT_COMPARISON_TOKENS
+    )
+
+
 def message_contains_internal_contract_leak(text: str) -> list[str]:
     """检测用户消息路径是否泄漏内部契约（测试与门禁共用启发式）。."""
     hits: list[str] = []

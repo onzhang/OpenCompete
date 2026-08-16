@@ -134,3 +134,37 @@ def test_graph_prepare_research_input_real_node() -> None:
     assert "capabilities" not in message_text
     source = Path("src/opencompete/graph.py").read_text(encoding="utf-8")
     assert "build_prepare_research_message_content" in source
+
+
+def test_report_output_budget_scales_with_frozen_scope() -> None:
+    from opencompete.research_contracts import estimated_report_output_tokens
+
+    _request, small = _frozen_request_and_scope()
+    large_request = ResearchRequest(
+        query="比较多款 AI IDE",
+        entities=tuple(ResearchEntity(name=f"工具 {index}") for index in range(8)),
+        levels=(
+            AnalysisLevel.PRODUCT_SERVICE,
+            AnalysisLevel.COMPANY_ORGANIZATION,
+        ),
+        dimensions={
+            AnalysisLevel.PRODUCT_SERVICE: ("a", "b", "c", "d", "e"),
+            AnalysisLevel.COMPANY_ORGANIZATION: ("x", "y", "z", "w"),
+        },
+        discover_candidates=False,
+    )
+    large = build_draft_scope(large_request).model_copy(
+        update={
+            "frozen": True,
+            "revision": 1,
+            "confirmed_at": datetime(2026, 7, 18, tzinfo=timezone.utc),
+        }
+    )
+
+    def expected(scope):
+        groups = sum(len(scope.dimensions[level]) for level in scope.levels)
+        return 1_500 + len(scope.entities) * groups * 220 + groups * 300
+
+    assert estimated_report_output_tokens(small) == expected(small)
+    assert estimated_report_output_tokens(large) == expected(large)
+    assert estimated_report_output_tokens(large) > estimated_report_output_tokens(small) * 5

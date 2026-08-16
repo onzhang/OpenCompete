@@ -69,6 +69,21 @@ class FrozenModel(BaseModel):
     )
 
 
+class LenientModel(BaseModel):
+    """模型结构化输出边界的传输模型基类：忽略未知字段。.
+
+    业务契约一律使用 ``FrozenModel``（extra=forbid）；模型输出直接
+    落地的候选/绑定层面对 Schema 之外的噪声字段应丢弃而非整单拒绝，
+    再由确定性规范化边界转换为严格领域模型。
+    """
+
+    model_config = ConfigDict(
+        extra="ignore",
+        frozen=True,
+        str_strip_whitespace=True,
+    )
+
+
 class AnalysisLevel(str, Enum):
     """竞品分析支持的三个通用层级。."""
 

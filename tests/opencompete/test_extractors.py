@@ -190,3 +190,80 @@ async def test_langchain_extractor_normalizes_invalid_unknown_evidence(
     assert result.claims[0].status is ClaimStatus.UNKNOWN
     assert result.claims[0].evidence_ids == ()
     assert "模型候选中的 Unknown 证据引用已清除" in result.limitations
+
+
+@pytest.mark.asyncio
+async def test_langchain_extractor_drops_unknown_comparison_fields(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """模型在 Comparison 上发明 Schema 之外字段（如 commonality_gap_note）
+    时应丢弃该字段继续提取，而不是让整个任务失败。."""
+    entity = ResearchEntity(name="产品 A")
+    source = Source(
+        url="https://example.com/a",
+        title="产品 A",
+        accessed_at=datetime.now(UTC),
+    )
+    evidence = Evidence(source_id=source.source_id, excerpt="产品 A 支持离线模式")
+
+    class FakeStructuredModel:
+        def with_config(self, _config: dict[str, Any]) -> "FakeStructuredModel":
+            return self
+
+        def with_retry(self, **_kwargs: Any) -> "FakeStructuredModel":
+            return self
+
+        async def ainvoke(self, *_args: Any, **_kwargs: Any) -> dict[str, Any]:
+            return {
+                "claims": [
+                    {
+                        "text": "产品 A 支持离线模式",
+                        "entity_id": entity.entity_id,
+                        "level": "product_service",
+                        "dimension": "features",
+                        "evidence_ids": [evidence.evidence_id],
+                        "status": "supported",
+                    }
+                ],
+                "comparisons": [
+                    {
+                        "entity_ids": [entity.entity_id],
+                        "level": "product_service",
+                        "dimension": "features",
+                        "claim_ids": [],
+                        "differences": ["离线能力不同"],
+                        # 模型幻觉字段：Schema 未定义，修复前会让整单校验失败
+                        "commonality_gap_note": "",
+                    }
+                ],
+            }
+
+    class FakeModel:
+        def with_structured_output(self, _schema: type[Any]) -> FakeStructuredModel:
+            return FakeStructuredModel()
+
+    monkeypatch.setattr(
+        extractor_module,
+        "init_chat_model",
+        lambda **_kwargs: FakeModel(),
+    )
+    scope = ScopeSpec(
+        entities=(entity,),
+        levels=(AnalysisLevel.PRODUCT_SERVICE,),
+        dimensions={AnalysisLevel.PRODUCT_SERVICE: ("features",)},
+        confirmed_at=datetime.now(UTC),
+        revision=1,
+        frozen=True,
+    )
+
+    result = await LangChainArtifactExtractor("openai:test").extract(
+        scope=scope,
+        sources=(source,),
+        evidence=(evidence,),
+        report_markdown="# 报告",
+    )
+
+    assert len(result.comparisons) == 1
+    assert result.comparisons[0].differences == ("离线能力不同",)
+    assert not hasattr(result.comparisons[0], "commonality_gap_note")
+    assert result.comparisons[0].comparison_id.startswith("cmp")

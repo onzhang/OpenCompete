@@ -9,6 +9,7 @@ from typing import Any, Protocol, cast, runtime_checkable
 from langchain.chat_models import init_chat_model
 from langchain_core.messages import HumanMessage, SystemMessage
 from langchain_core.runnables import RunnableConfig
+from pydantic import Field
 
 from open_deep_research.model_routing import (
     build_resilient_model,
@@ -21,12 +22,13 @@ from opencompete.models import (
     Comparison,
     Evidence,
     FrozenModel,
+    LenientModel,
     ScopeSpec,
     Source,
 )
 
 
-class _CandidateClaim(FrozenModel):
+class _CandidateClaim(LenientModel):
     """允许模型候选先进入确定性 Claim 规范化边界。."""
 
     text: str
@@ -40,11 +42,24 @@ class _CandidateClaim(FrozenModel):
     important: bool = True
 
 
-class _CandidateArtifactExtraction(FrozenModel):
+class _CandidateComparison(LenientModel):
+    """允许模型候选先进入确定性 Comparison 规范化边界。."""
+
+    entity_ids: tuple[str, ...] = Field(min_length=1)
+    level: AnalysisLevel
+    dimension: str = Field(min_length=1)
+    claim_ids: tuple[str, ...] = ()
+    comparison_id: str = ""
+    differences: tuple[str, ...] = ()
+    commonalities: tuple[str, ...] = ()
+    gaps: tuple[str, ...] = ()
+
+
+class _CandidateArtifactExtraction(LenientModel):
     """不提前执行 Claim 跨字段业务门禁的模型输出契约。."""
 
     claims: tuple[_CandidateClaim, ...] = ()
-    comparisons: tuple[Comparison, ...] = ()
+    comparisons: tuple[_CandidateComparison, ...] = ()
     cross_level_conclusions: tuple[str, ...] = ()
     limitations: tuple[str, ...] = ()
 
@@ -238,6 +253,7 @@ class LangChainArtifactExtractor:
                 SystemMessage(
                     content=(
                         "你负责把竞品研究报告转换为结构化结论。"
+                        "只能输出 Schema 已定义的字段，多余字段会被直接丢弃；"
                         "只能引用输入中已经存在的 entity_id、source_id 和 evidence_id；"
                         "不得增加对象、层级、维度、来源或事实。"
                         "没有充分证据的结论必须使用 unknown。"
@@ -268,7 +284,7 @@ class LangChainArtifactExtractor:
 def _normalize_candidate(
     candidate: _CandidateArtifactExtraction,
 ) -> ArtifactExtraction:
-    """把常见模型跨字段错误降级后再创建严格领域 Claim。."""
+    """把常见模型跨字段错误降级后再创建严格领域模型。."""
     claims: list[Claim] = []
     limitations = list(candidate.limitations)
     for item in candidate.claims:
@@ -297,9 +313,22 @@ def _normalize_candidate(
                 important=item.important,
             )
         )
+    comparisons = tuple(
+        Comparison(
+            entity_ids=item.entity_ids,
+            level=item.level,
+            dimension=item.dimension,
+            claim_ids=item.claim_ids,
+            comparison_id=item.comparison_id,
+            differences=item.differences,
+            commonalities=item.commonalities,
+            gaps=item.gaps,
+        )
+        for item in candidate.comparisons
+    )
     return ArtifactExtraction(
         claims=tuple(claims),
-        comparisons=candidate.comparisons,
+        comparisons=comparisons,
         cross_level_conclusions=candidate.cross_level_conclusions,
         limitations=tuple(dict.fromkeys(limitations)),
     )

@@ -36,7 +36,7 @@ from opencompete.models import (
     BudgetEstimate,
     DiscoveryCandidate,
     DiscoveryRequest,
-    FrozenModel,
+    LenientModel,
     ResearchEntity,
 )
 from opencompete.security import validate_public_http_url
@@ -292,14 +292,14 @@ def _is_safe_result_url(url: str) -> bool:
     return True
 
 
-class _NamedCandidate(FrozenModel):
+class _NamedCandidate(LenientModel):
     """意图识别阶段的候选草稿：仅名称与定位，尚无来源。."""
 
     name: str
     description: str | None = None
 
 
-class _IntentDraft(FrozenModel):
+class _IntentDraft(LenientModel):
     """意图识别的结构化输出契约。."""
 
     intent_summary: str = ""
@@ -307,7 +307,7 @@ class _IntentDraft(FrozenModel):
     candidates: tuple[_NamedCandidate, ...] = ()
 
 
-class _BoundCandidate(FrozenModel):
+class _BoundCandidate(LenientModel):
     """来源绑定阶段的单个候选：source_url 必须来自搜索结果。."""
 
     name: str
@@ -318,13 +318,13 @@ class _BoundCandidate(FrozenModel):
     source_excerpt: str | None = None
 
 
-class _BindingDraft(FrozenModel):
+class _BindingDraft(LenientModel):
     """来源绑定的结构化输出契约。."""
 
     candidates: tuple[_BoundCandidate, ...] = ()
 
 
-class _CoverageAssessment(FrozenModel):
+class _CoverageAssessment(LenientModel):
     """候选池是否已覆盖当前竞争空间的轻量判断。."""
 
     saturated: bool = False
@@ -647,7 +647,7 @@ class LlmDiscoveryProvider:
         )
         return _CoverageAssessment.model_validate(response)
 
-    def _build_model(self, schema: type[FrozenModel]) -> Any:
+    def _build_model(self, schema: type[LenientModel]) -> Any:
         """按摘要模型路由构造带备用链的结构化输出模型。."""
         settings = self._settings
         fallback_attempts = (

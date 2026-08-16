@@ -4,7 +4,9 @@ from __future__ import annotations
 
 from datetime import UTC, datetime
 from pathlib import Path
+from time import perf_counter
 from types import SimpleNamespace
+from typing import Any
 
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
@@ -13,7 +15,7 @@ from opencompete.api.errors import register_exception_handlers
 from opencompete.api.meta import RunMetaStore
 from opencompete.api.routes import router
 from opencompete.api.tasks import ResearchTaskRegistry
-from opencompete.application import RunInspection
+from opencompete.application import CommissionRunStartup, RunInspection
 from opencompete.models import (
     AnalysisLevel,
     CandidateSelection,
@@ -73,25 +75,36 @@ class _FakeRunner:
         self.inspect_calls += 1
         return self.inspections[run_id]
 
-    async def create_commission_run(self, commission: ResearchCommission) -> RunHandle:
+    async def initialize_commission_run(
+        self, commission: ResearchCommission
+    ) -> CommissionRunStartup:
         self.commissions.append(commission)
         run_id = f"commission-{len(self.commissions)}"
-        scope = _scope()
-        self.repository.initialize(_manifest(run_id, RunStatus.AWAITING_CONFIRMATION))
-        handle = RunHandle(
-            run_id=run_id,
-            status=RunStatus.AWAITING_CONFIRMATION,
-            scope=scope,
-            pending_confirmation=True,
-            confirmation_kind=ConfirmationKind.SCOPE_CONFIRMATION,
-        )
-        self.inspections[run_id] = RunInspection(
-            handle=handle,
-            request=None,
-            has_confirmation_interrupt=True,
-            recoverable=False,
-        )
-        return handle
+        self.repository.initialize(_manifest(run_id, RunStatus.DRAFT))
+        handle = RunHandle(run_id=run_id, status=RunStatus.DRAFT)
+
+        async def execute() -> RunHandle:
+            # 模拟后台范围规划：推进 manifest 与检查投影到确认点。
+            scope = _scope()
+            self.repository.update_manifest(
+                _manifest(run_id, RunStatus.AWAITING_CONFIRMATION)
+            )
+            done = RunHandle(
+                run_id=run_id,
+                status=RunStatus.AWAITING_CONFIRMATION,
+                scope=scope,
+                pending_confirmation=True,
+                confirmation_kind=ConfirmationKind.SCOPE_CONFIRMATION,
+            )
+            self.inspections[run_id] = RunInspection(
+                handle=done,
+                request=None,
+                has_confirmation_interrupt=True,
+                recoverable=False,
+            )
+            return done
+
+        return CommissionRunStartup(handle=handle, execution=execute())
 
     async def resume_run(
         self,
@@ -227,6 +240,22 @@ def test_get_projects_durable_candidate_confirmation_without_resuming(
     assert repository.load_manifest(run_id).status is RunStatus.AWAITING_CONFIRMATION
 
 
+def _wait_for_confirmation(
+    client: TestClient,
+    run_id: str,
+    *,
+    timeout_seconds: float = 5.0,
+) -> dict[str, Any]:
+    """轮询详情直到后台创建任务到达确认点（TestClient 请求驱动事件循环）。."""
+    deadline = perf_counter() + timeout_seconds
+    last: dict[str, Any] = {}
+    while perf_counter() < deadline:
+        last = client.get(f"/api/runs/{run_id}").json()
+        if last.get("pending_confirmation") is True:
+            return last
+    raise AssertionError(f"后台创建未在限期内到达确认点：{last}")
+
+
 def test_create_uses_commission_and_rejects_fixed_web_scope_fields(
     tmp_path: Path,
 ) -> None:
@@ -258,8 +287,12 @@ def test_create_uses_commission_and_rejects_fixed_web_scope_fields(
         },
     )
 
-    assert created.status_code == 200
-    assert created.json()["pending_confirmation"] is True
+    # 创建立即返回 202：draft 投影 + 后台执行登记，不等待模型规划。
+    assert created.status_code == 202
+    draft = created.json()
+    assert draft["status"] == "draft"
+    assert draft["pending_confirmation"] is False
+    assert draft["active"] is True
     assert runner.commissions == [
         ResearchCommission(
             query="调研 Trae 的 AI IDE 竞品",
@@ -270,6 +303,10 @@ def test_create_uses_commission_and_rejects_fixed_web_scope_fields(
     ]
     assert rejected.status_code == 422
     assert len(runner.commissions) == 1
+    # 后台范围规划完成后，详情投影到达范围确认点。
+    detail = _wait_for_confirmation(client, draft["run_id"])
+    assert detail["confirmation_kind"] == "scope_confirmation"
+    assert detail["expected_revision"] == 0
 
 
 def test_scope_acceptance_is_frozen_before_202_execution_projection(

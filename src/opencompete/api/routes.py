@@ -200,33 +200,41 @@ async def list_runs(request: Request) -> list[dict[str, Any]]:
     return items
 
 
-@router.post("/runs")
-async def create_run(request: Request, body: CreateRunBody) -> dict[str, Any]:
-    """创建研究任务并执行到第一个确认点。.
+@router.post("/runs", status_code=202)
+async def create_run(request: Request, body: CreateRunBody) -> JSONResponse:
+    """创建研究任务并立即返回 202；范围规划与候选发现转入后台。.
 
-    每次委托都会进行一次轻量模型范围规划；开启候选发现时还会进行
-    一次 Tavily 佐证检索。完整深度研究仍要等范围确认后才开始。
+    轻量初始化（分配 run_id、写 manifest 与 ``run_created`` 事件）同步
+    完成；随后的模型范围规划与 Tavily 佐证检索作为后台任务运行，进度
+    经事件直播接口跟踪，到达确认点后详情页自动切换确认表单。
     """
     state = _state(request)
-    handle = await state.runner.create_commission_run(body.to_domain())
+    startup = await state.runner.initialize_commission_run(body.to_domain())
+    run_id = startup.handle.run_id
+    try:
+        state.registry.reserve(run_id)
+    except Exception:
+        # 未启动的协程必须显式关闭，否则事件循环报 never awaited。
+        startup.execution.close()
+        raise
+    try:
+        state.registry.start_reserved(run_id, startup.execution)
+    except Exception:
+        state.registry.release(run_id)
+        raise
     state.meta_store.write(
-        handle.run_id,
+        run_id,
         {
             "query": body.query,
-            "entities": (
-                [entity.name for entity in handle.scope.entities]
-                if handle.scope
-                else list(body.entities)
-            ),
-            "confirmation_kind": (
-                handle.confirmation_kind.value
-                if handle.confirmation_kind
-                else None
-            ),
+            "entities": list(body.entities),
+            "confirmation_kind": None,
             "created_at": None,
         },
     )
-    return _detail_response(state, handle.run_id, handle=handle)
+    return JSONResponse(
+        status_code=202,
+        content=_detail_response(state, run_id, handle=startup.handle),
+    )
 
 
 @router.get("/runs/{run_id}")

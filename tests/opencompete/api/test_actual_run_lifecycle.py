@@ -160,6 +160,24 @@ def _wait_for_background_task(
     client.portal.call(wait)
 
 
+def _wait_for_background_confirmation(
+    client: TestClient,
+    run_id: str,
+    *,
+    timeout_seconds: float = 5.0,
+) -> dict[str, Any]:
+    """轮询详情直到 202 创建的后台规划到达确认点。."""
+    from time import perf_counter
+
+    deadline = perf_counter() + timeout_seconds
+    last: dict[str, Any] = {}
+    while perf_counter() < deadline:
+        last = client.get(f"/api/runs/{run_id}").json()
+        if last.get("pending_confirmation") is True:
+            return last
+    raise AssertionError(f"后台创建未在限期内到达确认点：{last}")
+
+
 def test_scope_confirmation_202_durably_freezes_actual_sqlite_checkpoint(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
@@ -183,16 +201,23 @@ def test_scope_confirmation_202_durably_freezes_actual_sqlite_checkpoint(
             "/api/runs",
             json={"query": "调研 Trae 的 AI IDE 竞品", "entities": ["Trae"]},
         )
-        assert created.status_code == 200
+        # 创建 202 立即返回 draft 投影；范围规划在后台执行。
+        assert created.status_code == 202
         draft = created.json()
-        assert draft["pending_confirmation"] is True
-        assert draft["expected_revision"] == 0
+        assert draft["status"] == "draft"
+        assert draft["pending_confirmation"] is False
+        assert draft["active"] is True
+
+        # 等后台规划到达确认点，再读取确认所需的 expected_revision。
+        pending = _wait_for_background_confirmation(client, draft["run_id"])
+        assert pending["pending_confirmation"] is True
+        assert pending["expected_revision"] == 0
 
         confirmed = client.post(
             f"/api/runs/{draft['run_id']}/scope-confirmation",
             json={
                 "accepted": True,
-                "expected_revision": draft["expected_revision"],
+                "expected_revision": pending["expected_revision"],
                 "dimensions": {
                     "product_service": ["团队代码库迁移成本"]
                 },

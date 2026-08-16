@@ -7,7 +7,7 @@ import hashlib
 import logging
 import threading
 import weakref
-from collections.abc import Callable, Mapping
+from collections.abc import Callable, Coroutine, Mapping
 from dataclasses import dataclass
 from pathlib import Path
 from time import perf_counter
@@ -74,6 +74,15 @@ if TYPE_CHECKING:
     )
 
 logger = logging.getLogger(__name__)
+
+
+@dataclass(frozen=True)
+class CommissionRunStartup:
+    """两段式创建结果：draft 句柄与待启动的后台执行协程。."""
+
+    handle: RunHandle
+    execution: Coroutine[Any, Any, RunHandle]
+
 
 _PUBLISHED_STATUSES = {RunStatus.COMPLETED, RunStatus.PARTIAL}
 _STATUS_NAMES = {
@@ -205,11 +214,34 @@ class ApplicationRunner:
             {"commission": commission.model_dump(mode="json")}
         )
 
-    async def _create_graph_run(
+    async def initialize_commission_run(
         self,
-        initial_input: Mapping[str, Any],
-    ) -> RunHandle:
-        """初始化一次 Run，并把单一入口输入交给外层 Scope Graph。."""
+        commission: ResearchCommission,
+    ) -> CommissionRunStartup:
+        """初始化任务但不执行；返回 draft 句柄与后台执行协程。.
+
+        供 API 层 202 异步创建使用：轻量初始化（分配 run_id、写 manifest
+        与 ``run_created`` 事件）在调用方完成，模型范围规划与候选发现由
+        ``execution`` 协程承担。调用方负责启动协程；放弃启动时必须
+        ``close()`` 协程。
+        """
+        initial_input = {"commission": commission.model_dump(mode="json")}
+        run_id = self._initialize_graph_run(initial_input)
+        # 202 返回前完成全部建表 DDL：后台任务与随后的详情轮询各自打开
+        # 新 SQLite 连接，不能把 executescript 留给并发窗口。
+        await self._execution_ledger.initialize()
+        async with self._checkpoint_store.open_saver():
+            # 触发官方 Saver 的 checkpoint 表创建后立即释放连接。
+            pass
+        handle = RunHandle(run_id=run_id, status=RunStatus.DRAFT)
+        return CommissionRunStartup(
+            handle=handle,
+            execution=self._execute_initial_graph_run(run_id, initial_input),
+        )
+
+    def _initialize_graph_run(self, initial_input: Mapping[str, Any]) -> str:
+        """同步初始化 manifest 与 run_created 事件，返回 run_id。."""
+        del initial_input  # 输入只在执行期进入 Graph
         run_id = str(uuid4())
         limit = self._budget_limit()
         initial_budget = BudgetSnapshot(limit=limit, remaining=limit)
@@ -223,7 +255,14 @@ class ApplicationRunner:
         )
         self._repository.initialize(manifest)
         self._append_event(run_id, "run_created", status=RunStatus.DRAFT)
+        return run_id
 
+    async def _execute_initial_graph_run(
+        self,
+        run_id: str,
+        initial_input: Mapping[str, Any],
+    ) -> RunHandle:
+        """把单一入口输入交给外层 Scope Graph，执行到第一个确认点。."""
         lock = self._lock_for(run_id)
         async with lock:
             try:
@@ -239,6 +278,14 @@ class ApplicationRunner:
             except Exception as exc:
                 await self._record_failure(run_id, exc)
                 raise
+
+    async def _create_graph_run(
+        self,
+        initial_input: Mapping[str, Any],
+    ) -> RunHandle:
+        """初始化一次 Run，并把单一入口输入交给外层 Scope Graph。."""
+        run_id = self._initialize_graph_run(initial_input)
+        return await self._execute_initial_graph_run(run_id, initial_input)
 
     async def create_fixed_scope_run(
         self,

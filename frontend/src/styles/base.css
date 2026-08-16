@@ -1,0 +1,338 @@
+@import './tokens.css';
+
+/* ============ 基础重置与纸面氛围 ============ */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+body {
+  font-family: var(--font-body);
+  font-size: 14.5px;
+  line-height: 1.65;
+  color: var(--ink);
+  background-color: var(--paper);
+  /* 纸张横纹 + 微弱页边基线 */
+  background-image:
+    linear-gradient(rgba(184, 172, 144, 0.09) 1px, transparent 1px);
+  background-size: 100% 34px;
+  min-height: 100vh;
+}
+
+/* 纸纹颗粒覆盖层 */
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 9999;
+  opacity: 0.34;
+  mix-blend-mode: multiply;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 240 240' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3CfeComponentTransfer%3E%3CfeFuncA type='linear' slope='0.055'/%3E%3C/feComponentTransfer%3E%3C/filter%3E%3Crect width='240' height='240' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+::selection {
+  background: var(--vermilion);
+  color: var(--paper-raised);
+}
+
+a {
+  color: inherit;
+}
+
+button {
+  font-family: inherit;
+  cursor: pointer;
+}
+
+input,
+textarea,
+select {
+  font-family: inherit;
+}
+
+/* ============ 通用印刷组件 ============ */
+
+/* 版面卡片 —— 一页档案纸 */
+.sheet {
+  background: var(--paper-raised);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-paper);
+}
+
+/* 硬边框重点卡 —— 铅印压痕 */
+.pressed {
+  background: var(--paper-raised);
+  border: 1.5px solid var(--ink);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-press);
+}
+
+/* 章节眉标 —— 小型大写间隔标题 */
+.overline {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+}
+
+.overline--accent {
+  color: var(--vermilion);
+}
+
+/* 眉标 + 横线组合 */
+.rule-heading {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.rule-heading::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--line-strong);
+}
+
+/* 等宽编号 */
+.mono {
+  font-family: var(--font-mono);
+  font-size: 0.92em;
+}
+
+/* 点线引导（目录风） */
+.dotted-lead {
+  flex: 1;
+  border-bottom: 2px dotted var(--line-strong);
+  transform: translateY(-4px);
+  margin: 0 8px;
+}
+
+/* 印章按钮 */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 22px;
+  font-family: var(--font-body);
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  border-radius: var(--radius);
+  border: 1.5px solid var(--ink);
+  transition: transform 0.12s ease, box-shadow 0.12s ease, background 0.15s ease;
+  user-select: none;
+}
+
+.btn--primary {
+  background: var(--vermilion);
+  color: #fdf6ee;
+  border-color: var(--ink);
+  box-shadow: var(--shadow-press);
+}
+
+.btn--primary:hover {
+  background: var(--vermilion-deep);
+  transform: translate(-1px, -1px);
+  box-shadow: 5px 5px 0 var(--ink);
+}
+
+.btn--primary:active {
+  transform: translate(2px, 2px);
+  box-shadow: 1px 1px 0 var(--ink);
+}
+
+.btn--ink {
+  background: var(--ink);
+  color: var(--paper);
+  box-shadow: var(--shadow-press-sm);
+}
+
+.btn--ink:hover {
+  background: #2c332d;
+  transform: translate(-1px, -1px);
+  box-shadow: 4px 4px 0 rgba(28, 33, 29, 0.55);
+}
+
+.btn--ghost {
+  background: transparent;
+  color: var(--ink);
+  border-color: var(--line-strong);
+}
+
+.btn--ghost:hover {
+  border-color: var(--ink);
+  background: var(--paper-dim);
+}
+
+.btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  transform: none !important;
+  box-shadow: none !important;
+}
+
+/* 表单基元 */
+.field-label {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  font-family: var(--font-serif);
+  font-size: 15px;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+
+.field-label .req {
+  color: var(--vermilion);
+  font-family: var(--font-mono);
+  font-size: 11px;
+}
+
+.field-hint {
+  font-size: 12.5px;
+  color: var(--ink-faint);
+  margin-top: 6px;
+}
+
+.input,
+.textarea {
+  width: 100%;
+  padding: 10px 14px;
+  font-size: 14.5px;
+  color: var(--ink);
+  background: var(--paper-raised);
+  border: 1.5px solid var(--line-strong);
+  border-radius: var(--radius);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.input:focus,
+.textarea:focus {
+  outline: none;
+  border-color: var(--ink);
+  box-shadow: 3px 3px 0 rgba(28, 33, 29, 0.16);
+}
+
+.textarea {
+  resize: vertical;
+  line-height: 1.7;
+}
+
+/* 表格 —— 台账风 */
+.ledger-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13.5px;
+}
+
+.ledger-table th {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  text-align: left;
+  color: var(--ink-faint);
+  padding: 8px 14px;
+  border-bottom: 2px solid var(--ink);
+  white-space: nowrap;
+}
+
+.ledger-table td {
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--line);
+  vertical-align: middle;
+}
+
+/* 滚动条 */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--paper-dim);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--line-strong);
+  border-radius: 5px;
+  border: 2px solid var(--paper-dim);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--ink-faint);
+}
+
+/* ============ 动效 ============ */
+@keyframes rise-in {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.rise-in {
+  animation: rise-in 0.5s cubic-bezier(0.22, 0.8, 0.3, 1) both;
+}
+
+@keyframes pulse-ring {
+  0% {
+    box-shadow: 0 0 0 0 rgba(201, 138, 18, 0.45);
+  }
+  75% {
+    box-shadow: 0 0 0 9px rgba(201, 138, 18, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(201, 138, 18, 0);
+  }
+}
+
+@keyframes blink-cursor {
+  0%, 55% { opacity: 1; }
+  56%, 100% { opacity: 0; }
+}
+
+/* 页面通用容器 */
+.page {
+  padding: 34px 42px 72px;
+  max-width: 1240px;
+  margin: 0 auto;
+}
+
+.page-head {
+  margin-bottom: 30px;
+}
+
+.page-title {
+  font-family: var(--font-serif);
+  font-size: 34px;
+  font-weight: 900;
+  letter-spacing: 0.01em;
+  line-height: 1.25;
+  margin-top: 6px;
+}
+
+.page-title em {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-weight: 700;
+  color: var(--vermilion);
+}

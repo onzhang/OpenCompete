@@ -1,0 +1,63 @@
+/* ============================================================
+   OpenCompete 设计基调 —— 「研究卷宗 · 编辑部情报简报」
+   暖纸底 × 碳墨 × 朱砂印章 × 勘察绿 / 琥珀状态色
+   ============================================================ */
+:root {
+  /* 纸面层次 */
+  --paper: #f4eee1;
+  --paper-raised: #fbf7ec;
+  --paper-dim: #ece4d2;
+  --paper-deep: #e3d9c3;
+
+  /* 墨色层次 */
+  --ink: #1c211d;
+  --ink-soft: #454d47;
+  --ink-faint: #7d857c;
+  --ink-ghost: #a9afa5;
+
+  /* 结构线 */
+  --line: #d3c9b2;
+  --line-strong: #b8ac90;
+  --line-ink: #2a302b;
+
+  /* 主强调 —— 朱砂 */
+  --vermilion: #c2401c;
+  --vermilion-deep: #9d3013;
+  --vermilion-wash: #f3ddd2;
+
+  /* 状态色 */
+  --forest: #2e6144;        /* 完成 / 成功 */
+  --forest-wash: #dbe7dc;
+  --amber: #a8730f;         /* 进行中 / 等待 */
+  --amber-bright: #c98a12;
+  --amber-wash: #f2e5c8;
+  --slate: #3d5a6c;         /* 信息 / 链接辅助（非紫） */
+  --slate-wash: #dde5e6;
+
+  /* 字体 */
+  --font-display: 'Fraunces', 'Noto Serif SC', serif;
+  --font-serif: 'Noto Serif SC', 'Fraunces', serif;
+  --font-body: 'Noto Sans SC', -apple-system, sans-serif;
+  --font-mono: 'IBM Plex Mono', 'Courier New', monospace;
+
+  /* 印刷阴影 */
+  --shadow-paper: 0 1px 2px rgba(74, 60, 34, 0.07), 0 10px 28px rgba(74, 60, 34, 0.07);
+  --shadow-press: 4px 4px 0 var(--ink);
+  --shadow-press-sm: 3px 3px 0 var(--ink);
+
+  /* 圆角与节奏 */
+  --radius: 3px;
+  --radius-lg: 6px;
+  --gutter: 28px;
+
+  /* 状态语义映射 */
+  --status-draft: var(--ink-faint);
+  --status-awaiting: var(--amber);
+  --status-frozen: var(--slate);
+  --status-researching: var(--amber-bright);
+  --status-synthesizing: var(--amber-bright);
+  --status-completed: var(--forest);
+  --status-partial: var(--amber);
+  --status-failed: var(--vermilion);
+  --status-cancelled: var(--ink-faint);
+}

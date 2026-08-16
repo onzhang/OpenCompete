@@ -157,6 +157,11 @@ def render_user_report_brief_message(
     if brief.confirmed_scope:
         lines.append("本次已确认的研究范围：")
         lines.extend(f"- {item}" for item in brief.confirmed_scope)
+        lines.append(
+            "研究覆盖要求：以上每个研究对象都应获得实质性的资料检索与分析，"
+            "不要只深入研究其中部分对象；对比类研究应为每个对象分别收集证据，"
+            "确保报告中的横向比较有真实依据。"
+        )
     if allowed_urls:
         lines.append("用户确认可参考的公开网址：")
         lines.extend(f"- {url}" for url in allowed_urls)

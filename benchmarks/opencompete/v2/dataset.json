@@ -1,0 +1,50 @@
+{
+  "schema_version": 2,
+  "dataset_id": "opencompete-bench-v2",
+  "version": "2.2.0-beta.4",
+  "language": "zh-CN",
+  "author_prompt_sha256": "c59b4aee8b37752eb0d9897c455b6e67ea7d1430e25daf38305112dd6417588a",
+  "reviewer_prompt_sha256": "d6351209f99ebf9269df19fe3cad55338097a78c6875f0783b2ab0f3efc8dce2",
+  "cases": [
+    {
+      "case_id": "ocb-001-aws-lambda-vs-azure-functions",
+      "path": "cases/ocb-001-aws-lambda-vs-azure-functions",
+      "content_sha256": "a972f6677917c313249ba0aa4c2f19c5e192c09ad97ab50268a841353f82a363"
+    },
+    {
+      "case_id": "ocb-002-m365-vs-google-workspace",
+      "path": "cases/ocb-002-m365-vs-google-workspace",
+      "content_sha256": "77802133507c37df1a6b47a2a0cb30cd0598809e5271cd865c69a38966a87f46"
+    },
+    {
+      "case_id": "ocb-003-visa-vs-mastercard",
+      "path": "cases/ocb-003-visa-vs-mastercard",
+      "content_sha256": "ed1a86d6e139575e8a84b8e2abfb74aa7df9ddaa8c2c21a84528651e8f13e0a6"
+    },
+    {
+      "case_id": "ocb-004-ups-vs-fedex",
+      "path": "cases/ocb-004-ups-vs-fedex",
+      "content_sha256": "6ba15d87a79cf0ed59774130f80e9374058f451f1e6729f58b19cff1f87d4e38"
+    },
+    {
+      "case_id": "ocb-005-kindle-vs-kobo",
+      "path": "cases/ocb-005-kindle-vs-kobo",
+      "content_sha256": "4b67c104bd44e50955737035d360e20d184c19701eb67d9aae68b20ed2ff8844"
+    },
+    {
+      "case_id": "ocb-006-spotify-vs-apple-music",
+      "path": "cases/ocb-006-spotify-vs-apple-music",
+      "content_sha256": "754e15cc0fe8bd97fc3345adcb2512943d19b540993bdc41e9113746cf87d27a"
+    },
+    {
+      "case_id": "ocb-007-supercharger-vs-ionity",
+      "path": "cases/ocb-007-supercharger-vs-ionity",
+      "content_sha256": "560e51693a39eddf1c3d920eecdcd5a86b928ba54f4c8fbb9706d9d5213c307c"
+    },
+    {
+      "case_id": "ocb-008-cloud-infrastructure-competition",
+      "path": "cases/ocb-008-cloud-infrastructure-competition",
+      "content_sha256": "d516a7618e77afc7b8bd479dfeb53ba01b5fa11ed9e8d1622ec88bc719d2e610"
+    }
+  ]
+}

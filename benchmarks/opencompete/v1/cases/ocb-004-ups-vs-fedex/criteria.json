@@ -1,0 +1,40 @@
+{
+  "case_id": "ocb-004-ups-vs-fedex",
+  "race": {
+    "comprehensiveness": [
+      "覆盖 UPS、FedEx 以及任务指定的全部层级和维度。",
+      "明确列出证据不足、不可比信息与截止日期限制。"
+    ],
+    "depth": [
+      "不仅罗列功能或数字，还解释差异的原因、影响与适用边界。",
+      "跨层案例需要说明公司行为与市场结构之间的关系。"
+    ],
+    "instruction_following": [
+      "不增加未获任务授权的核心比较对象、层级或分析维度。",
+      "重要事实有可定位引用，证据不足时使用 Unknown。"
+    ],
+    "readability": [
+      "使用清晰标题、对比结构和一致的对象命名。",
+      "事实、分析判断、限制和建议彼此区分。"
+    ]
+  },
+  "fact": [
+    {
+      "criterion_id": "fact-services",
+      "description": "运输产品、时效或服务范围结论应引用双方官方服务说明。",
+      "source_ids": [
+        "ups-services",
+        "fedex-services"
+      ]
+    },
+    {
+      "criterion_id": "fact-operations",
+      "description": "收入、利润、运量或运营网络数字应引用双方年度报告并标注期间。",
+      "source_ids": [
+        "ups-annual-reports",
+        "fedex-annual-reports"
+      ]
+    }
+  ]
+}
+

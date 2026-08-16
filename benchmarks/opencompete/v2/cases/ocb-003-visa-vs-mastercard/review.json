@@ -1,0 +1,79 @@
+{
+  "schema_version": 2,
+  "case_id": "ocb-003-visa-vs-mastercard",
+  "status": "expert_ai_dual_reviewed",
+  "review_kind": "expert_ai_dual_review",
+  "author_agent": {"agent_id":"/root/expert_cases_001_003","role":"支付网络、发卡与监管竞品分析 Reference 作者","model":"codex:expert-agent","prompt_sha256":"c59b4aee8b37752eb0d9897c455b6e67ea7d1430e25daf38305112dd6417588a"},
+  "reviewer_agent": {
+    "agent_id": "/root/expert_cases_007_008_bench",
+    "role": "独立支付网络、发卡与监管竞品分析 Reviewer",
+    "model": "codex:expert-agent",
+    "prompt_sha256": "d6351209f99ebf9269df19fe3cad55338097a78c6875f0783b2ab0f3efc8dce2"
+  },
+  "review_rounds": 2,
+  "issues": [
+    {
+      "issue_id": "ocb003-r2-fact-audit",
+      "severity": "critical",
+      "subject_id": "ocb003-f01..ocb003-f05",
+      "decision": "accept",
+      "description": "逐项核对 PSR、Federal Reserve 和 DOJ 五条直接事实的来源类型、定位、实际摘录和 UTF-8 quote_sha256。",
+      "resolved": true,
+      "resolution": "全部直接摘录哈希可复算；PSR 标题只证明最终报告存在，Regulation II 的费用、欺诈调整和路由要求未被过度外推，DOJ 材料始终表述为政府诉讼主张而非最终裁判。"
+    },
+    {
+      "issue_id": "ocb003-r2-scale-comparability",
+      "severity": "critical",
+      "subject_id": "ocb003-u01,ocb003-u02,reference.md#商业模式与网络规模",
+      "decision": "accept",
+      "description": "公司财年、支付量/GDV、processed/switched transactions、卡片和凭证定义不一致时不得直接排名或计算全球份额。",
+      "resolved": true,
+      "resolution": "未固定的 2025 Form 10-K 数字全部保持 Unknown；Reference 要求记录原始期间、定义、网络范围和排除项，并明确禁止用不可比指标生成统一规模排名。"
+    },
+    {
+      "issue_id": "ocb003-r2-regulatory-boundary",
+      "severity": "major",
+      "subject_id": "reference.md#市场结构、费用与监管",
+      "decision": "accept",
+      "description": "英国市场审查、美国借记规则、司法诉讼和欧洲支付统计必须保留法域、材料状态和不可外推边界。",
+      "resolved": true,
+      "resolution": "英国材料未被外推为全球结论，美国规则明确要求项目级法律适用性审查，诉讼与裁判分离，ECB 入口只用于多支付工具背景而未虚构网络级替代份额。"
+    },
+    {
+      "issue_id": "ocb003-r2-commercial-operational-unknowns",
+      "severity": "critical",
+      "subject_id": "ocb003-u03,ocb003-u04",
+      "decision": "accept",
+      "description": "客户实际费率、返利、最低承诺、授权、欺诈、争议、API、实施和支持 SLA 不得由公司级公开材料推断。",
+      "resolved": true,
+      "resolution": "商业与运营结果均保持 Unknown，并分别绑定保密双网络 RFP、合同尽调和相同国家/MCC/卡产品/交易样本 PoC。"
+    },
+    {
+      "issue_id": "ocb003-r2-recommendations",
+      "severity": "major",
+      "subject_id": "ocb003-r01..ocb003-r04",
+      "decision": "accept",
+      "description": "合作建议必须服务于主要网络、第二网络和增值服务采购，不能因公司总规模或单一区域材料宣布唯一胜者。",
+      "resolved": true,
+      "resolution": "Reference 采用双网络 RFP、分模块采购和分地区设计；提供报价、监管、运营、数据与退出条款，以及同样本 PoC、揭盲前冻结权重和可审计淘汰条件。"
+    },
+    {
+      "issue_id": "ocb003-r2-criteria",
+      "severity": "major",
+      "subject_id": "criteria.json",
+      "decision": "accept",
+      "description": "检查五维权重、Criteria 数量、关键项、锚点可判定性，以及 FACT 对全部关键事实与关键 Unknown 的覆盖。",
+      "resolved": true,
+      "resolution": "五维权重归一化；每维 2 项、总计 10 项、4 项 critical；FACT 覆盖全部五条直接事实及财务口径、客户商业数据和运营结果 Unknown。"
+    }
+  ],
+  "unresolved_material_issues": 0,
+  "limitations": [
+    "本 Reference 由两个 AI 专家角色完成作者与独立复核，未经过人类专家审核",
+    "双方 2025 Form 10-K 未固定到具体 accession、页码和内容哈希，精确财务与网络规模保持 Unknown",
+    "支付量、GDV、交易、卡片和凭证定义及财务期间不同，不能生成严格全球份额",
+    "客户实际费用、返利、授权、欺诈、争议和支持 SLA 属于非公开资料",
+    "DOJ 页面反映政府诉讼主张而非最终裁判",
+    "未执行真实 RFP、合同尽调或生产 PoC"
+  ]
+}

@@ -1,0 +1,41 @@
+{
+  "schema_version": 1,
+  "dataset_id": "opencompete-bench-v1",
+  "version": "1.0.0",
+  "language": "zh-CN",
+  "cases": [
+    {
+      "case_id": "ocb-001-aws-lambda-vs-azure-functions",
+      "path": "cases/ocb-001-aws-lambda-vs-azure-functions"
+    },
+    {
+      "case_id": "ocb-002-m365-vs-google-workspace",
+      "path": "cases/ocb-002-m365-vs-google-workspace"
+    },
+    {
+      "case_id": "ocb-003-visa-vs-mastercard",
+      "path": "cases/ocb-003-visa-vs-mastercard"
+    },
+    {
+      "case_id": "ocb-004-ups-vs-fedex",
+      "path": "cases/ocb-004-ups-vs-fedex"
+    },
+    {
+      "case_id": "ocb-005-kindle-vs-kobo",
+      "path": "cases/ocb-005-kindle-vs-kobo"
+    },
+    {
+      "case_id": "ocb-006-spotify-vs-apple-music",
+      "path": "cases/ocb-006-spotify-vs-apple-music"
+    },
+    {
+      "case_id": "ocb-007-supercharger-vs-ionity",
+      "path": "cases/ocb-007-supercharger-vs-ionity"
+    },
+    {
+      "case_id": "ocb-008-cloud-infrastructure-competition",
+      "path": "cases/ocb-008-cloud-infrastructure-competition"
+    }
+  ]
+}
+

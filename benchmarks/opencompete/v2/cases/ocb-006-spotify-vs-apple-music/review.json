@@ -1,0 +1,74 @@
+{
+  "schema_version": 2,
+  "case_id": "ocb-006-spotify-vs-apple-music",
+  "status": "expert_ai_dual_reviewed",
+  "review_kind": "expert_ai_dual_review",
+  "author_agent": {
+    "agent_id": "/root/expert_cases_004_006",
+    "role": "数字音乐订阅与平台生态竞品分析领域作者",
+    "model": "codex:expert-agent",
+    "prompt_sha256": "c59b4aee8b37752eb0d9897c455b6e67ea7d1430e25daf38305112dd6417588a"
+  },
+  "reviewer_agent": {
+    "agent_id": "/root/expert_cases_001_003",
+    "role": "独立数字音乐订阅竞品分析 Reviewer",
+    "model": "codex:expert-agent",
+    "prompt_sha256": "d6351209f99ebf9269df19fe3cad55338097a78c6875f0783b2ab0f3efc8dce2"
+  },
+  "review_rounds": 2,
+  "issues": [
+    {
+      "issue_id": "ocb006-review-direct-evidence",
+      "severity": "critical",
+      "subject_id": "ocb006-f01-spotify-individual-student..ocb006-f15-apple-transfer-region",
+      "decision": "accept",
+      "description": "Reviewer 必须确认全部价格、资格、音频、设备、发现和迁移事实的 quote 不只是哈希自洽，而且实际存在于对应官方正文。",
+      "resolved": true,
+      "resolution": "已逐来源实时读取 Spotify Premium、Spotify 音质、Spotify 导入、Apple Music、Apple Lossless 和 Apple 迁移页面；15 条 FACT 的全部精确摘录均实际命中，UTF-8 SHA256 复算一致。"
+    },
+    {
+      "issue_id": "ocb006-review-price-normalization",
+      "severity": "critical",
+      "subject_id": "ocb006-a01-tco,ocb006-a02-price-difference",
+      "decision": "accept",
+      "description": "两年价格结论必须使用同日美国区标准月费，不得把首月免费促销混入标准价，也不得把无直接对应套餐机械配对。",
+      "resolved": true,
+      "resolution": "Individual、Student 和 Family 的 24 个月乘法及 48/24/120 美元名义差额复算正确；Duo 明确标为无直接对等套餐，税费、促销、捆绑、资格和调价被列为翻转因素。"
+    },
+    {
+      "issue_id": "ocb006-review-family-eligibility",
+      "severity": "major",
+      "subject_id": "reference.md#同日美国区价格快照",
+      "decision": "accept",
+      "description": "Spotify 同住要求有直接证据，但 Apple Family 的完整共享资格没有独立保存短摘录，不能凭记忆补齐。",
+      "resolved": true,
+      "resolution": "Reference 只陈述已核验的 Spotify 同住规则，并明确要求按 Apple 当前页面和用户账户再次确认 Apple Family 规则；没有虚构 Apple 资格事实。"
+    },
+    {
+      "issue_id": "ocb006-review-audio-causality",
+      "severity": "major",
+      "subject_id": "ocb006-a03-audio-value,ocb006-u03-catalog-device",
+      "decision": "accept",
+      "description": "最高音频规格不能直接解释为固定曲目覆盖、目标设备支持或可感知听感优势。",
+      "resolved": true,
+      "resolution": "Reference 同时呈现编码上限、Apple 外置 DAC 与蓝牙限制，并要求固定曲目、母带、设备、连接和成本测试；目标设备与听感结论保持 Unknown。"
+    },
+    {
+      "issue_id": "ocb006-review-effect-and-reversibility",
+      "severity": "major",
+      "subject_id": "ocb006-u01-recommendation-quality,ocb006-u02-migration-quality,ocb006-r02-migration-test,ocb006-r03-recommendation-test",
+      "decision": "accept",
+      "description": "功能或迁移入口存在不能证明推荐质量和迁移完整，切换必须保留回退窗口。",
+      "resolved": true,
+      "resolution": "推荐与迁移效果均保持 Unknown；已定义 30 天并行推荐测试、10 个歌单和 200 首曲目迁移抽样，以及至少一个账单周期的原服务保留与回退条件。"
+    }
+  ],
+  "unresolved_material_issues": 0,
+  "limitations": [
+    "本 Reference 由 AI 作者和独立 AI Reviewer 完成双角色复核，未经过人类专家审核",
+    "动态价格、促销和功能页面未保存全页历史快照，结论只对应 2026-07-17 实际读取内容",
+    "Apple Family 的完整共享资格未作为独立 direct FACT 保存，购买前需在当前账户和条款中确认",
+    "推荐效果、迁移成功率、固定曲目覆盖、目标设备音频能力和主观听感没有用户级实测",
+    "24 个月名义成本未计税、未来调价、促销资格、捆绑净价值和设备升级成本"
+  ]
+}

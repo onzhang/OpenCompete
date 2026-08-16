@@ -1,0 +1,93 @@
+{
+  "schema_version": 2,
+  "case_id": "ocb-004-ups-vs-fedex",
+  "status": "expert_ai_dual_reviewed",
+  "review_kind": "expert_ai_dual_review",
+  "author_agent": {
+    "agent_id": "/root/expert_cases_004_006",
+    "role": "物流与承运商采购竞品分析领域作者",
+    "model": "codex:expert-agent",
+    "prompt_sha256": "c59b4aee8b37752eb0d9897c455b6e67ea7d1430e25daf38305112dd6417588a"
+  },
+  "reviewer_agent": {
+    "agent_id": "/root/expert_cases_007_008_bench",
+    "role": "独立物流与承运商采购竞品分析 Reviewer",
+    "model": "codex:expert-agent",
+    "prompt_sha256": "d6351209f99ebf9269df19fe3cad55338097a78c6875f0783b2ab0f3efc8dce2"
+  },
+  "review_rounds": 2,
+  "issues": [
+    {
+      "issue_id": "ocb004-r2-fact-audit",
+      "severity": "critical",
+      "subject_id": "ocb004-f01-ups-financials..ocb004-f11-fedex-international",
+      "decision": "accept",
+      "description": "逐项核对 UPS/FedEx 申报、公司运营及服务 FACT 的来源、定位、实际 quote 和 UTF-8 quote_sha256。",
+      "resolved": true,
+      "resolution": "全部 15 个直接 quote 哈希可复算；财务期间、公司/分部口径、动态服务页和厂商描述边界均已保留。"
+    },
+    {
+      "issue_id": "ocb004-r2-fedex-two-day",
+      "severity": "major",
+      "subject_id": "ocb004-a03-portfolio-fit,ocb004-u05-fedex-two-day",
+      "decision": "revise",
+      "description": "原 Reference 写成双方均覆盖两日达，但固定 FedEx 摘录只证明 Ground/Home Delivery 和国际优先，没有两日达直接证据。",
+      "resolved": true,
+      "resolution": "删除双边两日达已确认结论；新增关键 Unknown、FACT 覆盖，并要求目标邮编正式服务映射和书面报价。"
+    },
+    {
+      "issue_id": "ocb004-r2-price-reliability",
+      "severity": "critical",
+      "subject_id": "ocb004-u01-tco,ocb004-u02-reliability",
+      "decision": "accept",
+      "description": "企业协议价、附加费和同线路履约数据不公开，不能判断成本或可靠性胜者。",
+      "resolved": true,
+      "resolution": "Reference 保持 TCO 与可靠性 Unknown，并以三个固定篮子、同日报价和 4 至 6 周双承运商试运行关闭缺口。"
+    },
+    {
+      "issue_id": "ocb004-r2-scale-causality",
+      "severity": "major",
+      "subject_id": "ocb004-a01-period-boundary,ocb004-a02-scale-not-service",
+      "decision": "accept",
+      "description": "公司财务、件量、飞机、车辆和投递点容易被误写为线路级成本或可靠性优势。",
+      "resolved": true,
+      "resolution": "Reference 区分 UPS 日历年和 FedEx 财年，并明确公司/分部规模只证明大规模运营基础，不证明目标线路表现。"
+    },
+    {
+      "issue_id": "ocb004-r2-integration-migration",
+      "severity": "major",
+      "subject_id": "ocb004-u03-integration,ocb004-u04-migration",
+      "decision": "accept",
+      "description": "开发者入口不能证明 API 对等、稳定性、实施工时或迁移成本。",
+      "resolved": true,
+      "resolution": "集成和迁移保持 Unknown，并通过同订单 API POC、幂等/错误测试、一个结算周期双写与回滚验证。"
+    },
+    {
+      "issue_id": "ocb004-r2-recommendations",
+      "severity": "major",
+      "subject_id": "ocb004-r01-validate-baskets..ocb004-r04-dual-carrier",
+      "decision": "accept",
+      "description": "主承运商和双承运商建议必须绑定服务篮子、企业门槛和中断损失，不能按品牌指定。",
+      "resolved": true,
+      "resolution": "Reference 已覆盖优先 UPS、优先 FedEx、双承运商和暂停决策场景，并给出顺序化签约前验证和翻转条件。"
+    },
+    {
+      "issue_id": "ocb004-r2-criteria",
+      "severity": "major",
+      "subject_id": "criteria.json",
+      "decision": "accept",
+      "description": "检查五维权重、Criterion 数量和关键项，以及 FACT 对关键事实与 Unknown 的覆盖。",
+      "resolved": true,
+      "resolution": "五维权重符合 v2.1；每维 2–3 项、总 13 项、critical 4 项；补充 FedEx 两日达 Unknown 后全部材料性范围已覆盖。"
+    }
+  ],
+  "unresolved_material_issues": 0,
+  "limitations": [
+    "本 Reference 由两个 AI 专家角色完成作者与独立复核，未经过人类专家审核",
+    "没有企业协议价、真实履约、理赔和客服工单数据",
+    "UPS 与 FedEx 动态服务页面未保存全页历史快照，FACT 依赖已验证短摘录及其 SHA256",
+    "FedEx 目标住宅两日达服务映射和保证条件保持 Unknown",
+    "开发者入口未形成稳定 API 能力快照，集成和迁移成本保持 Unknown",
+    "尚未执行同日报价、API POC、双承运商试运行、账单核对和回滚演练"
+  ]
+}

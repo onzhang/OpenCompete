@@ -1,0 +1,50 @@
+{
+  "schema_version": 2,
+  "case_id": "ocb-004-ups-vs-fedex",
+  "title": "美国中型 DTC 企业的 UPS 与 FedEx 主承运商决策",
+  "as_of": "2026-07-17",
+  "reference_mode": "positive",
+  "decision_context": {
+    "audience": "美国中型 DTC 零售企业的物流与采购负责人",
+    "decision": "选择未来 12 个月的主要包裹承运商，并判断是否保留第二承运商",
+    "horizon": "12 个月",
+    "geography": "美国国内为主，兼顾美国发出的跨境件",
+    "assumptions": [
+      "年发货约 25 万件",
+      "70% 为美国住宅陆运、20% 为两日达、10% 为跨境件",
+      "存在旺季波动，停运与延误会造成收入和客户体验损失",
+      "公开资料不能代表企业协议价"
+    ]
+  },
+  "research_request": {
+    "query": "为美国中型 DTC 零售企业比较 UPS 与 FedEx，重点判断主承运商和备用承运商组合。必须覆盖服务映射、网络与运营能力、情景总成本、可靠性、异常与理赔、技术集成、迁移风险和供应连续性；不能用公司规模直接替代线路级服务表现。",
+    "entities": [{"name": "UPS"}, {"name": "FedEx"}],
+    "levels": ["product_service", "company_organization"],
+    "dimensions": {
+      "product_service": ["capabilities", "pricing", "user_experience", "technology_integrations", "service_support", "服务组合", "网络覆盖", "可靠性与异常处理", "情景总成本"],
+      "company_organization": ["positioning_strategy", "business_model", "operations_capabilities", "partnerships_ecosystem", "财务与规模", "客户集中度", "供应连续性风险"]
+    },
+    "exclusions": ["其他承运商作为核心比较对象", "未取得的企业协议价", "没有同条件证据的准时率排名", "投资建议"],
+    "allowed_urls": [
+      "https://www.sec.gov/Archives/edgar/data/1090727/000162828026008432/ups-20251231.htm",
+      "https://www.sec.gov/Archives/edgar/data/1048911/000104891125000011/fdx-20250531.htm",
+      "https://www.ups.com/us/en/support/shipping-support/shipping-services",
+      "https://www.fedex.com/en-us/shipping/services.html",
+      "https://developer.ups.com/",
+      "https://developer.fedex.com/api/en-us/catalog.html"
+    ],
+    "discover_candidates": false
+  },
+  "expected_scope": {
+    "entities": [{"name": "UPS"}, {"name": "FedEx"}],
+    "levels": ["product_service", "company_organization"],
+    "dimensions": {
+      "product_service": ["capabilities", "pricing", "user_experience", "technology_integrations", "service_support", "服务组合", "网络覆盖", "可靠性与异常处理", "情景总成本"],
+      "company_organization": ["positioning_strategy", "business_model", "operations_capabilities", "partnerships_ecosystem", "财务与规模", "客户集中度", "供应连续性风险"]
+    },
+    "exclusions": ["其他承运商作为核心比较对象", "未取得的企业协议价", "没有同条件证据的准时率排名", "投资建议"],
+    "confirmed_at": null,
+    "revision": 0,
+    "frozen": false
+  }
+}

@@ -1,0 +1,71 @@
+{
+  "schema_version": 2,
+  "reference_mode": "positive",
+  "case_id": "ocb-002-m365-vs-google-workspace",
+  "title": "Microsoft 365 与 Google Workspace：250 人协作套件选型与迁移",
+  "as_of": "2026-07-17",
+  "decision_context": {
+    "audience": "250 人混合办公知识型企业的 CIO、IT 负责人和安全负责人",
+    "decision": "选择未来三年的标准协作套件和对应 SKU，并判断是否值得从现有平台迁移",
+    "horizon": "三年合同与迁移周期",
+    "geography": "美国商业版；价格必须使用同地区、同币种和同合同期限快照",
+    "assumptions": [
+      "员工使用 Windows、macOS、移动设备和浏览器，存在复杂 Office 文档与实时共同编辑两类需求",
+      "组织需要企业邮箱、会议、文件协作、基础设备管理、DLP/保留/审计评估和 AI 治理",
+      "现有身份、终端、文件权限和培训成本必须计入迁移，不把席位价格等同于 TCO",
+      "没有租户测试、冻结价格和迁移盘点时，生产率、迁移成本和安全效果胜者必须写为 Unknown"
+    ]
+  },
+  "research_request": {
+    "query": "以 2026-07-17 为截止日，为 250 人美国混合办公知识型企业比较 Microsoft 365 与 Google Workspace。必须映射等价 SKU，覆盖邮件、会议、文档、文件、桌面与浏览器工作流、身份和设备、安全与合规、AI 治理、支持与 SLA、迁移切换成本和三年 TCO；按 Windows/Office 重度、浏览器优先、受监管三类组织场景给出条件化建议。动态价格和未经租户测试的效果必须写为 Unknown。",
+    "entities": [{"name": "Microsoft 365"}, {"name": "Google Workspace"}],
+    "levels": ["product_service"],
+    "dimensions": {
+      "product_service": [
+        "capabilities", "pricing", "user_experience", "technology_integrations", "service_support",
+        "workflow_fit", "sku_entitlements", "identity_device_security", "compliance_data_governance",
+        "ai_governance", "migration_switching", "total_cost_of_ownership", "support_sla"
+      ]
+    },
+    "exclusions": [
+      "不增加 Slack、Zoom、Notion 或其他核心比较对象",
+      "不跨地区或跨合同期限比较公开价格",
+      "不把应用数量、存储数字或 AI 宣传直接解释为生产率",
+      "不把营销安全页解释为组织已满足法律合规义务"
+    ],
+    "allowed_urls": [
+      "https://www.microsoft.com/en-us/microsoft-365/business/compare-all-microsoft-365-business-products",
+      "https://learn.microsoft.com/en-us/office365/servicedescriptions/office-365-platform-service-description/office-365-plan-options",
+      "https://learn.microsoft.com/en-us/microsoft-365/admin/security-and-compliance/m365bp-security-benefits?view=o365-worldwide",
+      "https://www.microsoft.com/en-us/trust-center/product-overview",
+      "https://www.microsoft.com/en-us/fasttrack/microsoft-365",
+      "https://learn.microsoft.com/en-us/sharepointmigration/fileshare-to-odsp-migration-guide",
+      "https://workspace.google.com/pricing.html",
+      "https://knowledge.workspace.google.com/admin/getting-started/editions/compare-business-editions?hl=en",
+      "https://workspace.google.com/security/",
+      "https://workspace.google.com/terms/sla.html",
+      "https://knowledge.workspace.google.com/admin/migrate/migrate-email-with-the-new-data-migration-service?hl=en"
+    ],
+    "discover_candidates": false
+  },
+  "expected_scope": {
+    "entities": [{"name": "Microsoft 365"}, {"name": "Google Workspace"}],
+    "levels": ["product_service"],
+    "dimensions": {
+      "product_service": [
+        "capabilities", "pricing", "user_experience", "technology_integrations", "service_support",
+        "workflow_fit", "sku_entitlements", "identity_device_security", "compliance_data_governance",
+        "ai_governance", "migration_switching", "total_cost_of_ownership", "support_sla"
+      ]
+    },
+    "exclusions": [
+      "不增加 Slack、Zoom、Notion 或其他核心比较对象",
+      "不跨地区或跨合同期限比较公开价格",
+      "不把应用数量、存储数字或 AI 宣传直接解释为生产率",
+      "不把营销安全页解释为组织已满足法律合规义务"
+    ],
+    "confirmed_at": null,
+    "revision": 0,
+    "frozen": false
+  }
+}

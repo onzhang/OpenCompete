@@ -1,0 +1,40 @@
+{
+  "case_id": "ocb-003-visa-vs-mastercard",
+  "race": {
+    "comprehensiveness": [
+      "覆盖 Visa、Mastercard 以及任务指定的全部层级和维度。",
+      "明确列出证据不足、不可比信息与截止日期限制。"
+    ],
+    "depth": [
+      "不仅罗列功能或数字，还解释差异的原因、影响与适用边界。",
+      "跨层案例需要说明公司行为与市场结构之间的关系。"
+    ],
+    "instruction_following": [
+      "不增加未获任务授权的核心比较对象、层级或分析维度。",
+      "重要事实有可定位引用，证据不足时使用 Unknown。"
+    ],
+    "readability": [
+      "使用清晰标题、对比结构和一致的对象命名。",
+      "事实、分析判断、限制和建议彼此区分。"
+    ]
+  },
+  "fact": [
+    {
+      "criterion_id": "fact-financials",
+      "description": "收入、交易量或网络规模等数字应引用相同或清楚标注的报告期间。",
+      "source_ids": [
+        "visa-annual-report",
+        "visa-sec-filings",
+        "mastercard-annual-reports"
+      ]
+    },
+    {
+      "criterion_id": "fact-regulation",
+      "description": "支付网络监管或市场基础设施结论应引用监管机构资料。",
+      "source_ids": [
+        "federal-reserve-payment-systems"
+      ]
+    }
+  ]
+}
+

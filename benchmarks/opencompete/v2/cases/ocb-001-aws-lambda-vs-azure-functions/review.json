@@ -1,0 +1,84 @@
+{
+  "schema_version": 2,
+  "case_id": "ocb-001-aws-lambda-vs-azure-functions",
+  "status": "expert_ai_dual_reviewed",
+  "review_kind": "expert_ai_dual_review",
+  "author_agent": {
+    "agent_id": "/root/expert_cases_001_003",
+    "role": "企业云平台竞品分析 Reference 作者",
+    "model": "codex:expert-agent",
+    "prompt_sha256": "c59b4aee8b37752eb0d9897c455b6e67ea7d1430e25daf38305112dd6417588a"
+  },
+  "reviewer_agent": {
+    "agent_id": "/root/expert_cases_007_008_bench",
+    "role": "独立企业云平台竞品分析 Reviewer",
+    "model": "codex:expert-agent",
+    "prompt_sha256": "d6351209f99ebf9269df19fe3cad55338097a78c6875f0783b2ab0f3efc8dce2"
+  },
+  "review_rounds": 2,
+  "issues": [
+    {
+      "issue_id": "ocb001-r2-fact-audit",
+      "severity": "critical",
+      "subject_id": "ocb001-f01..ocb001-f11",
+      "decision": "accept",
+      "description": "逐项核对 11 条关键 FACT 的来源类型、定位、实际 quote 和 UTF-8 quote_sha256。",
+      "resolved": true,
+      "resolution": "全部 quote 哈希可复算，Claim 措辞未超出摘录；AWS 和 Azure 的异构扩缩容指标没有被直接横比。"
+    },
+    {
+      "issue_id": "ocb001-r2-support-scope",
+      "severity": "major",
+      "subject_id": "service_support",
+      "decision": "revise",
+      "description": "任务明确要求比较服务支持，但作者版本只有 SLA Unknown，没有覆盖支持计划、响应、升级、价格和真实工单结果。",
+      "resolved": true,
+      "resolution": "新增 ocb001-u04、对应 FACT Criterion、Reference Unknown 和同一故障场景支持升级桌面演练。"
+    },
+    {
+      "issue_id": "ocb001-r2-comparison-rigor",
+      "severity": "major",
+      "subject_id": "ocb001-a01,reference.md#扩缩容数字不能直接横比",
+      "decision": "accept",
+      "description": "AWS 每 10 秒执行环境扩容配额和 Azure Flex 最大实例数容易因数字同为 1,000 而被误比。",
+      "resolved": true,
+      "resolution": "作者已准确区分扩容速率、最大实例、单实例并发和实际吞吐，并要求同负载 PoC。"
+    },
+    {
+      "issue_id": "ocb001-r2-unknowns",
+      "severity": "critical",
+      "subject_id": "ocb001-u01,ocb001-u02,ocb001-u03,ocb001-u04",
+      "decision": "accept",
+      "description": "TCO、性能/开发效率、双边 SLA 和服务支持均缺少完整同口径证据。",
+      "resolved": true,
+      "resolution": "四类结论均保持 Unknown，且分别绑定价格冻结、同代码 PoC、合同核验和支持演练。"
+    },
+    {
+      "issue_id": "ocb001-r2-recommendations",
+      "severity": "major",
+      "subject_id": "ocb001-r01,ocb001-r02,ocb001-r03",
+      "decision": "accept",
+      "description": "默认平台、组合编排和 PoC 建议必须可被新证据推翻，不能成为既有云偏见。",
+      "resolved": true,
+      "resolution": "Reference 已给出优先双方、暂不选边、淘汰条件和四类结论翻转条件，并要求完整 TCO 覆盖双控制面和迁移成本。"
+    },
+    {
+      "issue_id": "ocb001-r2-criteria",
+      "severity": "major",
+      "subject_id": "criteria.json",
+      "decision": "accept",
+      "description": "检查五维权重、每维数量、关键项、锚点互斥性以及 FACT 对关键事实与 Unknown 的覆盖。",
+      "resolved": true,
+      "resolution": "五维权重符合 v2.1；每维 2 项、总 10 项、critical 4 项；新增支持 Unknown 后关键范围均由 FACT 覆盖。"
+    }
+  ],
+  "unresolved_material_issues": 0,
+  "limitations": [
+    "本 Reference 由两个 AI 专家角色完成作者与独立复核，未经过人类专家审核",
+    "动态价格页没有内容快照，完整 TCO 保持 Unknown",
+    "未运行同代码性能、扩缩容、私网和开发效率 PoC",
+    "Azure Functions 具体适用 SLA 正文未取得，双边合同可用性比较保持 Unknown",
+    "未获取企业折扣、支持合同、真实日志量和出站流量数据",
+    "服务支持质量尚未经过书面方案对比和故障升级桌面演练"
+  ]
+}

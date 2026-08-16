@@ -1,0 +1,39 @@
+{
+  "schema_version": 1,
+  "case_id": "ocb-005-kindle-vs-kobo",
+  "sources": [
+    {
+      "source_id": "kindle-store",
+      "title": "Kindle 官方商店入口",
+      "publisher": "Amazon",
+      "url": "https://www.amazon.com/kindle-dbs/storefront",
+      "authority": "official",
+      "as_of": "2026-07-15"
+    },
+    {
+      "source_id": "kindle-support",
+      "title": "Kindle 官方帮助入口",
+      "publisher": "Amazon",
+      "url": "https://www.amazon.com/gp/help/customer/display.html?nodeId=G201014330",
+      "authority": "official",
+      "as_of": "2026-07-15"
+    },
+    {
+      "source_id": "kobo-ereaders",
+      "title": "Kobo 电子阅读器官方页",
+      "publisher": "Rakuten Kobo",
+      "url": "https://www.kobo.com/ereaders",
+      "authority": "official",
+      "as_of": "2026-07-15"
+    },
+    {
+      "source_id": "kobo-help",
+      "title": "Kobo 官方帮助中心",
+      "publisher": "Rakuten Kobo",
+      "url": "https://help.kobo.com/hc/en-us/categories/360001239977",
+      "authority": "official",
+      "as_of": "2026-07-15"
+    }
+  ]
+}
+

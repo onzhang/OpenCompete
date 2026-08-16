@@ -1,0 +1,52 @@
+{
+  "schema_version": 2,
+  "case_id": "ocb-001-aws-lambda-vs-azure-functions",
+  "variants": [
+    {
+      "variant_id": "ocb001-cal-decision-scope",
+      "kind": "decision_scope_violation",
+      "expected_primary_dimension": "decision_relevance",
+      "report_anchor": "平台工程委员会应先确定默认云控制面，再按四类工作负载设置例外门槛：突发型 HTTP API、消息与文件异步处理、延迟敏感型常驻容量、有状态工作流。",
+      "replace_claim_id": "ocb001-r01",
+      "defect_text": "其余决策范围保持不变，但默认平台评估不再覆盖有状态工作流，也不说明该场景应作为例外负载另行处理。"
+    },
+    {
+      "variant_id": "ocb001-cal-comparison-mismatch",
+      "kind": "comparison_mismatch",
+      "expected_primary_dimension": "comparison_rigor",
+      "report_anchor": "AWS 的“每函数每 10 秒 1,000 个执行环境”是函数扩容配额；Azure Flex 的“最多 1,000 个实例”是托管方案的动态扩展上限描述。[aws-lambda-quotas] [azure-functions-scale] 两者的实例模型、单实例并发和触发器行为不同。成熟比较必须使用相同请求模型和业务 SLO 实测，不能把两个相同数字当作同一能力。",
+      "replace_claim_id": "ocb001-a01",
+      "defect_text": "AWS 每函数每 10 秒可增加 1,000 个执行环境，而 Azure 最多扩展到 1,000 个实例，因此 AWS 的扩缩容能力更强。"
+    },
+    {
+      "variant_id": "ocb001-cal-causal-overclaim",
+      "kind": "causal_overclaim",
+      "expected_primary_dimension": "causal_synthesis",
+      "report_anchor": "Azure 官方资料明确 Durable Functions 工作流路径。[azure-functions-overview] 但本案例没有 AWS 侧对应编排服务的固定直接来源，不能据此判定 Azure 全面胜出。真正的锁定边界包括事件格式、状态语义、重放、身份、网络、日志、告警和 IaC，而不仅是函数语言。",
+      "replace_claim_id": "ocb001-a02",
+      "defect_text": "Azure 提供 Durable Functions，因此这一项产品能力本身就足以证明迁移到 Azure Functions 必然降低工作流锁定和退出成本，无需核验事件格式、状态语义、重放、身份、网络、观测和 IaC。"
+    },
+    {
+      "variant_id": "ocb001-cal-evidence-overclaim",
+      "kind": "evidence_overclaim",
+      "expected_primary_dimension": "evidence_grounding",
+      "report_anchor": "**双边 SLA 比较为 Unknown。** AWS 条款可以定位，但 Azure Functions 具体适用条款没有取得；不能用单边合同或营销可用性形成排名。[aws-lambda-sla] [azure-functions-sla]",
+      "replace_claim_id": "ocb001-u03",
+      "defect_text": "AWS Lambda 的 99.95% SLA 承诺已经证明其每个月的实际可用率必然达到 99.95%，无需再核验排除项、服务抵扣或真实故障记录。[aws-lambda-sla]"
+    },
+    {
+      "variant_id": "ocb001-cal-unconditional-recommendation",
+      "kind": "unconditional_recommendation",
+      "expected_primary_dimension": "recommendation_quality",
+      "report_anchor": "使用相同业务代码、依赖、区域级别和内存档位，执行三组测试：突发 HTTP、队列消费、私网数据库访问。记录 P50/P95/P99、扩容时间、限流、失败/重试、部署回滚、日志追踪完整性和完整账单。有状态工作流另测状态重放、失败恢复和退出成本。",
+      "replace_claim_id": "ocb001-r03",
+      "defect_text": "对于报告已条件性优先 Lambda 的场景，建议直接定为全量默认平台，不再执行同代码 PoC、成本冻结、SLA 核验或退出测试。"
+    },
+    {
+      "variant_id": "ocb001-cal-style-only",
+      "kind": "style_only",
+      "expected_primary_dimension": null,
+      "defect_text": ""
+    }
+  ]
+}

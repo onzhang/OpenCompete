@@ -1,0 +1,13 @@
+{
+  "schema_version": 3,
+  "dataset_id": "opencompete-bench-v3",
+  "version": "3.0.0-alpha.1",
+  "language": "zh-CN",
+  "cases": [
+    {
+      "case_id": "ocb-006-spotify-vs-apple-music",
+      "path": "cases/ocb-006-spotify-vs-apple-music",
+      "content_sha256": "df0e02489c80b67b8b6fff9511a1670dd4aa029a74758912cc343678e0e26504"
+    }
+  ]
+}

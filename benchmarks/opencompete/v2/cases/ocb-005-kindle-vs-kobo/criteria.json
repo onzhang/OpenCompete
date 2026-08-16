@@ -1,0 +1,43 @@
+{
+  "schema_version": 2,
+  "case_id": "ocb-005-kindle-vs-kobo",
+  "dimension_weights": {"decision_relevance": 0.15, "comparison_rigor": 0.25, "causal_synthesis": 0.20, "evidence_grounding": 0.25, "recommendation_quality": 0.15},
+  "dimensions": {
+    "decision_relevance": {"definition": "是否支持美国重度读者的三年设备与内容生态选择。", "criteria": [
+      {"criterion_id": "dr-reader", "description": "绑定每年购书、图书馆、个人文档、漫画和既有藏书需求。", "weight": 0.50, "critical": true, "anchors": {"0": "无用户场景", "4": "只比较品牌和硬件", "6": "覆盖主要阅读需求", "8": "每项判断映射用户工作流", "10": "需求直接形成选择、不换和退出门槛"}},
+      {"criterion_id": "dr-three-year", "description": "用固定书单、三年 TCO 和迁移资产评价长期价值。", "weight": 0.50, "critical": false, "anchors": {"0": "只看设备售价", "4": "泛泛提长期", "6": "覆盖订阅或购书", "8": "完整三年成本和书单", "10": "成本、迁移、敏感性和翻转条件完整"}}
+    ]},
+    "comparison_rigor": {"definition": "型号、内容路径、格式语义、地区和测试条件是否同口径。", "criteria": [
+      {"criterion_id": "cr-model", "description": "所有硬件结论绑定具体型号，并处理屏幕档位与续航测试条件差异。", "weight": 0.35, "critical": true, "anchors": {"0": "品牌级混比", "4": "部分绑定型号", "6": "主要规格绑定型号", "8": "型号和测试条件完整", "10": "同档实测任务和不可比边界均明确"}},
+      {"criterion_id": "cr-content-path", "description": "区分商店购买、订阅、图书馆和个人文档，并使用固定版本或 ISBN。", "weight": 0.35, "critical": false, "anchors": {"0": "内容路径混为一谈", "4": "部分区分", "6": "四类路径基本清楚", "8": "固定书单和版本口径明确", "10": "覆盖价格、等待、版本和地区差异"}},
+      {"criterion_id": "cr-format-migration", "description": "区分上传、转换、原生读取、DRM、导出和元数据迁移。", "weight": 0.30, "critical": false, "anchors": {"0": "EPUB 即开放", "4": "有模糊保留", "6": "主要语义正确", "8": "全部路径和迁移边界清楚", "10": "合法迁移任务、人工修正和不换门槛完整"}}
+    ]},
+    "causal_synthesis": {"definition": "是否解释设备、内容工作流和既有资产如何共同形成长期价值。", "criteria": [
+      {"criterion_id": "cs-ecosystem", "description": "解释购买、订阅、借阅和个人文档路径如何影响三年成本和便利性。", "weight": 0.50, "critical": false, "anchors": {"0": "只列功能", "4": "有单向推断", "6": "主要机制清楚", "8": "机制与替代解释完整", "10": "每个机制均有固定书单或任务验证"}},
+      {"criterion_id": "cs-lockin", "description": "把 DRM、藏书、批注、进度和书架连接到迁移损失与不换平台条件。", "weight": 0.50, "critical": false, "anchors": {"0": "忽略锁定", "4": "只提 DRM", "6": "解释内容迁移成本", "8": "内容和元数据均覆盖", "10": "合法抽样、量化和结论翻转条件完整"}}
+    ]},
+    "evidence_grounding": {"definition": "事实是否有精确短摘录和哈希，材料性缺口是否明确为 Unknown。", "criteria": [
+      {"criterion_id": "eg-quotes", "description": "设备、格式和图书馆 FACT 使用实际精确 quote 与 UTF-8 SHA256。", "weight": 0.45, "critical": true, "anchors": {"0": "无引用或伪造", "4": "有来源无精确摘录", "6": "多数关键事实有摘录", "8": "全部关键 FACT 有摘录和哈希", "10": "定位、摘录、哈希、口径和限制完全可审计"}},
+      {"criterion_id": "eg-source-fit", "description": "厂商商品页、帮助页和 OverDrive 来源只支持其实际正文范围。", "weight": 0.30, "critical": false, "anchors": {"0": "来源错配", "4": "多处外推", "6": "主要来源用途正确", "8": "所有重要主张匹配来源", "10": "同时处理厂商自述、动态页和地区限制"}},
+      {"criterion_id": "eg-unknown", "description": "书单覆盖、价格 TCO、迁移和真实体验无证据时保持 Unknown。", "weight": 0.25, "critical": false, "anchors": {"0": "以常识补齐", "4": "遗漏多个缺口", "6": "核心 Unknown 明确", "8": "每项有具体补证任务", "10": "Unknown 与暂停点、翻转条件完全对应"}}
+    ]},
+    "recommendation_quality": {"definition": "建议是否按既有资产、内容工作流、迁移损失和不适用场景条件化。", "criteria": [
+      {"criterion_id": "rq-conditional", "description": "分别说明保留 Kindle、验证 Kobo 和不换平台的条件。", "weight": 0.40, "critical": true, "anchors": {"0": "单一赢家", "4": "条件泛泛", "6": "双方有适用场景", "8": "条件对应书单、图书馆和迁移", "10": "条件、门槛、反例和翻转因素完整"}},
+      {"criterion_id": "rq-validation", "description": "提出固定书单、图书馆任务、设备实测和合法迁移抽样。", "weight": 0.35, "critical": false, "anchors": {"0": "无验证", "4": "只建议试用", "6": "至少两类任务", "8": "四类任务和记录指标完整", "10": "任务结果直接映射选择与不换决定"}},
+      {"criterion_id": "rq-exit", "description": "识别复杂 PDF 或大量手写应退出当前案例并转向大屏比较。", "weight": 0.25, "critical": false, "anchors": {"0": "强行给建议", "4": "只提限制", "6": "有退出场景", "8": "说明为什么当前对象不适用", "10": "给出明确替代案例边界和触发门槛"}}
+    ]}
+  },
+  "fact": [
+    {"criterion_id": "fact-kindle-device", "description": "Kindle Paperwhite 显示、续航和防水主张必须绑定指定产品页并保留测试边界。", "reference_claim_ids": ["ocb005-f01-kindle-display", "ocb005-f02-kindle-battery-water"], "critical": true},
+    {"criterion_id": "fact-kindle-formats", "description": "Send to Kindle 格式、大小和 USB 传输事实必须匹配官方页面，且不得外推为原生开放。", "reference_claim_ids": ["ocb005-f03-kindle-send", "ocb005-f04-kindle-usb"], "critical": true},
+    {"criterion_id": "fact-kindle-library", "description": "Kindle 图书馆流程必须说明美国边界和跳转 Amazon 领取。", "reference_claim_ids": ["ocb005-f05-kindle-library-us", "ocb005-f06-kindle-library-flow"], "critical": true},
+    {"criterion_id": "fact-kobo-device", "description": "Kobo Clara BW 的屏幕、防水、存储和续航必须绑定具体型号和测试条件。", "reference_claim_ids": ["ocb005-f07-kobo-device", "ocb005-f09-kobo-battery"], "critical": true},
+    {"criterion_id": "fact-kobo-formats", "description": "Kobo 原生格式和应用格式事实必须匹配产品页和帮助页，并保留 DRM 边界。", "reference_claim_ids": ["ocb005-f08-kobo-native-formats", "ocb005-f10-kobo-format-help"], "critical": true},
+    {"criterion_id": "fact-kobo-library", "description": "Kobo 阅读器端借阅和地区范围必须匹配帮助页并说明书目差异。", "reference_claim_ids": ["ocb005-f11-kobo-library-flow", "ocb005-f12-kobo-library-countries"], "critical": true},
+    {"criterion_id": "fact-model-boundary", "description": "不得直接比较不同型号和不同续航测试条件形成硬件赢家。", "reference_claim_ids": ["ocb005-a01-model-boundary"], "critical": true},
+    {"criterion_id": "fact-book-basket-unknown", "description": "未执行固定版本书单前，内容可得性和价格必须保持 Unknown。", "reference_claim_ids": ["ocb005-u01-book-basket"], "critical": true},
+    {"criterion_id": "fact-tco-unknown", "description": "未冻结美国区价格和使用假设前，三年 TCO 数值优劣必须保持 Unknown。", "reference_claim_ids": ["ocb005-u02-pricing-tco"], "critical": true},
+    {"criterion_id": "fact-migration-unknown", "description": "未做合法迁移抽样前，DRM 内容和元数据迁移能力必须保持 Unknown。", "reference_claim_ids": ["ocb005-u03-migration"], "critical": true},
+    {"criterion_id": "fact-support-unknown", "description": "未固定美国区保修、退换、维修、更换和保障条款前，服务支持胜者必须保持 Unknown。", "reference_claim_ids": ["ocb005-u05-support"], "critical": true}
+  ]
+}

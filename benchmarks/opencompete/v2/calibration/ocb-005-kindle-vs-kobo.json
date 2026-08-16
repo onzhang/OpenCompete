@@ -1,0 +1,52 @@
+{
+  "schema_version": 2,
+  "case_id": "ocb-005-kindle-vs-kobo",
+  "variants": [
+    {
+      "variant_id": "ocb005-decision-scope-violation",
+      "kind": "decision_scope_violation",
+      "expected_primary_dimension": "decision_relevance",
+      "report_anchor": "已有大量 Kindle 商店藏书、主要从 Amazon 购书并希望保留现有账户工作流的用户，应优先考虑继续使用 Kindle。重视原生 EPUB/漫画格式、个人文档和阅读器端公共图书馆操作的用户，应优先验证 Kobo。最终选择必须由固定 20 本书单、目标图书馆、三年 TCO 和合法迁移抽样决定。",
+      "replace_claim_id": "ocb005-r03-conditional",
+      "defect_text": "仍按美国个人重度读者、未来三年单一主要阅读生态的采购层级作结论，但忽略冻结范围内“偶尔阅读漫画”这一子场景，不再评价 CBZ/CBR 支持及漫画工作流对 Kindle 与 Kobo 选择的影响。"
+    },
+    {
+      "variant_id": "ocb005-comparison-mismatch",
+      "kind": "comparison_mismatch",
+      "expected_primary_dimension": "comparison_rigor",
+      "report_anchor": "两家的续航声明不能直接排序：单位不同，且 Kindle 短摘录没有同等完整的测试条件。屏幕尺寸和产品档位也不同。实际翻页延迟、前光均匀性、重量舒适度、PDF 操作和真实续航为 `Unknown`，应使用同档设备和统一任务实测。",
+      "replace_claim_id": "ocb005-a01-model-boundary",
+      "defect_text": "可直接用 Kindle Paperwhite 的最长 12 周与 Kobo Clara BW 在限定条件下的最长 53 天续航数字排序，并判定 Kindle 续航更强。"
+    },
+    {
+      "variant_id": "ocb005-causal-overclaim",
+      "kind": "causal_overclaim",
+      "expected_primary_dimension": "causal_synthesis",
+      "report_anchor": "“Send to Kindle 接受 EPUB”与“Kobo 原生支持 EPUB”不是同一种能力。前者描述上传入口，后者描述设备格式支持；两者都不能单独证明 DRM 书籍、批注、书架和阅读进度可以合法跨平台迁移。",
+      "replace_claim_id": "ocb005-a02-format-semantics",
+      "defect_text": "Kobo 原生支持 EPUB 这一工作流差异本身就足以证明用户三年总阅读成本更低，无需排除固定书单、购书价格、借阅、重复购买和迁移成本。"
+    },
+    {
+      "variant_id": "ocb005-evidence-overclaim",
+      "kind": "evidence_overclaim",
+      "expected_primary_dimension": "evidence_grounding",
+      "report_anchor": "“Send to Kindle 接受 EPUB”与“Kobo 原生支持 EPUB”不是同一种能力。前者描述上传入口，后者描述设备格式支持；两者都不能单独证明 DRM 书籍、批注、书架和阅读进度可以合法跨平台迁移。",
+      "replace_claim_id": "ocb005-a02-format-semantics",
+      "defect_text": "现有格式列表已经证明，将个人 DRM-free EPUB/PDF 从 Kindle 工作流迁往 Kobo 后，文件内容、目录结构与批注都能完整保留。"
+    },
+    {
+      "variant_id": "ocb005-unconditional-recommendation",
+      "kind": "unconditional_recommendation",
+      "expected_primary_dimension": "recommendation_quality",
+      "report_anchor": "- 原生 EPUB、PDF、CBZ/CBR 和个人文档是核心需求。\n- 目标公共图书馆已验证支持阅读器端借阅，固定书单可借率更高。\n- 三年内容与订阅成本足以抵消换平台和重复购书成本。\n- 合法迁移抽样表明关键内容和元数据损失可接受。",
+      "replace_claim_id": "ocb005-r03-conditional",
+      "defect_text": "对于报告已条件性偏向 Kobo 的原生 EPUB 场景，建议直接完成平台迁移，不再核验固定书单、目标图书馆、合法迁移抽样或三年 TCO。"
+    },
+    {
+      "variant_id": "ocb005-style-only",
+      "kind": "style_only",
+      "expected_primary_dimension": null,
+      "defect_text": ""
+    }
+  ]
+}

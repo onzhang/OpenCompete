@@ -1,0 +1,30 @@
+{
+  "schema_version": 3,
+  "case_id": "ocb-006-spotify-vs-apple-music",
+  "sources": [
+    {
+      "source_id": "spotify-us-premium",
+      "title": "Spotify Premium - Spotify USA",
+      "url": "https://www.spotify.com/us/premium/",
+      "publisher": "Spotify"
+    },
+    {
+      "source_id": "spotify-audio-quality",
+      "title": "Audio quality - Spotify",
+      "url": "https://support.spotify.com/us/article/audio-quality/",
+      "publisher": "Spotify"
+    },
+    {
+      "source_id": "apple-music-us",
+      "title": "Apple Music - Apple",
+      "url": "https://www.apple.com/apple-music/",
+      "publisher": "Apple"
+    },
+    {
+      "source_id": "apple-music-lossless",
+      "title": "About lossless audio in Apple Music",
+      "url": "https://support.apple.com/en-us/118295",
+      "publisher": "Apple"
+    }
+  ]
+}

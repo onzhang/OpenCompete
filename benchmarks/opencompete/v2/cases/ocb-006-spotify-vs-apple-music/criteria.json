@@ -1,0 +1,42 @@
+{
+  "schema_version": 2,
+  "case_id": "ocb-006-spotify-vs-apple-music",
+  "dimension_weights": {"decision_relevance": 0.15, "comparison_rigor": 0.25, "causal_synthesis": 0.20, "evidence_grounding": 0.25, "recommendation_quality": 0.15},
+  "dimensions": {
+    "decision_relevance": {"definition": "是否直接服务美国个人与家庭未来 24 个月的订阅和迁移决策。", "criteria": [
+      {"criterion_id": "dr-user-segments", "description": "区分单人、学生、两名同住用户、不同规模家庭、Apple One 和高保真用户。", "weight": 0.50, "critical": true, "anchors": {"0": "没有用户分层", "4": "只分个人和家庭", "6": "覆盖主要套餐类型", "8": "每类用户有成本和功能判断", "10": "每类都有选择、迁移和不建议门槛"}},
+      {"criterion_id": "dr-two-year", "description": "以两年 TCO、迁移资产和实际功能使用价值作决策。", "weight": 0.50, "critical": false, "anchors": {"0": "只列月费", "4": "有简单两年乘法", "6": "标准价和主要权益均覆盖", "8": "TCO、迁移和设备成本完整", "10": "六类场景、敏感性和翻转条件完整"}}
+    ]},
+    "comparison_rigor": {"definition": "价格、套餐、音频、设备、迁移和推荐是否采用同条件口径。", "criteria": [
+      {"criterion_id": "cr-price", "description": "价格使用同日美国区标准月费，区分促销、资格、人数、同住和席位利用。", "weight": 0.35, "critical": true, "anchors": {"0": "跨地区或混用促销", "4": "地区一致但资格错配", "6": "标准月费正确", "8": "两年成本、人数和资格完整", "10": "还处理捆绑、席位利用和调价敏感性"}},
+      {"criterion_id": "cr-audio-device", "description": "区分编码、最高规格、曲目覆盖、设备、连接、DAC 和主观听感。", "weight": 0.35, "critical": false, "anchors": {"0": "最大规格即更好", "4": "仅提蓝牙限制", "6": "主要播放链路正确", "8": "曲目与设备测试完整", "10": "规格、成本、实测和不适用场景完全对应"}},
+      {"criterion_id": "cr-migration-recommendation", "description": "功能存在与效果质量分离，并以同一歌单、曲目和用户行为验证。", "weight": 0.30, "critical": false, "anchors": {"0": "有入口即迁移完整或有功能即推荐更好", "4": "有模糊保留", "6": "承认质量 Unknown", "8": "定义迁移和推荐测试", "10": "指标、控制变量、回退和结论映射完整"}}
+    ]},
+    "causal_synthesis": {"definition": "是否解释价格、权益、历史资产和播放链路如何共同形成用户价值。", "criteria": [
+      {"criterion_id": "cs-net-value", "description": "解释标准价差如何被捆绑、附带权益、席位利用和历史资产改变。", "weight": 0.50, "critical": false, "anchors": {"0": "最便宜即最好", "4": "只列权益", "6": "主要净价值因素清楚", "8": "因素按用户分层", "10": "净价值、替代解释和翻转条件完整"}},
+      {"criterion_id": "cs-quality-mechanism", "description": "解释推荐历史、迁移匹配和音频链路为何可能改变体验，不把相关性写成因果。", "weight": 0.50, "critical": false, "anchors": {"0": "功能名直接等于体验", "4": "有未经验证的因果", "6": "主要机制谨慎", "8": "机制、替代解释和 Unknown 完整", "10": "每个机制均有可复现验证和反例"}}
+    ]},
+    "evidence_grounding": {"definition": "价格与能力事实是否有实际精确摘录和哈希，Unknown 是否覆盖材料性缺口。", "criteria": [
+      {"criterion_id": "eg-price-quotes", "description": "美国区套餐价格、人数和资格使用同日实际 quote 与 UTF-8 SHA256。", "weight": 0.45, "critical": true, "anchors": {"0": "价格无来源或伪造", "4": "有页面无精确摘录", "6": "多数价格有摘录", "8": "全部关键价格和人数有摘录与哈希", "10": "日期、地区、促销、资格和哈希完全可审计"}},
+      {"criterion_id": "eg-capability-quotes", "description": "音频、发现、设备和迁移 FACT 只使用对应官方正文范围。", "weight": 0.30, "critical": false, "anchors": {"0": "来源错配", "4": "多处超范围外推", "6": "主要主张有匹配来源", "8": "全部关键能力有精确引用", "10": "同时明确厂商自述、动态页面和技术限制"}},
+      {"criterion_id": "eg-unknown", "description": "推荐质量、迁移质量、固定曲目和目标设备支持无证据时保持 Unknown。", "weight": 0.25, "critical": false, "anchors": {"0": "用常识补齐", "4": "遗漏多个缺口", "6": "核心 Unknown 明确", "8": "每项有指标和任务", "10": "Unknown、暂停点和结论翻转条件完全对应"}}
+    ]},
+    "recommendation_quality": {"definition": "建议是否按用户类型、净价值、迁移风险和实测结果条件化。", "criteria": [
+      {"criterion_id": "rq-conditional", "description": "分别说明优先 Spotify、优先 Apple Music 和不立即迁移的条件。", "weight": 0.40, "critical": true, "anchors": {"0": "单一赢家", "4": "条件泛泛", "6": "双方有适用场景", "8": "条件对应价格、历史和设备", "10": "门槛、反例、回退和翻转因素完整"}},
+      {"criterion_id": "rq-validation", "description": "提出价格冻结、两年 TCO、迁移抽样、30 天推荐测试和设备音频测试。", "weight": 0.35, "critical": false, "anchors": {"0": "无验证", "4": "只建议试用", "6": "至少两类测试", "8": "采购、迁移、推荐和设备测试完整", "10": "顺序、指标、控制变量和决策映射完整"}},
+      {"criterion_id": "rq-reversibility", "description": "迁移期间保留原服务和回退窗口，避免不可逆取消。", "weight": 0.25, "critical": false, "anchors": {"0": "直接取消", "4": "仅提醒备份", "6": "提出并行订阅", "8": "明确一个账单周期和验收", "10": "迁移、设备、推荐均通过后才取消且有回退计划"}}
+    ]}
+  },
+  "fact": [
+    {"criterion_id": "fact-spotify-pricing", "description": "Spotify 美国区 Individual、Student、Duo、Family 价格、人数和同住要求必须匹配同日页面。", "reference_claim_ids": ["ocb006-f01-spotify-individual-student", "ocb006-f02-spotify-duo-family", "ocb006-f03-spotify-household"], "critical": true},
+    {"criterion_id": "fact-spotify-audio", "description": "Spotify Lossless 上限必须匹配官方音质页，且保留曲目和设备 Unknown。", "reference_claim_ids": ["ocb006-f04-spotify-audio"], "critical": true},
+    {"criterion_id": "fact-spotify-features", "description": "Spotify 发现、社交和设备 FACT 必须匹配官方页面，不外推为效果质量。", "reference_claim_ids": ["ocb006-f05-spotify-discovery", "ocb006-f06-spotify-devices"], "critical": true},
+    {"criterion_id": "fact-spotify-transfer", "description": "Spotify 迁移必须说明 TuneMyMusic 第三方身份和质量责任边界。", "reference_claim_ids": ["ocb006-f07-spotify-import"], "critical": true},
+    {"criterion_id": "fact-apple-pricing", "description": "Apple Music 美国区 Individual、Family 和 Student 价格必须匹配同日页面。", "reference_claim_ids": ["ocb006-f08-apple-pricing"], "critical": true},
+    {"criterion_id": "fact-apple-content", "description": "Apple 目录和平台声明必须匹配产品页，不外推为固定曲目或体验优势。", "reference_claim_ids": ["ocb006-f09-apple-content-platform"], "critical": true},
+    {"criterion_id": "fact-apple-audio", "description": "Apple ALAC、分辨率、DAC 和蓝牙限制必须共同呈现。", "reference_claim_ids": ["ocb006-f10-apple-lossless-catalog", "ocb006-f11-apple-lossless-tiers", "ocb006-f12-apple-playback-boundary"], "critical": true},
+    {"criterion_id": "fact-apple-transfer", "description": "Apple 迁移流程、相似版本审核和地区限制必须匹配官方支持页。", "reference_claim_ids": ["ocb006-f13-apple-transfer", "ocb006-f14-apple-transfer-review", "ocb006-f15-apple-transfer-region"], "critical": true},
+    {"criterion_id": "fact-tco-calculation", "description": "两年 TCO 和名义价差必须由同日美国区标准月费正确计算，并单列敏感性。", "reference_claim_ids": ["ocb006-a01-tco", "ocb006-a02-price-difference"], "critical": true},
+    {"criterion_id": "fact-quality-unknown", "description": "没有并行测试时，推荐、迁移、固定曲目和目标设备质量必须保持 Unknown。", "reference_claim_ids": ["ocb006-u01-recommendation-quality", "ocb006-u02-migration-quality", "ocb006-u03-catalog-device"], "critical": true}
+  ]
+}

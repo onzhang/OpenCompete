@@ -1,0 +1,52 @@
+{
+  "schema_version": 2,
+  "case_id": "ocb-002-m365-vs-google-workspace",
+  "variants": [
+    {
+      "variant_id": "ocb002-cal-decision-scope",
+      "kind": "decision_scope_violation",
+      "expected_primary_dimension": "decision_relevance",
+      "report_anchor": "若桌面兼容要求低，可优先试点 Google Workspace",
+      "replace_claim_id": "ocb002-r02",
+      "defect_text": "其余决策范围保持不变，但标准套件评估只覆盖 Office 重度用户，不再回答浏览器优先团队的选择条件。"
+    },
+    {
+      "variant_id": "ocb002-cal-comparison-mismatch",
+      "kind": "comparison_mismatch",
+      "expected_primary_dimension": "comparison_rigor",
+      "report_anchor": "不能把 Starter 机械等价为 Basic，也不能把 Plus 机械等价为 Premium。正确顺序是先确定控制项，再找满足控制项的最低 SKU：",
+      "replace_claim_id": "ocb002-a01",
+      "defect_text": "直接比较 Google Business Starter 与 Microsoft 365 Business Premium 的公开席位价即可判断 Google 更便宜。"
+    },
+    {
+      "variant_id": "ocb002-cal-causal-overclaim",
+      "kind": "causal_overclaim",
+      "expected_primary_dimension": "causal_synthesis",
+      "report_anchor": "功能存在不等于生产率，安全能力存在不等于配置完成或合规，迁移工具存在不等于无损迁移。",
+      "replace_claim_id": "ocb002-a02",
+      "defect_text": "Google Workspace 采用浏览器优先协作方式，因此这一产品组织方式本身就足以证明目标团队迁移后生产率更高，无需排除任务结构、培训、兼容和采用差异。"
+    },
+    {
+      "variant_id": "ocb002-cal-evidence-overclaim",
+      "kind": "evidence_overclaim",
+      "expected_primary_dimension": "evidence_grounding",
+      "report_anchor": "Microsoft 文件迁移指南覆盖从文件共享到 OneDrive、Teams 和 SharePoint 的准备；Google 数据导入文档列出 Workspace、IMAP、Gmail 和 Exchange Online 邮件来源。[microsoft-file-migration] [workspace-migration] 这些资料只能证明存在对应路径，不能证明邮件、文件权限、共享链接、日历、宏、格式、移动端和第三方集成可以无损迁移。\n\n成熟 TCO 应包含三年席位与附加许可、身份和终端工具、归档与安全、迁移实施、双轨订阅、培训、服务台增量、格式修复和退出成本。没有源租户盘点时，这些项目为 Unknown。功能存在不等于生产率，安全能力存在不等于配置完成或合规，迁移工具存在不等于无损迁移。",
+      "replace_claim_id": "ocb002-u02",
+      "defect_text": "Google 数据导入文档列出了 Exchange Online 邮件来源，因此已经证明邮件、权限、日历、格式和第三方集成可以无损迁移，无需源租户盘点或迁移试点。[workspace-migration]"
+    },
+    {
+      "variant_id": "ocb002-cal-unconditional-recommendation",
+      "kind": "unconditional_recommendation",
+      "expected_primary_dimension": "recommendation_quality",
+      "report_anchor": "选择财务/运营重度 Office 用户、销售协作团队和安全管理员三个群组，运行 30–60 天试点。记录复杂文档兼容、共同编辑、会议、外部共享、移动端、管理员策略、审计、服务台工单、培训时间和回退次数。试点前先冻结任务、通过阈值和回退方案；前后使用相同任务和问卷。",
+      "replace_claim_id": "ocb002-r03",
+      "defect_text": "对于报告已条件性偏向 Google Workspace 的浏览器优先团队，建议直接全量迁移，不再进行 30–60 天试点、回退验证或保留现状比较。"
+    },
+    {
+      "variant_id": "ocb002-cal-style-only",
+      "kind": "style_only",
+      "expected_primary_dimension": null,
+      "defect_text": ""
+    }
+  ]
+}

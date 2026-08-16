@@ -1,0 +1,39 @@
+{
+  "schema_version": 1,
+  "case_id": "ocb-002-m365-vs-google-workspace",
+  "sources": [
+    {
+      "source_id": "m365-business-plans",
+      "title": "Microsoft 365 商业版方案比较",
+      "publisher": "Microsoft",
+      "url": "https://www.microsoft.com/en-us/microsoft-365/business/compare-all-microsoft-365-business-products",
+      "authority": "official",
+      "as_of": "2026-07-15"
+    },
+    {
+      "source_id": "m365-security",
+      "title": "Microsoft 365 安全与合规文档",
+      "publisher": "Microsoft",
+      "url": "https://learn.microsoft.com/en-us/microsoft-365/admin/security-and-compliance/",
+      "authority": "official",
+      "as_of": "2026-07-15"
+    },
+    {
+      "source_id": "workspace-pricing",
+      "title": "Google Workspace 定价页",
+      "publisher": "Google",
+      "url": "https://workspace.google.com/pricing.html",
+      "authority": "official",
+      "as_of": "2026-07-15"
+    },
+    {
+      "source_id": "workspace-security",
+      "title": "Google Workspace 安全调查工具说明",
+      "publisher": "Google",
+      "url": "https://support.google.com/a/answer/7587183",
+      "authority": "official",
+      "as_of": "2026-07-15"
+    }
+  ]
+}
+

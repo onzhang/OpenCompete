@@ -1,0 +1,114 @@
+{
+  "schema_version": 3,
+  "case_id": "ocb-006-spotify-vs-apple-music",
+  "dimension_weights": {
+    "comprehensiveness": 0.3,
+    "insight": 0.25,
+    "instruction_following": 0.2,
+    "readability": 0.25
+  },
+  "dimensions": {
+    "comprehensiveness": {
+      "definition": "是否覆盖对象、套餐、价格、用户类型、音频、设备、迁移、锁定和 TCO。",
+      "criteria": [
+        {
+          "criterion_id": "comp-coverage",
+          "description": "覆盖 Spotify 与 Apple Music 的套餐、价格、用户分层、音频、设备、迁移与两年成本。",
+          "weight": 0.55,
+          "critical": true
+        },
+        {
+          "criterion_id": "comp-segments",
+          "description": "区分单人、学生、同住、家庭、Apple 生态与高保真用户。",
+          "weight": 0.45,
+          "critical": false
+        }
+      ]
+    },
+    "insight": {
+      "definition": "是否解释价格、权益、历史资产和播放链路如何共同形成用户价值。",
+      "criteria": [
+        {
+          "criterion_id": "ins-net-value",
+          "description": "解释标准价差如何被捆绑、席位利用和历史资产改变。",
+          "weight": 0.5,
+          "critical": false
+        },
+        {
+          "criterion_id": "ins-mechanism",
+          "description": "解释推荐历史、迁移匹配和音频链路如何改变体验，并给出条件化建议。",
+          "weight": 0.5,
+          "critical": true
+        }
+      ]
+    },
+    "instruction_following": {
+      "definition": "是否遵守地区、日期、用户场景与排除项，并直接回答选择问题。",
+      "criteria": [
+        {
+          "criterion_id": "if-scope",
+          "description": "坚持美国区同日口径，不跨地区比价，不把规格写成听感。",
+          "weight": 0.5,
+          "critical": true
+        },
+        {
+          "criterion_id": "if-decision",
+          "description": "直接回答什么人适合谁，以及何时不迁移。",
+          "weight": 0.5,
+          "critical": false
+        }
+      ]
+    },
+    "readability": {
+      "definition": "是否面向目标用户、结论前置、语言一致、结构清晰、来源可访问。",
+      "criteria": [
+        {
+          "criterion_id": "rd-audience",
+          "description": "普通用户无需理解系统内部结构即可阅读。",
+          "weight": 0.25,
+          "critical": true
+        },
+        {
+          "criterion_id": "rd-structure",
+          "description": "结论前置，表格同口径，术语有用户意义解释。",
+          "weight": 0.35,
+          "critical": false
+        },
+        {
+          "criterion_id": "rd-sources",
+          "description": "关键价格与迁移规则有可点击官方链接，无内部字段泄漏。",
+          "weight": 0.4,
+          "critical": false
+        }
+      ]
+    }
+  },
+  "fact": [
+    {
+      "criterion_id": "fact-spotify-pricing",
+      "description": "Spotify 美国区价格与资格。",
+      "reference_claim_ids": [
+        "ocb006-f01-spotify-individual-student",
+        "ocb006-f02-spotify-duo-family"
+      ],
+      "critical": true
+    },
+    {
+      "criterion_id": "fact-apple-pricing",
+      "description": "Apple Music 美国区价格。",
+      "reference_claim_ids": [
+        "ocb006-f08-apple-pricing"
+      ],
+      "critical": true
+    },
+    {
+      "criterion_id": "fact-audio",
+      "description": "双方音频规格与边界。",
+      "reference_claim_ids": [
+        "ocb006-f04-spotify-audio",
+        "ocb006-f10-apple-lossless-catalog"
+      ],
+      "critical": true
+    }
+  ]
+}

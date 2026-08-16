@@ -1,0 +1,55 @@
+{
+  "schema_version": 3,
+  "case_id": "ocb-006-spotify-vs-apple-music",
+  "claims": [
+    {
+      "claim_id": "ocb006-f01-spotify-individual-student",
+      "claim_type": "fact",
+      "materiality": "critical",
+      "text": "Spotify 美国区页面显示 Individual 标准月费 12.99 美元，Student 标准月费 6.99 美元，二者页面均展示首月 0 美元的促销。",
+      "source_ids": [
+        "spotify-us-premium",
+        "spotify-us-premium"
+      ]
+    },
+    {
+      "claim_id": "ocb006-f02-spotify-duo-family",
+      "claim_type": "fact",
+      "materiality": "critical",
+      "text": "Spotify 美国区页面显示 Duo 月费 18.99 美元、包含 2 个 Premium 账户；Family 月费 21.99 美元、最多 6 个 Premium 账户。",
+      "source_ids": [
+        "spotify-us-premium",
+        "spotify-us-premium"
+      ]
+    },
+    {
+      "claim_id": "ocb006-f04-spotify-audio",
+      "claim_type": "fact",
+      "materiality": "critical",
+      "text": "Spotify 官方音质页列出 Lossless 最高约 24-bit/44.1kHz FLAC。",
+      "source_ids": [
+        "spotify-audio-quality"
+      ]
+    },
+    {
+      "claim_id": "ocb006-f08-apple-pricing",
+      "claim_type": "fact",
+      "materiality": "critical",
+      "text": "Apple Music 美国区页面显示 Individual 月费 10.99 美元、Family 月费 16.99 美元、Student 月费 5.99 美元，三者均展示新订阅者首月免费。",
+      "source_ids": [
+        "apple-music-us",
+        "apple-music-us",
+        "apple-music-us"
+      ]
+    },
+    {
+      "claim_id": "ocb006-f10-apple-lossless-catalog",
+      "claim_type": "fact",
+      "materiality": "critical",
+      "text": "Apple 支持页称 Apple Music 大部分目录使用 ALAC，分辨率从 16-bit/44.1kHz 到 24-bit/192kHz。",
+      "source_ids": [
+        "apple-music-lossless"
+      ]
+    }
+  ]
+}

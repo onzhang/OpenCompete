@@ -1,0 +1,30 @@
+{
+  "schema_version": 2,
+  "case_id": "ocb-006-spotify-vs-apple-music",
+  "title": "美国个人与家庭的 Spotify 与 Apple Music 两年订阅决策",
+  "as_of": "2026-07-17",
+  "reference_mode": "positive",
+  "decision_context": {
+    "audience": "美国个人或家庭音乐订阅用户",
+    "decision": "选择未来两年的主要音乐流媒体服务，并评估迁移是否值得",
+    "horizon": "24 个月",
+    "geography": "United States",
+    "assumptions": ["分别考虑单人、两人同住和家庭场景", "既有播放列表与推荐历史具有迁移成本", "高规格音频只有在播放链路支持时才产生价值", "促销价与标准月费分开"]
+  },
+  "research_request": {
+    "query": "以美国区同日口径比较 Spotify 与 Apple Music 的 24 个月订阅决策。覆盖套餐、内容与音频、推荐与发现、设备生态、家庭规则、播放列表迁移、锁定和总成本。功能存在不等于体验质量，音频规格必须说明设备和连接条件。",
+    "entities": [{"name": "Spotify"}, {"name": "Apple Music"}],
+    "levels": ["product_service"],
+    "dimensions": {"product_service": ["capabilities", "pricing", "user_experience", "technology_integrations", "service_support", "内容与音频能力", "推荐与发现", "定价与套餐", "平台生态", "迁移与锁定", "两年总成本"]},
+    "exclusions": ["跨地区价格比较", "公司财务与投资分析", "把最高音频规格等同于实际听感", "没有用户级测试的推荐质量排名"],
+    "allowed_urls": ["https://www.spotify.com/us/premium/", "https://support.spotify.com/us/article/audio-quality/", "https://support.spotify.com/us/article/spotify-connect/", "https://www.spotify.com/us/import-music/", "https://www.apple.com/apple-music/", "https://support.apple.com/en-us/118295", "https://support.apple.com/en-us/118249"],
+    "discover_candidates": false
+  },
+  "expected_scope": {
+    "entities": [{"name": "Spotify"}, {"name": "Apple Music"}],
+    "levels": ["product_service"],
+    "dimensions": {"product_service": ["capabilities", "pricing", "user_experience", "technology_integrations", "service_support", "内容与音频能力", "推荐与发现", "定价与套餐", "平台生态", "迁移与锁定", "两年总成本"]},
+    "exclusions": ["跨地区价格比较", "公司财务与投资分析", "把最高音频规格等同于实际听感", "没有用户级测试的推荐质量排名"],
+    "confirmed_at": null, "revision": 0, "frozen": false
+  }
+}

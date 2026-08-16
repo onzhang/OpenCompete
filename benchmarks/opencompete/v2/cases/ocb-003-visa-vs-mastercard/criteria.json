@@ -1,0 +1,51 @@
+{
+  "schema_version": 2,
+  "case_id": "ocb-003-visa-vs-mastercard",
+  "dimension_weights": {"decision_relevance": 0.15, "comparison_rigor": 0.25, "causal_synthesis": 0.20, "evidence_grounding": 0.25, "recommendation_quality": 0.15},
+  "dimensions": {
+    "decision_relevance": {
+      "definition": "报告是否服务于北美和欧洲跨境发卡项目的网络、增值服务与风险决策。",
+      "criteria": [
+        {"criterion_id": "ocb003-dr-partner", "description": "围绕主要网络、第二网络、增值服务和 RFP 决策组织分析。", "weight": 0.55, "critical": true, "anchors": {"0": "只有公司概况", "4": "提到合作但无决策结构", "6": "覆盖主要合作问题", "8": "网络、服务、地区和风险均映射到决策", "10": "还能定义淘汰条件和谈判优先级"}},
+        {"criterion_id": "ocb003-dr-region", "description": "区分北美借记、欧洲方案费与跨境产品的监管和经济性。", "weight": 0.45, "critical": false, "anchors": {"0": "用全球结论覆盖所有地区", "4": "零散提到监管", "6": "区分北美和欧洲", "8": "地区、产品和监管场景完整", "10": "还能连接到合同、路由和运营设计"}}
+      ]
+    },
+    "comparison_rigor": {
+      "definition": "是否保留财务和网络指标的期间、定义、排除项与区域边界。",
+      "criteria": [
+        {"criterion_id": "ocb003-cr-metrics", "description": "支付量、GDV、交易、卡片、凭证和受理点不得在不同定义下直接排名。", "weight": 0.60, "critical": true, "anchors": {"0": "直接计算份额或宣布规模胜者", "4": "有口径提示但仍混比", "6": "主要指标保留定义", "8": "所有重大数字均含期间和不可比边界", "10": "还能提供口径字典和允许/禁止的推导"}},
+        {"criterion_id": "ocb003-cr-business-regulation", "description": "公司收入、监管结论、诉讼指控和分析判断必须分层。", "weight": 0.40, "critical": false, "anchors": {"0": "混淆公司主张和监管事实", "4": "偶尔区分来源类型", "6": "大部分结论分层", "8": "所有重大结论均正确标注证据性质", "10": "还说明适用法域、状态和不可外推边界"}}
+      ]
+    },
+    "causal_synthesis": {
+      "definition": "是否解释网络效应、费用、监管和替代轨道如何影响合作策略。",
+      "criteria": [
+        {"criterion_id": "ocb003-cs-network", "description": "建立网络参与、客户激励、方案费、议价和增值服务之间的因果关系。", "weight": 0.55, "critical": false, "anchors": {"0": "只有事实罗列", "4": "泛称网络效应", "6": "解释主要经济机制", "8": "形成网络结构—费用—客户后果链", "10": "还能指出区域差异、反例和验证数据"}},
+        {"criterion_id": "ocb003-cs-rails", "description": "解释实时账户支付、钱包和本地轨道对卡网络策略的影响，但不虚构份额。", "weight": 0.45, "critical": false, "anchors": {"0": "忽略替代轨道或伪造份额", "4": "只列趋势", "6": "解释部分竞争机制", "8": "连接替代轨道、监管和公司战略", "10": "还能形成产品组合与风险对冲建议"}}
+      ]
+    },
+    "evidence_grounding": {
+      "definition": "公司数字是否来自具体披露，市场结论是否来自监管机构，Unknown 是否诚实。",
+      "criteria": [
+        {"criterion_id": "ocb003-eg-filings-regulators", "description": "财务和网络数字引用年报/SEC；费用和监管结论引用监管机构。", "weight": 0.60, "critical": true, "anchors": {"0": "关键事实无来源或来源错位", "4": "依赖公司新闻稿或二手摘要", "6": "多数事实有权威来源", "8": "关键事实均有直接、类型正确的来源", "10": "还保留文件、期间、法域、状态和证据等级"}},
+        {"criterion_id": "ocb003-eg-unknown", "description": "非公开费率、返利、授权、欺诈和 SLA 必须 Unknown，诉讼必须称为指控。", "weight": 0.40, "critical": false, "anchors": {"0": "伪造商业数据或把指控当事实", "4": "免责声明与正文冲突", "6": "主要缺口正确标记", "8": "所有重大未知和法律状态准确", "10": "Unknown 还绑定 RFP、合同或 PoC 的关闭条件"}}
+      ]
+    },
+    "recommendation_quality": {
+      "definition": "建议是否能直接转化为双网络 RFP、尽调、PoC 和淘汰门槛。",
+      "criteria": [
+        {"criterion_id": "ocb003-rq-scenarios", "description": "按北美借记、欧洲跨境和增值服务给出条件化策略，而非统一胜者。", "weight": 0.55, "critical": true, "anchors": {"0": "按公司规模无条件选边", "4": "建议泛化", "6": "覆盖主要地区场景", "8": "场景、监管、经济性和第二网络策略完整", "10": "还能给出组合、升级和退出阈值"}},
+        {"criterion_id": "ocb003-rq-rfp", "description": "提供可审计 RFP、合同尽调和 PoC 指标。", "weight": 0.45, "critical": false, "anchors": {"0": "无下一步", "4": "只建议进一步调研", "6": "列出基本问题", "8": "定义报价、运营、监管、数据和退出检查项", "10": "还能给出同样本验证、淘汰门槛和决策复盘"}}
+      ]
+    }
+  },
+  "fact": [
+    {"criterion_id": "fact-psr-report", "description": "英国 PSR 最终报告的存在和范围必须准确，不得仅凭标题扩张具体结论。", "reference_claim_ids": ["ocb003-f01"], "critical": true},
+    {"criterion_id": "fact-regulation-ii-fees", "description": "美国借记交换费标准和欺诈预防调整必须准确引用。", "reference_claim_ids": ["ocb003-f02", "ocb003-f03"], "critical": true},
+    {"criterion_id": "fact-regulation-ii-routing", "description": "非关联网络数量和商户路由要求必须准确引用，并避免替代法律意见。", "reference_claim_ids": ["ocb003-f04"], "critical": true},
+    {"criterion_id": "fact-doj-allegation", "description": "DOJ 材料必须写为诉讼及政府主张，不得写成最终裁判。", "reference_claim_ids": ["ocb003-f05"], "critical": true},
+    {"criterion_id": "fact-financial-periods", "description": "财务和网络数字必须固定文件并保留各自财年、定义和排除项。", "reference_claim_ids": ["ocb003-u01", "ocb003-u02"], "critical": true},
+    {"criterion_id": "fact-commercial-unknown", "description": "未冻结的公司数字与非公开客户商业数据必须保持 Unknown。", "reference_claim_ids": ["ocb003-u01", "ocb003-u03"], "critical": true},
+    {"criterion_id": "fact-operational-unknown", "description": "客户级授权、欺诈、争议、API 和实施结果必须由同样本 PoC 验证。", "reference_claim_ids": ["ocb003-u04"], "critical": true}
+  ]
+}

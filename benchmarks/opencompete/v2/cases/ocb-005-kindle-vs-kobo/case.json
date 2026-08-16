@@ -1,0 +1,30 @@
+{
+  "schema_version": 2,
+  "case_id": "ocb-005-kindle-vs-kobo",
+  "title": "美国重度读者的 Kindle 与 Kobo 三年生态选择",
+  "as_of": "2026-07-17",
+  "reference_mode": "mixed",
+  "decision_context": {
+    "audience": "美国重度电子书读者",
+    "decision": "购买一台电子阅读器并选择未来三年的主要数字阅读生态",
+    "horizon": "3 年",
+    "geography": "United States",
+    "assumptions": ["每年购买约 30 本书", "经常借阅公共图书馆电子书", "拥有 EPUB/PDF 个人文档", "偶尔阅读漫画", "已有藏书和批注的迁移成本不可忽略"]
+  },
+  "research_request": {
+    "query": "为美国重度读者比较 Kindle 与 Kobo 的三年设备和内容生态选择。必须绑定具体设备型号，区分商店购买、订阅、图书馆借阅、个人文档导入和 DRM；覆盖设备体验、固定书单内容可得性、三年 TCO、迁移与锁定。",
+    "entities": [{"name": "Kindle"}, {"name": "Kobo"}],
+    "levels": ["product_service"],
+    "dimensions": {"product_service": ["capabilities", "pricing", "user_experience", "technology_integrations", "service_support", "设备与阅读体验", "内容生态", "定价与订阅", "格式与开放性", "图书馆借阅", "迁移与锁定", "三年总成本"]},
+    "exclusions": ["未绑定型号的硬件结论", "把 EPUB 上传转换等同于原生开放", "没有固定书单的目录优劣结论", "破解 DRM 的建议"],
+    "allowed_urls": ["https://www.amazon.com/Kindle-Paperwhite-Our-fastest-Kindle/dp/B0CFPHV9ZN", "https://www.amazon.com/sendtokindle", "https://www.amazon.com/gp/help/customer/display.html?nodeId=TCUBEdEkbIhK07ysFu", "https://help.overdrive.com/en-us/0431.html", "https://us.kobobooks.com/products/kobo-clara-bw", "https://help.kobo.com/hc/en-us/articles/360017763713-File-formats-your-Kobo-eReader-and-Kobo-Books-app-support", "https://help.kobo.com/hc/en-us/articles/360017677053-Use-OverDrive-on-your-Kobo-eReader"],
+    "discover_candidates": false
+  },
+  "expected_scope": {
+    "entities": [{"name": "Kindle"}, {"name": "Kobo"}],
+    "levels": ["product_service"],
+    "dimensions": {"product_service": ["capabilities", "pricing", "user_experience", "technology_integrations", "service_support", "设备与阅读体验", "内容生态", "定价与订阅", "格式与开放性", "图书馆借阅", "迁移与锁定", "三年总成本"]},
+    "exclusions": ["未绑定型号的硬件结论", "把 EPUB 上传转换等同于原生开放", "没有固定书单的目录优劣结论", "破解 DRM 的建议"],
+    "confirmed_at": null, "revision": 0, "frozen": false
+  }
+}

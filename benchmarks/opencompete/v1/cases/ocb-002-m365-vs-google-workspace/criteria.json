@@ -1,0 +1,40 @@
+{
+  "case_id": "ocb-002-m365-vs-google-workspace",
+  "race": {
+    "comprehensiveness": [
+      "覆盖 Microsoft 365、Google Workspace 以及任务指定的全部层级和维度。",
+      "明确列出证据不足、不可比信息与截止日期限制。"
+    ],
+    "depth": [
+      "不仅罗列功能或数字，还解释差异的原因、影响与适用边界。",
+      "跨层案例需要说明公司行为与市场结构之间的关系。"
+    ],
+    "instruction_following": [
+      "不增加未获任务授权的核心比较对象、层级或分析维度。",
+      "重要事实有可定位引用，证据不足时使用 Unknown。"
+    ],
+    "readability": [
+      "使用清晰标题、对比结构和一致的对象命名。",
+      "事实、分析判断、限制和建议彼此区分。"
+    ]
+  },
+  "fact": [
+    {
+      "criterion_id": "fact-plans",
+      "description": "版本、席位价格与功能差异应由双方官方方案或定价页支持。",
+      "source_ids": [
+        "m365-business-plans",
+        "workspace-pricing"
+      ]
+    },
+    {
+      "criterion_id": "fact-security",
+      "description": "安全和合规能力结论应引用双方官方管理或安全文档。",
+      "source_ids": [
+        "m365-security",
+        "workspace-security"
+      ]
+    }
+  ]
+}
+

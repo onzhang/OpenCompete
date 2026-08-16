@@ -1,0 +1,93 @@
+{
+  "schema_version": 2,
+  "case_id": "ocb-005-kindle-vs-kobo",
+  "status": "expert_ai_dual_reviewed",
+  "review_kind": "expert_ai_dual_review",
+  "author_agent": {
+    "agent_id": "/root/expert_cases_004_006",
+    "role": "消费硬件与数字内容生态竞品分析领域作者",
+    "model": "codex:expert-agent",
+    "prompt_sha256": "c59b4aee8b37752eb0d9897c455b6e67ea7d1430e25daf38305112dd6417588a"
+  },
+  "reviewer_agent": {
+    "agent_id": "/root/expert_cases_007_008_bench",
+    "role": "独立消费硬件与数字内容生态竞品分析 Reviewer",
+    "model": "codex:expert-agent",
+    "prompt_sha256": "d6351209f99ebf9269df19fe3cad55338097a78c6875f0783b2ab0f3efc8dce2"
+  },
+  "review_rounds": 2,
+  "issues": [
+    {
+      "issue_id": "ocb005-r2-fact-audit",
+      "severity": "critical",
+      "subject_id": "ocb005-f01-kindle-display..ocb005-f12-kobo-library-countries",
+      "decision": "accept",
+      "description": "逐项核对设备、格式和图书馆 FACT 的具体型号、来源、定位、实际 quote 与 UTF-8 quote_sha256。",
+      "resolved": true,
+      "resolution": "13 个直接 quote 哈希全部可复算；商品页、帮助页和 OverDrive 来源未被用于超出正文的价格、体验或迁移结论。"
+    },
+    {
+      "issue_id": "ocb005-r2-support-scope",
+      "severity": "major",
+      "subject_id": "service_support",
+      "decision": "revise",
+      "description": "冻结 Scope 包含服务支持，但作者版本没有覆盖美国保修、退换、故障更换、维修、客服和保障计划。",
+      "resolved": true,
+      "resolution": "新增 ocb005-u05-support、对应 FACT Criterion，并将保障费用与设备停用时间纳入三年 TCO 和暂停换平台条件。"
+    },
+    {
+      "issue_id": "ocb005-r2-format-semantics",
+      "severity": "critical",
+      "subject_id": "ocb005-f03-kindle-send,ocb005-f08-kobo-native-formats",
+      "decision": "accept",
+      "description": "Send to Kindle 接受 EPUB 容易被误写成设备原生开放，也可能与 Kobo 原生格式和 DRM 迁移混淆。",
+      "resolved": true,
+      "resolution": "Reference 明确区分上传、转换、原生读取、DRM、导出和元数据迁移，不把格式支持当作合法跨平台迁移。"
+    },
+    {
+      "issue_id": "ocb005-r2-book-tco",
+      "severity": "critical",
+      "subject_id": "ocb005-u01-book-basket,ocb005-u02-pricing-tco",
+      "decision": "accept",
+      "description": "没有固定版本书单、同日美国价格、订阅覆盖和图书馆可借数据，不能判断内容生态或三年成本胜者。",
+      "resolved": true,
+      "resolution": "Reference 保持书单覆盖和 TCO Unknown，提供 20 本测试书单、版本/ISBN 冻结、四类成本情景和敏感性分析。"
+    },
+    {
+      "issue_id": "ocb005-r2-migration-experience",
+      "severity": "major",
+      "subject_id": "ocb005-u03-migration,ocb005-u04-experience",
+      "decision": "accept",
+      "description": "DRM 内容、批注、进度、书架和真实设备体验均缺少同口径验证。",
+      "resolved": true,
+      "resolution": "迁移与体验保持 Unknown；Reference 定义合法迁移抽样和同档设备统一任务，并明确禁止绕过 DRM。"
+    },
+    {
+      "issue_id": "ocb005-r2-recommendations",
+      "severity": "major",
+      "subject_id": "ocb005-r01-book-test..ocb005-r04-no-switch",
+      "decision": "accept",
+      "description": "生态选择建议必须处理既有藏书、图书馆、格式、迁移损失和大屏任务退出边界。",
+      "resolved": true,
+      "resolution": "Reference 已覆盖保留 Kindle、验证 Kobo、不换平台和退出当前案例四类条件，并提供结论翻转顺序。"
+    },
+    {
+      "issue_id": "ocb005-r2-criteria",
+      "severity": "major",
+      "subject_id": "criteria.json",
+      "decision": "accept",
+      "description": "检查五维权重、Criterion 数量、关键项和 FACT 对关键事实与 Unknown 的覆盖。",
+      "resolved": true,
+      "resolution": "五维权重符合 v2.1；每维 2–3 项、总 13 项、critical 4 项；新增服务支持 Unknown 后冻结 Scope 已完整覆盖。"
+    }
+  ],
+  "unresolved_material_issues": 0,
+  "limitations": [
+    "本 Reference 由两个 AI 专家角色完成作者与独立复核，未经过人类专家审核",
+    "动态商品与帮助页面未保存全页历史快照，FACT 依赖已验证短摘录及其 SHA256",
+    "没有固定美国区设备、附件、订阅和 20 本书单价格",
+    "没有执行目标图书馆书目核验、同档设备体验测试或合法迁移抽样",
+    "保修、退换、维修、更换、客服和保障条款保持 Unknown",
+    "不得以任何绕过 DRM 的方式补齐迁移证据"
+  ]
+}

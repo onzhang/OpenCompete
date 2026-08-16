@@ -1,0 +1,47 @@
+{
+  "schema_version": 1,
+  "case_id": "ocb-007-supercharger-vs-ionity",
+  "sources": [
+    {
+      "source_id": "tesla-supercharger",
+      "title": "Tesla Supercharger 官方页",
+      "publisher": "Tesla",
+      "url": "https://www.tesla.com/supercharger",
+      "authority": "official",
+      "as_of": "2026-07-15"
+    },
+    {
+      "source_id": "tesla-charging-support",
+      "title": "Tesla Supercharger 官方支持",
+      "publisher": "Tesla",
+      "url": "https://www.tesla.com/support/charging/supercharger",
+      "authority": "official",
+      "as_of": "2026-07-15"
+    },
+    {
+      "source_id": "ionity-network",
+      "title": "IONITY 网络官方页",
+      "publisher": "IONITY",
+      "url": "https://www.ionity.eu/network",
+      "authority": "official",
+      "as_of": "2026-07-15"
+    },
+    {
+      "source_id": "ionity-press",
+      "title": "IONITY 官方新闻入口",
+      "publisher": "IONITY",
+      "url": "https://www.ionity.eu/ionity/press-releases",
+      "authority": "official",
+      "as_of": "2026-07-15"
+    },
+    {
+      "source_id": "eu-afir",
+      "title": "欧盟替代燃料基础设施法规",
+      "publisher": "European Union",
+      "url": "https://eur-lex.europa.eu/eli/reg/2023/1804/oj",
+      "authority": "regulator",
+      "as_of": "2026-07-15"
+    }
+  ]
+}
+

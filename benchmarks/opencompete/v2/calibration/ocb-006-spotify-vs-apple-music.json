@@ -1,0 +1,52 @@
+{
+  "schema_version": 2,
+  "case_id": "ocb-006-spotify-vs-apple-music",
+  "variants": [
+    {
+      "variant_id": "ocb006-decision-scope-violation",
+      "kind": "decision_scope_violation",
+      "expected_primary_dimension": "decision_relevance",
+      "report_anchor": "按 2026-07-17 同日美国区标准月费，Apple Music 在 Individual、Student 和 Family 三个可对齐套餐上均具有名义价格优势；Spotify 的合理选择理由主要来自 Duo、DJ/daylist/Jam/Blend 等发现与社交入口、既有推荐历史、设备工作流或附带权益，而不是当前标准月费。",
+      "replace_claim_id": "ocb006-r01-price-choice",
+      "defect_text": "其余决策范围保持不变，但本次选择改以商业公播授权作为主要场景，不再回答美国个人与家庭订阅用户的核心选择问题。"
+    },
+    {
+      "variant_id": "ocb006-comparison-mismatch",
+      "kind": "comparison_mismatch",
+      "expected_primary_dimension": "comparison_rigor",
+      "report_anchor": "在不计税、促销、捆绑和权益价值时，Apple Music 两年比 Spotify 便宜 48 美元（Individual）、24 美元（Student）和 120 美元（Family）。这些差额可能被以下因素翻转：Spotify Student 的附带权益、Spotify 有声书使用价值、Apple One、席位利用率、未来调价和促销资格。",
+      "replace_claim_id": "ocb006-a02-price-difference",
+      "defect_text": "可把 Spotify Student 的附带权益价值与 Apple Music Individual 的标准月费直接相减，并据此判定 Spotify 对普通单人用户更便宜。"
+    },
+    {
+      "variant_id": "ocb006-causal-overclaim",
+      "kind": "causal_overclaim",
+      "expected_primary_dimension": "causal_synthesis",
+      "report_anchor": "Spotify 页面明确列出 DJ、Wrapped、daylist、Jam 和 Blend。[spotify-us-premium] 这证明功能存在，但不能证明推荐更准确。",
+      "replace_claim_id": "ocb006-a04-feature-quality",
+      "defect_text": "Spotify 的设备工作流入口本身就足以证明其推荐更准确，无需排除既有推荐历史、主动训练行为、设备使用方式和用户偏好差异。"
+    },
+    {
+      "variant_id": "ocb006-evidence-overclaim",
+      "kind": "evidence_overclaim",
+      "expected_primary_dimension": "evidence_grounding",
+      "report_anchor": "Apple Music 提供从受支持服务迁移资料库和播放列表的流程，通过 Apple Music 目录匹配内容；未找到精确匹配时，可能提供相似替代版本并要求用户审核。[apple-music-transfer] Apple 还说明该迁移功能在中国大陆、缅甸和俄罗斯不可用。",
+      "replace_claim_id": "ocb006-f13-apple-transfer",
+      "defect_text": "Apple 的固定官方来源已经证明，美国区所有 Spotify 账户都属于受支持来源服务，并可直接把完整资料库和播放列表迁入 Apple Music。"
+    },
+    {
+      "variant_id": "ocb006-unconditional-recommendation",
+      "kind": "unconditional_recommendation",
+      "expected_primary_dimension": "recommendation_quality",
+      "report_anchor": "推荐历史通常不能等价迁移。原服务应保留至少一个账单周期，直到播放列表、收藏和高频设备工作流完成验收。",
+      "replace_claim_id": "ocb006-r02-migration-test",
+      "defect_text": "对于报告已因标准月费而条件性偏向 Apple Music 的场景，建议立即取消 Spotify，不再执行歌单迁移抽样、30 天并行试用或账单周期回退。"
+    },
+    {
+      "variant_id": "ocb006-style-only",
+      "kind": "style_only",
+      "expected_primary_dimension": null,
+      "defect_text": ""
+    }
+  ]
+}

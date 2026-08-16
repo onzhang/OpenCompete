@@ -1,0 +1,39 @@
+{
+  "schema_version": 1,
+  "case_id": "ocb-004-ups-vs-fedex",
+  "sources": [
+    {
+      "source_id": "ups-annual-reports",
+      "title": "UPS 年度报告入口",
+      "publisher": "UPS",
+      "url": "https://investors.ups.com/financials/annual-reports-and-proxy/default.aspx",
+      "authority": "filing",
+      "as_of": "2026-07-15"
+    },
+    {
+      "source_id": "ups-services",
+      "title": "UPS 运输服务入口",
+      "publisher": "UPS",
+      "url": "https://www.ups.com/us/en/support/shipping-support/shipping-services",
+      "authority": "official",
+      "as_of": "2026-07-15"
+    },
+    {
+      "source_id": "fedex-annual-reports",
+      "title": "FedEx 年度报告入口",
+      "publisher": "FedEx",
+      "url": "https://investors.fedex.com/financial-information/annual-reports/default.aspx",
+      "authority": "filing",
+      "as_of": "2026-07-15"
+    },
+    {
+      "source_id": "fedex-services",
+      "title": "FedEx 运输服务入口",
+      "publisher": "FedEx",
+      "url": "https://www.fedex.com/en-us/shipping/services.html",
+      "authority": "official",
+      "as_of": "2026-07-15"
+    }
+  ]
+}
+

@@ -1,0 +1,47 @@
+{
+  "schema_version": 1,
+  "case_id": "ocb-003-visa-vs-mastercard",
+  "title": "Visa 与 Mastercard 通用竞品分析",
+  "as_of": "2026-07-15",
+  "expected_scope": {
+    "entities": [
+      {
+        "name": "Visa"
+      },
+      {
+        "name": "Mastercard"
+      }
+    ],
+    "levels": [
+      "company_organization",
+      "industry_market"
+    ],
+    "dimensions": {
+      "company_organization": [
+        "positioning_strategy",
+        "business_model",
+        "go_to_market",
+        "operations_capabilities",
+        "partnerships_ecosystem",
+        "商业模式",
+        "网络与覆盖",
+        "财务与规模"
+      ],
+      "industry_market": [
+        "market_size_growth",
+        "customer_segments_demand",
+        "competitive_landscape",
+        "regulation_standards",
+        "trends_risks",
+        "市场结构",
+        "监管环境"
+      ]
+    }
+  },
+  "reference_review": {
+    "status": "draft",
+    "reviewed_by": null,
+    "reviewed_at": null,
+    "notes": "未审核；必须由具名人工审核员核验参考内容后才能用于正式评测。"
+  }
+}

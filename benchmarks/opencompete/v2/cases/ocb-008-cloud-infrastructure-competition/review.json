@@ -1,0 +1,38 @@
+{
+  "schema_version": 2,
+  "case_id": "ocb-008-cloud-infrastructure-competition",
+  "status": "expert_ai_dual_reviewed",
+  "review_kind": "expert_ai_dual_review",
+  "author_agent": {
+    "agent_id": "/root/expert_cases_007_008_bench",
+    "role": "云计算战略、竞争政策与竞品分析领域作者",
+    "model": "codex:expert-agent",
+    "prompt_sha256": "c59b4aee8b37752eb0d9897c455b6e67ea7d1430e25daf38305112dd6417588a"
+  },
+  "reviewer_agent": {
+    "agent_id": "/root/expert_cases_004_006",
+    "role": "企业云战略与竞争政策独立 Reviewer",
+    "model": "codex:expert-agent",
+    "prompt_sha256": "d6351209f99ebf9269df19fe3cad55338097a78c6875f0783b2ab0f3efc8dce2"
+  },
+  "review_rounds": 2,
+  "issues": [
+    {"issue_id": "ocb008-v21-financials", "severity": "critical", "subject_id": "ocb008-u01-financials", "decision": "source_missing", "description": "没有固定三家同期申报文件和可比云业务边界。", "resolved": true, "resolution": "财务、增长、利润和资本投入保持 Unknown，并要求固定同期 10-K/10-Q 或 Earnings Release。"},
+    {"issue_id": "ocb008-v21-market", "severity": "major", "subject_id": "ocb008-u02-market-share", "decision": "source_missing", "description": "缺少方法透明、版本冻结且明确市场定义的独立市场份额来源。", "resolved": true, "resolution": "不输出全球份额或排名；补证计划要求先冻结一个市场定义和报告版本。"},
+    {"issue_id": "ocb008-v21-infra-sla", "severity": "major", "subject_id": "ocb008-u03-infrastructure,ocb008-u04-sla", "decision": "unknown", "description": "厂商位置和 SLA 页面在截止日后复核或访问受阻，不能构成截止日同口径排名。", "resolved": true, "resolution": "基础设施和 SLA 保持 Unknown，改用目标国家服务矩阵和同拓扑条款作为 POC 前置证据。"},
+    {"issue_id": "ocb008-v21-price-control-ai", "severity": "major", "subject_id": "ocb008-u05-pricing,ocb008-u06-sovereignty-ai", "decision": "unknown", "description": "缺少固定工作负载价格、企业合同、主权云控制和 AI 容量同口径材料。", "resolved": true, "resolution": "不指定成本、主权云或 AI 胜者；定义书面报价、法务审查和目标 Region POC。"},
+    {"issue_id": "ocb008-v21-cma-boundary", "severity": "major", "subject_id": "ocb008-f03-cma-scope,ocb008-f04-cma-recommendation", "decision": "accept", "description": "监管材料不得扩写为全球市场结论、最终 SMS 指定或违法裁判。", "resolved": true, "resolution": "Reference 仅保留英国调查范围和 SMS 调查建议，并明确其不是最终指定、裁判或全球结论。"},
+    {"issue_id": "ocb008-review-commercial-scope", "severity": "major", "subject_id": "expected_scope.company_organization", "decision": "revise", "description": "作者版本没有明确覆盖商业模式、GTM、支持层级、伙伴生态和既有栈协同的证据缺口。", "resolved": true, "resolution": "已新增商业与合同 Unknown、伙伴生态 Unknown、事实矩阵和 Reference 边界说明，并要求同一 RFP、合同红线、伙伴尽调和替代实施方案。"},
+    {"issue_id": "ocb008-review-cma-topics", "severity": "major", "subject_id": "ocb008-a02-alternatives", "decision": "revise", "description": "Reference 把出口费、许可和承诺消费归因于 CMA，但原 Claim 只有 context 支撑，没有实际 quote/hash。", "resolved": true, "resolution": "已新增 CMA 专题 FACT，分别保存出口费、许可实践和承诺消费协议的实际短摘录及 UTF-8 SHA256，并限定为调查材料主题。"},
+    {"issue_id": "ocb008-review-quotes", "severity": "minor", "subject_id": "reference_claims.json", "decision": "accept", "description": "需要确认全部 direct FACT 的 quote 哈希可复算且可在对应官方页面定位。", "resolved": true, "resolution": "全部 direct quote 的 UTF-8 SHA256 均复算一致，并完成来源正文定位检查。"}
+  ],
+  "unresolved_material_issues": 0,
+  "limitations": [
+    "本案例是 evidence_scarcity_challenge，不是三家云厂商完整事实金标准。",
+    "未经过具名人类行业专家审核。",
+    "三家同期财务、统一市场份额、价格篮子和对等商务材料尚未固定。",
+    "基础设施与 SLA 页面没有截止日同口径快照。",
+    "主权云控制、伙伴实际交付能力和 AI 容量保持 Unknown。",
+    "CMA 材料仅适用于英国调查范围；SMS 内容是进一步调查建议。"
+  ]
+}

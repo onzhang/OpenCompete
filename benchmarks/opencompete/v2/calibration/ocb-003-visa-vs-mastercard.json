@@ -1,0 +1,52 @@
+{
+  "schema_version": 2,
+  "case_id": "ocb-003-visa-vs-mastercard",
+  "variants": [
+    {
+      "variant_id": "ocb003-cal-decision-scope",
+      "kind": "decision_scope_violation",
+      "expected_primary_dimension": "decision_relevance",
+      "report_anchor": "要求费用可解释、变更通知和监管配合条款；不得用全球规模代替欧洲经济性",
+      "replace_claim_id": "ocb003-r03",
+      "defect_text": "其余合作范围保持不变，但本次分析不再覆盖欧洲跨境场景，也不说明该缺口对网络选择的影响。"
+    },
+    {
+      "variant_id": "ocb003-cal-comparison-mismatch",
+      "kind": "comparison_mismatch",
+      "expected_primary_dimension": "comparison_rigor",
+      "report_anchor": "Visa 与 Mastercard 的财年截止日不同，支付量与 GDV、processed 与 switched、凭证与卡片都有不同定义、时点和排除项。成熟报告必须保留原始定义，而不是制作看似精确的统一排名。",
+      "replace_claim_id": "ocb003-a02",
+      "defect_text": "可直接比较 Visa 的支付量与 Mastercard 的 GDV，并以数值较大者认定网络规模领先。"
+    },
+    {
+      "variant_id": "ocb003-cal-causal-overclaim",
+      "kind": "causal_overclaim",
+      "expected_primary_dimension": "causal_synthesis",
+      "report_anchor": "公开年报能证明战略方向和服务类别，不能证明相同客户项目中的欺诈降低、授权提升或实施效率。相关效果在 PoC 前为 Unknown。",
+      "replace_claim_id": "ocb003-a02",
+      "defect_text": "在网络规模更大的前提下，可直接认定其规模效应足以造成更高授权率，无需排除发卡策略、商户结构、路由、风控和地区差异。"
+    },
+    {
+      "variant_id": "ocb003-cal-evidence-overclaim",
+      "kind": "evidence_overclaim",
+      "expected_primary_dimension": "evidence_grounding",
+      "report_anchor": "美国司法部已起诉 Visa，页面标题表达的是政府垄断主张，不是最终裁判。[doj-visa-debit-case]",
+      "replace_claim_id": "ocb003-f05",
+      "defect_text": "尽管法院尚未作出最终裁判，美国司法部的起诉公告本身已经证明 Visa 的被诉行为实际造成了该 FinTech 的授权率下降和未来三年方案费上涨。[doj-visa-debit-case]"
+    },
+    {
+      "variant_id": "ocb003-cal-unconditional-recommendation",
+      "kind": "unconditional_recommendation",
+      "expected_primary_dimension": "recommendation_quality",
+      "report_anchor": "最终主要网络应由目标市场的净费率与返利、受理和授权表现、欺诈与争议处理、数字钱包和代币化、数据与身份服务、实施周期、支持 SLA 及监管约束决定。这些关键商业与运营数据大多不公开，因此当前唯一网络选择为 **Unknown**。",
+      "replace_claim_id": "ocb003-r01",
+      "defect_text": "对于报告已把 Visa 列入主要网络候选的场景，建议直接授予唯一网络资格，不再进行双网络 RFP、同样本 PoC 或退出条款审查。"
+    },
+    {
+      "variant_id": "ocb003-cal-style-only",
+      "kind": "style_only",
+      "expected_primary_dimension": null,
+      "defect_text": ""
+    }
+  ]
+}

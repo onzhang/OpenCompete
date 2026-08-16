@@ -1,0 +1,126 @@
+{
+  "schema_version": 2,
+  "case_id": "ocb-007-supercharger-vs-ionity",
+  "title": "欧洲跨境高功率充电网络决策：Tesla Supercharger 与 IONITY",
+  "as_of": "2026-07-15",
+  "reference_mode": "evidence_scarcity_challenge",
+  "decision_context": {
+    "audience": "欧洲跨境出行用户、车队运营负责人及整车厂充电合作负责人",
+    "decision": "在欧洲指定国家和车型条件下，判断 Tesla Supercharger 与 IONITY 分别适合哪些公共高功率补能场景，并识别在签订订阅、车队政策或合作协议前仍须验证的关键缺口。",
+    "horizon": "未来 12 个月的充电网络选择与使用政策",
+    "geography": [
+      "欧洲",
+      "德国",
+      "法国",
+      "荷兰"
+    ],
+    "assumptions": [
+      "核心任务是欧洲跨境公共高功率充电，不评价家庭充电。",
+      "Tesla 车型与 CCS 非 Tesla 车型必须分开讨论。",
+      "偶发用户、高频跨境用户和车队的价格与体验权重不同。",
+      "动态价格、站点状态和车型开放范围必须按国家、日期及账户条件核验。"
+    ]
+  },
+  "research_request": {
+    "query": "以 2026-07-15 为截止日，从欧洲跨境公共高功率充电决策出发，对 Tesla Supercharger 与 IONITY 进行产品服务和产业市场两层竞品分析。统一国家、车型、站点/充电点、运营状态、价格和功率口径；分别给出 Tesla 车主、非 Tesla 高频跨境用户、偶发用户和车队的条件化建议。证据不足必须写 Unknown。",
+    "entities": [
+      {
+        "name": "Tesla Supercharger"
+      },
+      {
+        "name": "IONITY"
+      }
+    ],
+    "levels": [
+      "product_service",
+      "industry_market"
+    ],
+    "dimensions": {
+      "product_service": [
+        "capabilities",
+        "pricing",
+        "user_experience",
+        "technology_integrations",
+        "service_support",
+        "网络覆盖与走廊可达性",
+        "车型开放与接口兼容",
+        "功率与实际充电边界",
+        "国家价格与订阅盈亏平衡",
+        "找站支付与故障体验"
+      ],
+      "industry_market": [
+        "market_size_growth",
+        "customer_segments_demand",
+        "competitive_landscape",
+        "regulation_standards",
+        "trends_risks",
+        "基础设施扩张与所有权结构",
+        "AFIR 监管与互操作要求",
+        "竞争位置与用户锁定",
+        "跨境补能趋势与风险"
+      ]
+    },
+    "exclusions": [
+      "家庭充电设备",
+      "目的地慢充网络",
+      "未列为核心对象的其他充电运营商排名",
+      "缺少同口径证据的全球网络规模排名"
+    ],
+    "allowed_urls": [
+      "https://www.tesla.com/supercharger",
+      "https://www.tesla.com/support/charging/supercharging-other-evs",
+      "https://www.ionity.eu/network",
+      "https://www.ionity.eu/subscriptions",
+      "https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:32023R1804"
+    ],
+    "discover_candidates": false
+  },
+  "expected_scope": {
+    "entities": [
+      {
+        "name": "Tesla Supercharger"
+      },
+      {
+        "name": "IONITY"
+      }
+    ],
+    "levels": [
+      "product_service",
+      "industry_market"
+    ],
+    "dimensions": {
+      "product_service": [
+        "capabilities",
+        "pricing",
+        "user_experience",
+        "technology_integrations",
+        "service_support",
+        "网络覆盖与走廊可达性",
+        "车型开放与接口兼容",
+        "功率与实际充电边界",
+        "国家价格与订阅盈亏平衡",
+        "找站支付与故障体验"
+      ],
+      "industry_market": [
+        "market_size_growth",
+        "customer_segments_demand",
+        "competitive_landscape",
+        "regulation_standards",
+        "trends_risks",
+        "基础设施扩张与所有权结构",
+        "AFIR 监管与互操作要求",
+        "竞争位置与用户锁定",
+        "跨境补能趋势与风险"
+      ]
+    },
+    "exclusions": [
+      "家庭充电设备",
+      "目的地慢充网络",
+      "未列为核心对象的其他充电运营商排名",
+      "缺少同口径证据的全球网络规模排名"
+    ],
+    "confirmed_at": null,
+    "revision": 0,
+    "frozen": false
+  }
+}

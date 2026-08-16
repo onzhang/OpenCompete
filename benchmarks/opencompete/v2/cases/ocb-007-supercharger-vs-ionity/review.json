@@ -1,0 +1,37 @@
+{
+  "schema_version": 2,
+  "case_id": "ocb-007-supercharger-vs-ionity",
+  "status": "expert_ai_dual_reviewed",
+  "review_kind": "expert_ai_dual_review",
+  "author_agent": {
+    "agent_id": "/root/expert_cases_007_008_bench",
+    "role": "电动车充电基础设施与竞品分析领域作者",
+    "model": "codex:expert-agent",
+    "prompt_sha256": "c59b4aee8b37752eb0d9897c455b6e67ea7d1430e25daf38305112dd6417588a"
+  },
+  "reviewer_agent": {
+    "agent_id": "/root/expert_cases_004_006",
+    "role": "电动车充电网络竞品分析独立 Reviewer",
+    "model": "codex:expert-agent",
+    "prompt_sha256": "d6351209f99ebf9269df19fe3cad55338097a78c6875f0783b2ab0f3efc8dce2"
+  },
+  "review_rounds": 2,
+  "issues": [
+    {"issue_id": "ocb007-v21-tesla-static", "severity": "critical", "subject_id": "ocb007-u01-tesla-footprint,ocb007-u02-tesla-access", "decision": "source_missing", "description": "Tesla 两个固定官方入口均不可访问，缺少欧洲网络、目标车型开放和逐国价格的静态官方材料。", "resolved": true, "resolution": "Reference 将对应字段保留为 Unknown，并把固定地图/IR 材料及 VIN 级验证列为结论翻转前置条件。"},
+    {"issue_id": "ocb007-v21-pricing", "severity": "major", "subject_id": "ocb007-u03-pricing", "decision": "unknown", "description": "缺少德国、法国和荷兰两家的同日价格、订阅、税、漫游和占位费快照。", "resolved": true, "resolution": "不计算订阅盈亏平衡或价格胜者，要求同日冻结三国价格并预先固定使用量情景。"},
+    {"issue_id": "ocb007-v21-performance-reliability", "severity": "major", "subject_id": "ocb007-u04-performance,ocb007-u05-reliability", "decision": "unknown", "description": "缺少同车型充电曲线、启动成功、排队、故障恢复和客服的同口径数据。", "resolved": true, "resolution": "Reference 区分额定功率、数字入口与实际结果，并定义代表路线试点和预先冻结门槛。"},
+    {"issue_id": "ocb007-v21-afir", "severity": "major", "subject_id": "ocb007-u06-afir", "decision": "source_missing", "description": "AFIR 固定入口触发访问挑战，尚未取得可定位正文。", "resolved": true, "resolution": "不推导具体义务或合规状态；要求固定 Official Journal 正文并完成站点适用性矩阵。"},
+    {"issue_id": "ocb007-v21-ionity-dynamic", "severity": "major", "subject_id": "ocb007-f01-ionity-europe,ocb007-f02-ionity-realtime,ocb007-f03-ionity-status", "decision": "accept", "description": "IONITY 页面为动态来源，没有完整截止日页面快照。", "resolved": true, "resolution": "只保留实际读取并计算 quote_sha256 的三项有限 FACT；动态站点与充电点数量不进入 Reference 金标准，且不从单边事实形成相对排名。"},
+    {"issue_id": "ocb007-review-oem-scope", "severity": "major", "subject_id": "decision_context.audience", "decision": "revise", "description": "受众包含整车厂充电合作负责人，但作者版本没有独立覆盖 OEM 合作所需的接口、结算、数据、SLA、覆盖承诺和退出门槛。", "resolved": true, "resolution": "已新增 OEM 合作 Unknown、签约门禁、Reference 场景段落、最小补证步骤和 FACT Criterion，并使用 Scope 内的“竞争位置与用户锁定”维度。"},
+    {"issue_id": "ocb007-review-quotes", "severity": "minor", "subject_id": "ionity-network", "decision": "accept", "description": "需要确认三项 direct FACT 的 quote 哈希可复算且原文仍可在页面正文或元数据中定位。", "resolved": true, "resolution": "三个 UTF-8 quote_sha256 均复算一致；两项 description quote 可在原始 HTML 元数据定位，一项状态标签可在可见正文定位。"}
+  ],
+  "unresolved_material_issues": 0,
+  "limitations": [
+    "本案例是 evidence_scarcity_challenge，不是 Tesla 与 IONITY 完整事实金标准。",
+    "未经过具名人类行业专家审核。",
+    "Tesla 静态网络、非 Tesla 开放、价格和 OEM 合作材料尚未固定。",
+    "IONITY 动态网络数量没有截止日快照，不作为精确 FACT。",
+    "没有同车型、同路线的性能、可靠性和合作 POC 实测。",
+    "AFIR 具体条款和站点适用性保持 Unknown。"
+  ]
+}

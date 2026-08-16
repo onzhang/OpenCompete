@@ -1,0 +1,63 @@
+{
+  "schema_version": 2,
+  "case_id": "ocb-004-ups-vs-fedex",
+  "dimension_weights": {
+    "decision_relevance": 0.15,
+    "comparison_rigor": 0.25,
+    "causal_synthesis": 0.20,
+    "evidence_grounding": 0.25,
+    "recommendation_quality": 0.15
+  },
+  "dimensions": {
+    "decision_relevance": {
+      "definition": "报告是否直接支持该 DTC 企业未来 12 个月的主备承运商决策。",
+      "criteria": [
+        {"criterion_id": "dr-workload", "description": "把比较绑定到 25 万件、住宅 Ground、两日达和跨境三个业务篮子。", "weight": 0.50, "critical": true, "anchors": {"0": "没有决策场景", "4": "提到企业但分析仍是品牌概览", "6": "主要比较与货件结构相关", "8": "全部关键判断按服务篮子展开", "10": "每个篮子都有门槛、验证和主备决策"}},
+        {"criterion_id": "dr-execution", "description": "覆盖报价、试运行、集成、迁移、账单和合同执行。", "weight": 0.50, "critical": false, "anchors": {"0": "没有执行内容", "4": "只建议进一步调研", "6": "包含报价或试运行", "8": "覆盖采购和技术执行", "10": "形成按顺序可执行的签约前流程"}}
+      ]
+    },
+    "comparison_rigor": {
+      "definition": "是否采用同条件、同定义的价格、履约、财务和技术口径。",
+      "criteria": [
+        {"criterion_id": "cr-shipment-basket", "description": "价格和履约使用同日期、路线、重量尺寸、住宅属性、服务等级、折扣和附加费。", "weight": 0.40, "critical": true, "anchors": {"0": "直接比较官网起价", "4": "承认差异但仍排序", "6": "拒绝错误排名并定义部分条件", "8": "三个固定篮子口径完整", "10": "完整 TCO、敏感性和履约口径均一致"}},
+        {"criterion_id": "cr-period-network", "description": "区分 UPS 日历年、FedEx 财年、公司与分部，以及规模与线路表现。", "weight": 0.35, "critical": false, "anchors": {"0": "混用期间或规模即质量", "4": "部分标注但仍错误推断", "6": "主要口径正确", "8": "全部重要数字和推断边界正确", "10": "还给出替代解释和验证方法"}},
+        {"criterion_id": "cr-api-migration", "description": "区分开发者入口、API 功能存在、非功能限制、实施工时和迁移成本。", "weight": 0.25, "critical": false, "anchors": {"0": "入口存在即易集成", "4": "只列 API 名称", "6": "承认实施和迁移差异", "8": "定义对等 POC 与双写", "10": "验收、幂等、回滚和账单闭环完整"}}
+      ]
+    },
+    "causal_synthesis": {
+      "definition": "是否解释规模、服务结构和客户组合如何可能影响采购结果，同时保留替代解释。",
+      "criteria": [
+        {"criterion_id": "cs-scale-mechanism", "description": "解释件量、网络资源与成本、容量和服务之间的可能机制，但不把相关性写成因果。", "weight": 0.55, "critical": false, "anchors": {"0": "规模直接等于更优", "4": "有未经支持的因果", "6": "指出影响但边界有限", "8": "机制、替代解释和 Unknown 清楚", "10": "每个机制都有可验证指标和翻转条件"}},
+        {"criterion_id": "cs-customer-change", "description": "正确处理 UPS 大客户集中度和业务量调整对网络的多种可能影响。", "weight": 0.45, "critical": false, "anchors": {"0": "遗漏或单向推断", "4": "只罗列数字", "6": "指出潜在影响", "8": "同时说明释放容量、密度下降等替代解释", "10": "把替代解释映射到区域试运行和合同风险"}}
+      ]
+    },
+    "evidence_grounding": {
+      "definition": "事实是否有精确可核验引用，Unknown 是否覆盖全部材料性缺口。",
+      "criteria": [
+        {"criterion_id": "eg-direct-quotes", "description": "关键事实使用实际读取的精确短摘录和可复算 UTF-8 SHA256。", "weight": 0.45, "critical": true, "anchors": {"0": "无引用或伪造引用", "4": "有来源但无精确摘录", "6": "多数关键事实有摘录", "8": "全部关键事实有摘录和哈希", "10": "摘录、定位、口径和限制全部可审计"}},
+        {"criterion_id": "eg-source-fit", "description": "财务、服务和技术主张使用对应权威来源，不让来源支持超出其正文。", "weight": 0.30, "critical": false, "anchors": {"0": "来源错配", "4": "多处超范围外推", "6": "主要主张来源匹配", "8": "全部主张与来源用途匹配", "10": "还明确动态页面、厂商自述和分部边界"}},
+        {"criterion_id": "eg-unknown", "description": "TCO、可靠性、API 实施和迁移成本无证据时明确写 Unknown 并给补证方法。", "weight": 0.25, "critical": false, "anchors": {"0": "以常识补齐", "4": "遗漏多个材料性缺口", "6": "核心 Unknown 基本完整", "8": "Unknown 均有指标和验证", "10": "Unknown、结论翻转条件和决策暂停点完全对应"}}
+      ]
+    },
+    "recommendation_quality": {
+      "definition": "建议是否条件化、可执行并兼顾迁移与供应连续性。",
+      "criteria": [
+        {"criterion_id": "rq-conditional", "description": "分别说明何时优先 UPS、优先 FedEx 或按篮子拆分。", "weight": 0.40, "critical": true, "anchors": {"0": "绝对品牌赢家", "4": "条件模糊", "6": "双方有适用场景", "8": "条件对应 TCO、履约和集成门槛", "10": "还包含不适用场景和结论翻转条件"}},
+        {"criterion_id": "rq-resilience", "description": "用中断损失与冗余成本决定是否保留双承运商。", "weight": 0.35, "critical": false, "anchors": {"0": "忽略连续性", "4": "泛泛建议备用", "6": "提出双承运商条件", "8": "比较中断与冗余成本", "10": "按篮子定义主备、切换和回滚机制"}},
+        {"criterion_id": "rq-validation", "description": "签约前验证覆盖同日报价、API POC、试运行、账单核对和回滚。", "weight": 0.25, "critical": false, "anchors": {"0": "无验证", "4": "只建议试用", "6": "至少两类验证", "8": "采购与技术验证完整", "10": "顺序、周期、指标和决策映射完整"}}
+      ]
+    }
+  },
+  "fact": [
+    {"criterion_id": "fact-ups-financials", "description": "UPS 2025 收入、营业利润和利润率必须匹配固定 10-K。", "reference_claim_ids": ["ocb004-f01-ups-financials"], "critical": true},
+    {"criterion_id": "fact-ups-operations", "description": "UPS 件量、客户集中度和业务量调整计划必须匹配固定 10-K，并保留推断边界。", "reference_claim_ids": ["ocb004-f02-ups-volume", "ocb004-f03-ups-amazon-share", "ocb004-f04-ups-volume-plan"], "critical": true},
+    {"criterion_id": "fact-ups-services", "description": "UPS Ground、加速和国际服务描述必须匹配美国官方服务页。", "reference_claim_ids": ["ocb004-f05-ups-ground", "ocb004-f06-ups-accelerated", "ocb004-f07-ups-international"], "critical": true},
+    {"criterion_id": "fact-fedex-financials", "description": "FedEx FY2025 收入、营业利润和利润率必须匹配固定 10-K 并标注财年。", "reference_claim_ids": ["ocb004-f08-fedex-financials"], "critical": true},
+    {"criterion_id": "fact-fedex-network", "description": "FedEx 网络资源必须使用 Federal Express 分部口径，不外推为线路表现。", "reference_claim_ids": ["ocb004-f09-fedex-network"], "critical": true},
+    {"criterion_id": "fact-fedex-services", "description": "FedEx Ground、Home Delivery 和国际服务描述必须匹配美国官方服务页；没有直接摘录时不得补写两日达产品。", "reference_claim_ids": ["ocb004-f10-fedex-domestic", "ocb004-f11-fedex-international", "ocb004-u05-fedex-two-day"], "critical": true},
+    {"criterion_id": "fact-period-boundary", "description": "不得把 UPS 日历年与 FedEx 财年当作完全同期排名。", "reference_claim_ids": ["ocb004-a01-period-boundary"], "critical": true},
+    {"criterion_id": "fact-tco-unknown", "description": "没有同条件正式报价时，情景 TCO 必须保持 Unknown。", "reference_claim_ids": ["ocb004-u01-tco"], "critical": true},
+    {"criterion_id": "fact-reliability-unknown", "description": "没有同条件实际履约数据时，可靠性排名必须保持 Unknown。", "reference_claim_ids": ["ocb004-u02-reliability"], "critical": true},
+    {"criterion_id": "fact-integration-migration-unknown", "description": "没有对等 API POC 和流程盘点时，集成优劣、实施工时和迁移成本必须保持 Unknown。", "reference_claim_ids": ["ocb004-u03-integration", "ocb004-u04-migration"], "critical": true}
+  ]
+}

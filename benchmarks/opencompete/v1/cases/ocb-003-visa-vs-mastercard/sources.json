@@ -1,0 +1,39 @@
+{
+  "schema_version": 1,
+  "case_id": "ocb-003-visa-vs-mastercard",
+  "sources": [
+    {
+      "source_id": "visa-annual-report",
+      "title": "Visa 年度报告入口",
+      "publisher": "Visa",
+      "url": "https://annualreport.visa.com/",
+      "authority": "filing",
+      "as_of": "2026-07-15"
+    },
+    {
+      "source_id": "visa-sec-filings",
+      "title": "Visa SEC 文件入口",
+      "publisher": "Visa",
+      "url": "https://investor.visa.com/financial-information/sec-filings/default.aspx",
+      "authority": "filing",
+      "as_of": "2026-07-15"
+    },
+    {
+      "source_id": "mastercard-annual-reports",
+      "title": "Mastercard 年度报告与代理文件入口",
+      "publisher": "Mastercard",
+      "url": "https://investor.mastercard.com/financials-and-sec-filings/annual-reports-and-proxy-statements/default.aspx",
+      "authority": "filing",
+      "as_of": "2026-07-15"
+    },
+    {
+      "source_id": "federal-reserve-payment-systems",
+      "title": "美国联邦储备支付系统资料",
+      "publisher": "Board of Governors of the Federal Reserve System",
+      "url": "https://www.federalreserve.gov/paymentsystems.htm",
+      "authority": "regulator",
+      "as_of": "2026-07-15"
+    }
+  ]
+}
+

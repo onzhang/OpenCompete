@@ -1,0 +1,52 @@
+{
+  "schema_version": 2,
+  "case_id": "ocb-004-ups-vs-fedex",
+  "variants": [
+    {
+      "variant_id": "ocb004-cal-decision-scope",
+      "kind": "decision_scope_violation",
+      "expected_primary_dimension": "decision_relevance",
+      "report_anchor": "固定美国住宅 Ground、美国住宅两日达、美国至英国跨境三个 shipment basket，取得同日正式报价，完成 4 至 6 周双承运商试运行和 API POC，再分别确定主备关系。",
+      "replace_claim_id": "ocb004-r01-validate-baskets",
+      "defect_text": "其余决策范围保持不变，但主承运商评估不再覆盖美国住宅两日达服务篮子，也不说明该缺口对主备选择的影响。"
+    },
+    {
+      "variant_id": "ocb004-cal-comparison-mismatch",
+      "kind": "comparison_mismatch",
+      "expected_primary_dimension": "comparison_rigor",
+      "report_anchor": "财务口径：UPS 2025 是日历年；FedEx FY2025 截至 2025 年 5 月 31 日，不能当作完全同期排名。",
+      "replace_claim_id": "ocb004-a01-period-boundary",
+      "defect_text": "可将 UPS 2025 日历年利润率与 FedEx FY2025 利润率视为完全同期数据并直接排名。"
+    },
+    {
+      "variant_id": "ocb004-cal-causal-overclaim",
+      "kind": "causal_overclaim",
+      "expected_primary_dimension": "causal_synthesis",
+      "report_anchor": "这可能改变部分网络密度和成本结构，但也可能提高收入质量或释放容量。缺少区域数据时，不能把它直接解释为服务恶化或改善。",
+      "replace_claim_id": "ocb004-a02-scale-not-service",
+      "defect_text": "UPS 削减 Amazon 业务量后，网络密度变化这一机制本身就足以证明目标区域配送可靠性必然恶化，无需排除线路重构、容量配置、货件结构和季节因素。"
+    },
+    {
+      "variant_id": "ocb004-cal-evidence-overclaim",
+      "kind": "evidence_overclaim",
+      "expected_primary_dimension": "evidence_grounding",
+      "report_anchor": "当前固定来源没有同线路、同服务等级、同期间的准时率、首次投递成功率、丢损率和理赔周期，因此可靠性排名为 `Unknown`。官方时效描述是产品定义，不是历史履约率。",
+      "replace_claim_id": "ocb004-u02-reliability",
+      "defect_text": "FedEx 页面称 Home Delivery 面向住宅地址提供每周每日配送，因此已经证明该服务在企业全部目标邮编全年每一天都可投递，无需核验邮编覆盖、节假日安排或正式报价。[fedex-us-services]"
+    },
+    {
+      "variant_id": "ocb004-cal-unconditional-recommendation",
+      "kind": "unconditional_recommendation",
+      "expected_primary_dimension": "recommendation_quality",
+      "report_anchor": "若旺季停运一天即可造成显著收入、SLA 或客户流失损失，或不同服务篮子的最佳承运商不同，应保留双承运商。冗余的代价是双套集成、培训、预测和最低消费管理，必须与中断损失比较。",
+      "replace_claim_id": "ocb004-r04-dual-carrier",
+      "defect_text": "对于报告已条件性把 UPS 设为某服务篮子主承运商的情形，建议立即取消该篮子的第二承运商，不再执行双承运商试运行、API POC 或旺季风险门槛。"
+    },
+    {
+      "variant_id": "ocb004-cal-style-only",
+      "kind": "style_only",
+      "expected_primary_dimension": null,
+      "defect_text": ""
+    }
+  ]
+}

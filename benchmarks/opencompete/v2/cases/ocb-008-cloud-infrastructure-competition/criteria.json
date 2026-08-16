@@ -1,0 +1,124 @@
+{
+  "schema_version": 2,
+  "case_id": "ocb-008-cloud-infrastructure-competition",
+  "dimension_weights": {
+    "decision_relevance": 0.15,
+    "comparison_rigor": 0.25,
+    "causal_synthesis": 0.20,
+    "evidence_grounding": 0.25,
+    "recommendation_quality": 0.15
+  },
+  "dimensions": {
+    "decision_relevance": {
+      "definition": "面向企业主云、第二云和退出策略，而非输出脱离工作负载的厂商排行榜。",
+      "criteria": [
+        {
+          "criterion_id": "ocb008-dec-enterprise-context",
+          "description": "明确企业受众、24 至 36 个月决策、四类场景和短名单目标。",
+          "weight": 0.55,
+          "critical": true,
+          "anchors": {"0": "没有企业决策场景。", "4": "泛谈云厂商优劣。", "6": "主要场景明确但建议仍通用。", "8": "四类企业情景和决策边界完整。", "10": "所有比较均连接采购、架构、风险和退出决策。"}
+        },
+        {
+          "criterion_id": "ocb008-dec-gates",
+          "description": "把短名单、默认云、第二云和退出策略分别绑定到预先冻结的服务、恢复、成本、控制与退出门槛。",
+          "weight": 0.45,
+          "critical": false,
+          "anchors": {"0": "直接宣布综合冠军。", "4": "提到门槛但没有改变决策。", "6": "主要建议带部分通过条件。", "8": "默认云与退出策略均有明确门槛和翻转条件。", "10": "门槛在测试前冻结，并能支持不同场景产生不同默认云。"}
+        }
+      ]
+    },
+    "comparison_rigor": {
+      "definition": "统一财务、市场、基础设施、SLA 和价格口径。",
+      "criteria": [
+        {
+          "criterion_id": "ocb008-cmp-financial-market",
+          "description": "财务按期间和分部边界，市场份额按机构定义、地区和统计期。",
+          "weight": 0.35,
+          "critical": true,
+          "anchors": {"0": "混合不可比财务或市场数据排名。", "4": "列出数据但口径不完整。", "6": "主要边界正确且缺口明确。", "8": "同口径比较可复算。", "10": "还处理汇率、分部调整和多个市场定义敏感性。"}
+        },
+        {
+          "criterion_id": "ocb008-cmp-infrastructure-sla",
+          "description": "映射 Region/Zone/Geography 和故障域，SLA 绑定服务和拓扑。",
+          "weight": 0.35,
+          "critical": false,
+          "anchors": {"0": "直接比较不同基础设施单位或平台 SLA。", "4": "知道概念不同但仍有混用。", "6": "按服务和故障域比较。", "8": "位置、数据驻留、拓扑和 SLA 条款完整。", "10": "加入恢复目标、事故和客户责任敏感性。"}
+        },
+        {
+          "criterion_id": "ocb008-cmp-price-contract",
+          "description": "价格使用固定工作负载，并区分公开价、折扣、许可、出口和承诺消费。",
+          "weight": 0.30,
+          "critical": false,
+          "anchors": {"0": "无配置宣称更便宜。", "4": "只比较公开价。", "6": "工作负载和主要合同条件明确。", "8": "总成本和退出成本可复算。", "10": "包含规模、利用率和合同期敏感性。"}
+        }
+      ]
+    },
+    "causal_synthesis": {
+      "definition": "解释基础设施、生态、合同、监管和 AI 如何塑造竞争位置与客户锁定。",
+      "criteria": [
+        {
+          "criterion_id": "ocb008-cau-capabilities-market",
+          "description": "连接产品和运营能力到客户采用、市场结构和差异化，同时处理替代解释。",
+          "weight": 0.50,
+          "critical": false,
+          "anchors": {"0": "只有产品清单。", "4": "有市场判断但没有因果证据。", "6": "基本连接能力与竞争结果。", "8": "机制、反例和边界清晰。", "10": "能解释不同客户和法域下机制变化。"}
+        },
+        {
+          "criterion_id": "ocb008-cau-lockin-regulation",
+          "description": "解释出口费、许可、承诺消费和托管服务如何影响迁移、议价和监管。",
+          "weight": 0.50,
+          "critical": false,
+          "anchors": {"0": "无证据指控违法或垄断。", "4": "提到锁定但没有机制。", "6": "识别主要合同与技术机制。", "8": "结合监管材料、客户影响和法域边界。", "10": "进一步给出可量化退出测试和竞争反应。"}
+        }
+      ]
+    },
+    "evidence_grounding": {
+      "definition": "区分厂商自述、财务披露、监管结论和 Unknown，处理截止日及来源不对称。",
+      "criteria": [
+        {
+          "criterion_id": "ocb008-evi-source-role",
+          "description": "营销页不证明市场优势，监管结论不越出法域，截止日后页面不冒充历史快照。",
+          "weight": 0.55,
+          "critical": true,
+          "anchors": {"0": "伪造来源作用或时间。", "4": "有引用但越界推断明显。", "6": "主要来源类型和日期处理正确。", "8": "证据角色、冲突和不对称完整。", "10": "所有重要结论均有多层证据和反证审计。"}
+        },
+        {
+          "criterion_id": "ocb008-evi-unknown",
+          "description": "财务、份额、价格、主权云和 AI 容量不足时写 Unknown，并说明所需材料。",
+          "weight": 0.45,
+          "critical": false,
+          "anchors": {"0": "用记忆或常识补齐关键数字。", "4": "有限制但仍输出确定排名。", "6": "关键 Unknown 基本完整。", "8": "Unknown 对短名单和验证计划的影响清晰。", "10": "每个重大缺口都有最小可执行取证方案。"}
+        }
+      ]
+    },
+    "recommendation_quality": {
+      "definition": "为四类企业给出条件化短名单、POC、合同和退出建议。",
+      "criteria": [
+        {
+          "criterion_id": "ocb008-rec-scenarios",
+          "description": "分别覆盖 Microsoft 既有栈、数据 AI、全球基础设施和退出敏感企业。",
+          "weight": 0.55,
+          "critical": true,
+          "anchors": {"0": "输出统一最佳云厂商。", "4": "建议泛化。", "6": "主要场景有条件建议。", "8": "四类场景和不推荐条件完整。", "10": "建议带决策阈值、成本和结论改变触发器。"}
+        },
+        {
+          "criterion_id": "ocb008-rec-poc-exit",
+          "description": "提出代表工作负载 POC、合同审计和退出演练。",
+          "weight": 0.45,
+          "critical": false,
+          "anchors": {"0": "没有验证或退出计划。", "4": "只说做 POC。", "6": "验证指标基本可执行。", "8": "工作负载、SLA、成本、数据控制和退出均覆盖。", "10": "用最小实验关闭关键技术与采购不确定性。"}
+        }
+      ]
+    }
+  },
+  "fact": [
+    {"criterion_id": "ocb008-fact-aws-positioning", "description": "AWS 归属和客户范围只能使用实际 quote 支撑，不得转化为市场领先或客户结果。", "reference_claim_ids": ["ocb008-f01-aws-ownership", "ocb008-f02-aws-segments"], "critical": true},
+    {"criterion_id": "ocb008-fact-cma", "description": "CMA 调查范围、SMS 建议及出口费、许可和承诺消费专题必须使用实际 quote，并限定英国、建议状态和材料范围。", "reference_claim_ids": ["ocb008-f03-cma-scope", "ocb008-f04-cma-recommendation", "ocb008-f05-cma-topics"], "critical": true},
+    {"criterion_id": "ocb008-fact-financial-market", "description": "没有同期申报和固定独立市场定义时，财务、市场份额和排名必须保持 Unknown。", "reference_claim_ids": ["ocb008-u01-financials", "ocb008-u02-market-share"], "critical": true},
+    {"criterion_id": "ocb008-fact-infrastructure-sla", "description": "截止日位置证据和同拓扑条款不足时，基础设施与 SLA 排名必须保持 Unknown。", "reference_claim_ids": ["ocb008-u03-infrastructure", "ocb008-u04-sla"], "critical": true},
+    {"criterion_id": "ocb008-fact-cost-control", "description": "没有固定价格、合同、主权云和容量材料时，总成本与控制结论必须保持 Unknown。", "reference_claim_ids": ["ocb008-u05-pricing", "ocb008-u06-sovereignty-ai"], "critical": true},
+    {"criterion_id": "ocb008-fact-decision", "description": "默认云建议必须经过代表工作负载、合同审计、控制审查和退出门槛。", "reference_claim_ids": ["ocb008-a01-no-winner", "ocb008-a02-alternatives", "ocb008-r01-workload-poc", "ocb008-r02-flip-thresholds"], "critical": true},
+    {"criterion_id": "ocb008-fact-commercial-ecosystem", "description": "没有同一 RFP、书面合同和伙伴尽调时，商业模式、GTM、支持、生态协同与实施可替代性必须保持 Unknown。", "reference_claim_ids": ["ocb008-u07-commercial-model", "ocb008-u08-ecosystem-gtm"], "critical": true}
+  ]
+}

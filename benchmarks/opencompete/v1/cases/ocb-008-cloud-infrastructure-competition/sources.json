@@ -1,0 +1,39 @@
+{
+  "schema_version": 1,
+  "case_id": "ocb-008-cloud-infrastructure-competition",
+  "sources": [
+    {
+      "source_id": "aws-about",
+      "title": "AWS 官方公司与服务入口",
+      "publisher": "Amazon Web Services",
+      "url": "https://aws.amazon.com/about-aws/",
+      "authority": "official",
+      "as_of": "2026-07-15"
+    },
+    {
+      "source_id": "microsoft-annual-reports",
+      "title": "Microsoft 年度报告入口",
+      "publisher": "Microsoft",
+      "url": "https://www.microsoft.com/en-us/annualreports",
+      "authority": "filing",
+      "as_of": "2026-07-15"
+    },
+    {
+      "source_id": "alphabet-investor",
+      "title": "Alphabet 投资者资料入口",
+      "publisher": "Alphabet",
+      "url": "https://abc.xyz/investor/",
+      "authority": "filing",
+      "as_of": "2026-07-15"
+    },
+    {
+      "source_id": "ftc-tech",
+      "title": "美国联邦贸易委员会技术政策与研究入口",
+      "publisher": "Federal Trade Commission",
+      "url": "https://www.ftc.gov/policy/advocacy-research/tech-at-ftc",
+      "authority": "regulator",
+      "as_of": "2026-07-15"
+    }
+  ]
+}
+

@@ -1,0 +1,60 @@
+{
+  "schema_version": 2,
+  "case_id": "ocb-001-aws-lambda-vs-azure-functions",
+  "dimension_weights": {
+    "decision_relevance": 0.15,
+    "comparison_rigor": 0.25,
+    "causal_synthesis": 0.20,
+    "evidence_grounding": 0.25,
+    "recommendation_quality": 0.15
+  },
+  "dimensions": {
+    "decision_relevance": {
+      "definition": "报告是否直接服务默认函数平台、例外负载和 24 个月迁移决策。",
+      "criteria": [
+        {"criterion_id": "ocb001-dr-scenarios", "description": "把突发 HTTP、异步事件、常驻容量和有状态工作流分别映射到可判定约束。", "weight": 0.55, "critical": true, "anchors": {"0": "没有案例决策场景", "4": "提到工作负载但仍以功能清单为主", "6": "覆盖主要场景及部分约束", "8": "四类场景都有明确约束和待验证项", "10": "场景还能直接形成默认、例外和淘汰门槛"}},
+        {"criterion_id": "ocb001-dr-organization", "description": "把既有事件、身份、网络、观测、团队和迁移成本纳入组织适配。", "weight": 0.45, "critical": false, "anchors": {"0": "忽略组织环境", "4": "只泛称云生态", "6": "覆盖两到三个组织依赖", "8": "完整连接控制面与采用成本", "10": "还能给出资产盘点优先级和例外治理方式"}}
+      ]
+    },
+    "comparison_rigor": {
+      "definition": "报告是否保持托管方案、扩缩容指标、区域、负载和成本口径一致。",
+      "criteria": [
+        {"criterion_id": "ocb001-cr-metric-semantics", "description": "区分扩容速率、最大实例、并发、执行环境和请求吞吐，禁止因数字相同直接排序。", "weight": 0.55, "critical": true, "anchors": {"0": "混淆指标并宣布胜者", "4": "承认差异但仍错误横比", "6": "主要指标语义正确", "8": "所有扩缩容结论都保留定义和边界", "10": "还给出可复现实测以连接异构指标"}},
+        {"criterion_id": "ocb001-cr-normalization", "description": "性能和 TCO 比较统一运行时、内存、区域、流量、并发、常驻容量及网络观测成本。", "weight": 0.45, "critical": false, "anchors": {"0": "不同配置直接比较", "4": "只统一少量参数", "6": "核心负载和成本参数基本一致", "8": "全部关键参数归一化或标 Unknown", "10": "还能提供公式、输入和敏感性区间"}}
+      ]
+    },
+    "causal_synthesis": {
+      "definition": "报告是否解释配额、网络、事件、状态和监控差异如何产生业务后果。",
+      "criteria": [
+        {"criterion_id": "ocb001-cs-mechanisms", "description": "建立技术差异—运行机制—延迟、可靠性、成本和运维后果的因果链。", "weight": 0.55, "critical": false, "anchors": {"0": "只有事实罗列", "4": "影响判断缺少机制", "6": "解释主要技术差异的影响", "8": "形成完整机制链并标边界", "10": "还呈现反例、替代解释和验证方式"}},
+        {"criterion_id": "ocb001-cs-lockin", "description": "解释事件、状态、身份、网络、观测和 IaC 如何形成迁移与退出成本。", "weight": 0.45, "critical": false, "anchors": {"0": "把同语言视为可移植", "4": "仅泛称厂商锁定", "6": "识别主要锁定来源", "8": "锁定来源与组织资产逐项对应", "10": "还能形成退出测试、替换顺序和重评条件"}}
+      ]
+    },
+    "evidence_grounding": {
+      "definition": "事实是否有原子化官方证据、精确摘录和哈希，并诚实处理缺证。",
+      "criteria": [
+        {"criterion_id": "ocb001-eg-auditability", "description": "关键 FACT 使用直接官方来源、精确定位、实际短摘录及可复算 SHA256。", "weight": 0.60, "critical": true, "anchors": {"0": "关键事实无来源或摘录伪造", "4": "有来源但定位和摘录不足", "6": "多数关键事实可定位", "8": "关键 FACT 均有原子摘录和有效哈希", "10": "还区分文档、合同、动态页面和来源版本限制"}},
+        {"criterion_id": "ocb001-eg-uncertainty", "description": "价格、性能、开发效率和双边 SLA 缺证时明确 Unknown，并给出关闭条件。", "weight": 0.40, "critical": false, "anchors": {"0": "用常识补写胜负", "4": "免责声明与正文矛盾", "6": "主要缺口标 Unknown", "8": "Unknown 说明证据缺口和适用边界", "10": "每项 Unknown 都绑定数据、责任人和结论翻转条件"}}
+      ]
+    },
+    "recommendation_quality": {
+      "definition": "建议是否条件化、可执行，并能被 PoC、合同或成本证据推翻。",
+      "criteria": [
+        {"criterion_id": "ocb001-rq-gates", "description": "给出优先 Lambda、优先 Azure Functions 和暂不选边的明确条件与淘汰门槛。", "weight": 0.55, "critical": true, "anchors": {"0": "无条件宣布统一胜者", "4": "建议条件含糊", "6": "双方都有适用场景", "8": "默认、例外、不建议和淘汰门槛完整", "10": "还能说明何种新证据会翻转每项建议"}},
+        {"criterion_id": "ocb001-rq-validation", "description": "提供同代码 PoC、成本冻结、SLA 核验和退出测试的执行方案。", "weight": 0.45, "critical": false, "anchors": {"0": "无下一步", "4": "只建议进一步测试", "6": "列出主要测试和补证项", "8": "定义配置、指标、周期与通过条件", "10": "验证结果可直接复算并触发选择、例外或放弃"}}
+      ]
+    }
+  },
+  "fact": [
+    {"criterion_id": "ocb001-fact-aws-runtime", "description": "AWS 内存与 900 秒超时必须匹配配额文档并保留单位。", "reference_claim_ids": ["ocb001-f01", "ocb001-f02"], "critical": true},
+    {"criterion_id": "ocb001-fact-aws-scaling", "description": "AWS 扩容配额与并发定义必须分别陈述，不能当作吞吐结果。", "reference_claim_ids": ["ocb001-f03", "ocb001-f04"], "critical": true},
+    {"criterion_id": "ocb001-fact-aws-network-sla", "description": "AWS VPC 默认可达性与 99.95% SLA 必须使用对应官方资料。", "reference_claim_ids": ["ocb001-f05", "ocb001-f06"], "critical": true},
+    {"criterion_id": "ocb001-fact-azure-events", "description": "Azure 触发器/绑定与 Durable Functions 工作流必须按官方场景陈述。", "reference_claim_ids": ["ocb001-f07", "ocb001-f08"], "critical": true},
+    {"criterion_id": "ocb001-fact-azure-scaling", "description": "Flex Consumption 最多 1,000 个实例必须保留单实例并发和单函数负载上下文。", "reference_claim_ids": ["ocb001-f09"], "critical": true},
+    {"criterion_id": "ocb001-fact-azure-network-monitor", "description": "Azure 虚拟网络访问和 Application Insights 内置集成不得外推为质量胜负。", "reference_claim_ids": ["ocb001-f10", "ocb001-f11"], "critical": true},
+    {"criterion_id": "ocb001-fact-tco-unknown", "description": "没有冻结价格和完整成本输入时必须保持 TCO Unknown。", "reference_claim_ids": ["ocb001-u01"], "critical": true},
+    {"criterion_id": "ocb001-fact-performance-unknown", "description": "没有相同负载实测时必须保持性能和开发效率 Unknown。", "reference_claim_ids": ["ocb001-u02"], "critical": true},
+    {"criterion_id": "ocb001-fact-sla-unknown", "description": "没有 Azure 适用条款时不得进行双边 SLA 排名。", "reference_claim_ids": ["ocb001-u03"], "critical": true},
+    {"criterion_id": "ocb001-fact-support-unknown", "description": "没有书面支持计划、响应、升级和案例结果时不得判断服务支持胜者。", "reference_claim_ids": ["ocb001-u04"], "critical": true}
+  ]
+}

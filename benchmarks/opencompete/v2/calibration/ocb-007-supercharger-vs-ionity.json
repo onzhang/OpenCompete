@@ -1,0 +1,52 @@
+{
+  "schema_version": 2,
+  "case_id": "ocb-007-supercharger-vs-ionity",
+  "variants": [
+    {
+      "variant_id": "ocb007-decision-scope-violation",
+      "kind": "decision_scope_violation",
+      "expected_primary_dimension": "decision_relevance",
+      "report_anchor": "截至 2026-07-15，固定来源不足以指定 Tesla Supercharger 或 IONITY 为德国、法国和荷兰跨境补能的统一赢家。",
+      "replace_claim_id": "ocb007-a01-no-winner",
+      "defect_text": "其余决策范围保持不变，但本次网络选择改以北美城市通勤为主要场景，不再回答德法荷跨境公共高功率补能问题。"
+    },
+    {
+      "variant_id": "ocb007-comparison-mismatch",
+      "kind": "comparison_mismatch",
+      "expected_primary_dimension": "comparison_rigor",
+      "report_anchor": "截至 2026-07-15，固定来源不足以指定 Tesla Supercharger 或 IONITY 为德国、法国和荷兰跨境补能的统一赢家。",
+      "replace_claim_id": "ocb007-a01-no-winner",
+      "defect_text": "可把 IONITY 覆盖欧洲 24 国的厂商口径与 Tesla 未冻结日期、未限定德法荷且使用充电点口径的总数直接比较，并据此判定目标跨境路线的网络规模赢家。"
+    },
+    {
+      "variant_id": "ocb007-causal-overclaim",
+      "kind": "causal_overclaim",
+      "expected_primary_dimension": "causal_synthesis",
+      "report_anchor": "但这条机制只有在位置覆盖目标走廊、状态数据准确、目标车型可用且启动成功时，才会转化为更好的行程结果。当前来源没有这些结果指标。",
+      "replace_claim_id": "ocb007-a02-alternatives",
+      "defect_text": "IONITY 覆盖欧洲 24 国这一事实本身就足以证明德法荷目标路线的排队与启动失败更少，无需排除站点位置、每站密度、车型兼容和时段差异。"
+    },
+    {
+      "variant_id": "ocb007-evidence-overclaim",
+      "kind": "evidence_overclaim",
+      "expected_primary_dimension": "evidence_grounding",
+      "report_anchor": "| 找站与实时状态入口 | Unknown | 页面明确提供 | 只确认功能入口，不评价准确率 |\n| 启动成功、排队、故障恢复、客服 | Unknown | Unknown | 需方法透明数据或试点 |\n| AFIR 具体义务和合规状态 | Unknown | Unknown | 需固定法规正文和适用性审查 |\n\n## 4. 竞争机制与替代解释\n\nIONITY 的跨国覆盖描述、位置状态和实时可用性入口说明其公开服务界面试图把基础设施位置与行程规划连接起来。[ionity-network] 但这条机制只有在位置覆盖目标走廊、状态数据准确、目标车型可用且启动成功时，才会转化为更好的行程结果。当前来源没有这些结果指标。\n\n至少存在五个可能改变表面网络规模结论的替代解释：\n\n1. 站点更多，但偏离目标高速走廊，实际绕行更长。\n2. 充电点总数更多，但每站密度低，高峰排队风险更高。\n3. 额定功率更高，但目标车型充电曲线无法利用峰值。\n4. 按量价格较高，但订阅后对高频用户更低；对偶发用户则相反。\n5. App 提供实时状态，但刷新延迟或启动失败使功能存在未转化为可靠结果。\n\n因此，成熟竞争分析必须用路线、车型和使用频率解释差异，不能把厂商网页可访问性、网络总数或功能入口当作胜负代理。",
+      "replace_claim_id": "ocb007-f02-ionity-realtime",
+      "defect_text": "IONITY 页面提供实时可用性入口，已经证明其状态数据始终准确、刷新无延迟，并能可靠预测目标站点的启动成功与排队结果。"
+    },
+    {
+      "variant_id": "ocb007-unconditional-recommendation",
+      "kind": "unconditional_recommendation",
+      "expected_primary_dimension": "recommendation_quality",
+      "report_anchor": "对年度订阅、多车型车队或整车厂合作，应先补齐逐国价格和车型规则，再用真实车辆完成代表路线试充；任一网络未达到预先冻结的覆盖、兼容、成本与启动成功门槛时，保留双网络策略。",
+      "replace_claim_id": "ocb007-r01-staged-pilot",
+      "defect_text": "对于报告已把 IONITY 列为候选默认网络的场景，建议立即签订长期排他协议，不再执行逐国价格核验、代表路线试充、启动成功门槛或退出测试。"
+    },
+    {
+      "variant_id": "ocb007-style-only",
+      "kind": "style_only",
+      "expected_primary_dimension": null,
+      "defect_text": ""
+    }
+  ]
+}

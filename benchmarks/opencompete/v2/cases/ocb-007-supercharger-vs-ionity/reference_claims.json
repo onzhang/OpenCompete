@@ -1,0 +1,272 @@
+{
+  "schema_version": 2,
+  "case_id": "ocb-007-supercharger-vs-ionity",
+  "claims": [
+    {
+      "claim_id": "ocb007-f01-ionity-europe",
+      "claim_type": "fact",
+      "text": "IONITY 官方网络页将其网络描述为覆盖欧洲 24 个国家。",
+      "entities": ["IONITY"],
+      "level": "product_service",
+      "dimension": "网络覆盖与走廊可达性",
+      "materiality": "critical",
+      "time_scope": "截至 2026-07-15 的页面复核",
+      "geography": ["欧洲"],
+      "metric_definition": "页面声明的国家覆盖范围；不等于每国站点密度或路线可达性",
+      "support": [
+        {
+          "source_id": "ionity-network",
+          "locator": "页面 description 元数据",
+          "support_type": "direct",
+          "quote": "IONITY charging network for electric vehicles in 24 European countries.",
+          "quote_sha256": "2dcaef2772bba03b33bf5d709702e19a01eccb0d265aac1a306a9bf59556d0a4"
+        }
+      ],
+      "uncertainty": "动态网页没有截止日内容快照；该事实不能推出三国目标路线的覆盖质量。",
+      "recommendation_conditions": []
+    },
+    {
+      "claim_id": "ocb007-f02-ionity-realtime",
+      "claim_type": "fact",
+      "text": "IONITY 网络页提供查找快充站并查看实时可用性的数字入口。",
+      "entities": ["IONITY"],
+      "level": "product_service",
+      "dimension": "找站支付与故障体验",
+      "materiality": "major",
+      "time_scope": "截至 2026-07-15 的页面复核",
+      "geography": ["欧洲"],
+      "metric_definition": "是否提供官方站点查找和实时可用性入口",
+      "support": [
+        {
+          "source_id": "ionity-network",
+          "locator": "页面 description 元数据",
+          "support_type": "direct",
+          "quote": "Find fast-charging stations near you and check their availability in real-time.",
+          "quote_sha256": "e507ac72fc24174af706a18d2d9543c12074440ad5de2bea61d37b3646d152de"
+        }
+      ],
+      "uncertainty": "入口存在不证明信息准确率、刷新延迟、启动成功率、排队时间或故障恢复质量。",
+      "recommendation_conditions": []
+    },
+    {
+      "claim_id": "ocb007-f03-ionity-status",
+      "claim_type": "fact",
+      "text": "IONITY 网络页在展示位置时区分已开放与建设中状态。",
+      "entities": ["IONITY"],
+      "level": "product_service",
+      "dimension": "网络覆盖与走廊可达性",
+      "materiality": "major",
+      "time_scope": "截至 2026-07-15 的页面复核",
+      "geography": ["欧洲"],
+      "metric_definition": "运营位置与建设中位置必须分别统计",
+      "support": [
+        {
+          "source_id": "ionity-network",
+          "locator": "网络地图状态标签",
+          "support_type": "direct",
+          "quote": "Locations open being built",
+          "quote_sha256": "1f425f4cfa7d80558e7623debc3b8aab0973ea9d4ebf0f86425e945a8ab91d19"
+        }
+      ],
+      "uncertainty": "本案例不使用没有快照的动态数量；建设中也不等于将在决策期内投入运营。",
+      "recommendation_conditions": []
+    },
+    {
+      "claim_id": "ocb007-u01-tesla-footprint",
+      "claim_type": "unknown",
+      "text": "Tesla Supercharger 在德国、法国和荷兰同日期的运营站点、充电点、每站密度和代表高速走廊覆盖为 Unknown。",
+      "entities": ["Tesla Supercharger"],
+      "level": "product_service",
+      "dimension": "网络覆盖与走廊可达性",
+      "materiality": "critical",
+      "time_scope": "截至 2026-07-15",
+      "geography": ["德国", "法国", "荷兰"],
+      "metric_definition": "运营站点、充电点、每站密度、目标路线绕行距离",
+      "support": [
+        {"source_id": "tesla-supercharger", "locator": "HTTP 403 访问结果", "support_type": "context", "quote": null, "quote_sha256": null}
+      ],
+      "uncertainty": "固定 Tesla 页面不可访问，且没有 Tesla IR 静态材料或充电地图快照。",
+      "recommendation_conditions": ["取得截止日站点导出或可复核静态官方材料"]
+    },
+    {
+      "claim_id": "ocb007-u02-tesla-access",
+      "claim_type": "unknown",
+      "text": "Tesla 对非 Tesla 车型的开放国家、车型、接口、适配器、账户和支付条件为 Unknown。",
+      "entities": ["Tesla Supercharger"],
+      "level": "product_service",
+      "dimension": "车型开放与接口兼容",
+      "materiality": "critical",
+      "time_scope": "截至 2026-07-15",
+      "geography": ["德国", "法国", "荷兰"],
+      "metric_definition": "逐国、逐车型的开放和使用前提",
+      "support": [
+        {"source_id": "tesla-other-ev-support", "locator": "HTTP 403 访问结果", "support_type": "context", "quote": null, "quote_sha256": null}
+      ],
+      "uncertainty": "不能从品牌名称或其他地区规则推导三国目标车型可用性。",
+      "recommendation_conditions": ["使用目标车辆 VIN/车型在官方 App 中验证开放和接口条件"]
+    },
+    {
+      "claim_id": "ocb007-u03-pricing",
+      "claim_type": "unknown",
+      "text": "两家在德国、法国和荷兰的按量、订阅、漫游、占位和税费口径不足，无法计算订阅盈亏平衡或精确成本胜者。",
+      "entities": ["Tesla Supercharger", "IONITY"],
+      "level": "product_service",
+      "dimension": "国家价格与订阅盈亏平衡",
+      "materiality": "critical",
+      "time_scope": "截至 2026-07-15",
+      "geography": ["德国", "法国", "荷兰"],
+      "metric_definition": "逐国币种、税、每千瓦时价格、订阅月费、漫游和占位费",
+      "support": [
+        {"source_id": "tesla-other-ev-support", "locator": "访问受阻，未取得价格", "support_type": "context", "quote": null, "quote_sha256": null},
+        {"source_id": "ionity-subscriptions", "locator": "可访问但无截止日逐国价格快照", "support_type": "context", "quote": null, "quote_sha256": null}
+      ],
+      "uncertainty": "没有固定价格表和账户条件，不能用当前 App 价格回填历史截止日。",
+      "recommendation_conditions": ["冻结同日三国价格和套餐条款", "固定月充电量及国家分布"]
+    },
+    {
+      "claim_id": "ocb007-u04-performance",
+      "claim_type": "unknown",
+      "text": "两家对目标 Tesla 与 CCS 非 Tesla 车型的实际充电时间、充电曲线和冬季性能胜者为 Unknown。",
+      "entities": ["Tesla Supercharger", "IONITY"],
+      "level": "product_service",
+      "dimension": "功率与实际充电边界",
+      "materiality": "major",
+      "time_scope": "目标使用期",
+      "geography": ["德国", "法国", "荷兰"],
+      "metric_definition": "同车型、相同起止 SOC、电池温度和环境条件的实际充电时间",
+      "support": [],
+      "uncertainty": "额定峰值、车辆可接受功率和实际充电曲线不是同一指标。",
+      "recommendation_conditions": ["完成同车型、同 SOC 和温度条件的路线试充"]
+    },
+    {
+      "claim_id": "ocb007-u05-reliability",
+      "claim_type": "unknown",
+      "text": "两家的启动成功率、可用率、排队、故障恢复和客服处理质量没有方法透明的同口径证据。",
+      "entities": ["Tesla Supercharger", "IONITY"],
+      "level": "product_service",
+      "dimension": "找站支付与故障体验",
+      "materiality": "critical",
+      "time_scope": "截至 2026-07-15",
+      "geography": ["德国", "法国", "荷兰"],
+      "metric_definition": "按站点、时段、车型和样本期定义的成功率与恢复时间",
+      "support": [],
+      "uncertainty": "数字入口存在不等于可靠性更高；零散用户评论也不能代表全网。",
+      "recommendation_conditions": ["取得方法透明的独立数据或执行代表路线试点"]
+    },
+    {
+      "claim_id": "ocb007-u06-afir",
+      "claim_type": "unknown",
+      "text": "AFIR 对两家指定站点的即时支付、价格展示、接口和部署要求及实际合规状态为 Unknown。",
+      "entities": ["Tesla Supercharger", "IONITY"],
+      "level": "industry_market",
+      "dimension": "AFIR 监管与互操作要求",
+      "materiality": "critical",
+      "time_scope": "截至 2026-07-15",
+      "geography": ["欧盟"],
+      "metric_definition": "具体法规条款、适用日期、站点范围和运营能力",
+      "support": [
+        {"source_id": "eu-afir", "locator": "CELEX 32023R1804 入口触发访问挑战", "support_type": "context", "quote": null, "quote_sha256": null}
+      ],
+      "uncertainty": "未取得可定位法规正文，不能从法规名称推导具体义务或合规判断。",
+      "recommendation_conditions": ["固定 Official Journal 正文并由法律/合规人员完成站点适用性映射"]
+    },
+    {
+      "claim_id": "ocb007-a01-no-winner",
+      "claim_type": "analysis",
+      "text": "现有固定证据可以确认 IONITY 的部分欧洲网络描述和数字入口，但不能支持两家的覆盖、价格、兼容性、可靠性或综合优劣排名。",
+      "entities": ["Tesla Supercharger", "IONITY"],
+      "level": "industry_market",
+      "dimension": "竞争位置与用户锁定",
+      "materiality": "critical",
+      "time_scope": "截至 2026-07-15",
+      "geography": ["欧洲"],
+      "metric_definition": "只有同地区、同日期、同单位的双边证据才能形成排序",
+      "support": [
+        {"source_id": "ionity-network", "locator": "页面覆盖和实时入口", "support_type": "context", "quote": null, "quote_sha256": null},
+        {"source_id": "tesla-supercharger", "locator": "访问受阻", "support_type": "context", "quote": null, "quote_sha256": null}
+      ],
+      "uncertainty": "证据不对称可能反映网页可访问性，而不是实际产品优劣。",
+      "recommendation_conditions": []
+    },
+    {
+      "claim_id": "ocb007-a02-alternatives",
+      "claim_type": "analysis",
+      "text": "即使某网络站点或充电点更多，也可能因目标走廊位置、每站密度、车型功率曲线、排队和账户价格不同而不产生更优行程结果。",
+      "entities": ["Tesla Supercharger", "IONITY"],
+      "level": "industry_market",
+      "dimension": "竞争位置与用户锁定",
+      "materiality": "major",
+      "time_scope": "未来 12 个月",
+      "geography": ["德国", "法国", "荷兰"],
+      "metric_definition": "行程结果由路线、站点、车辆、价格和可靠性共同决定",
+      "support": [
+        {"source_id": "ionity-network", "locator": "国家覆盖、位置状态和实时入口说明", "support_type": "context", "quote": null, "quote_sha256": null}
+      ],
+      "uncertainty": "没有路线级数据时，上述因素的相对贡献 Unknown。",
+      "recommendation_conditions": ["用代表路线而非全网总数进行最终选择"]
+    },
+    {
+      "claim_id": "ocb007-r01-staged-pilot",
+      "claim_type": "recommendation",
+      "text": "在补齐逐国价格、车型开放和路线覆盖前，不应签订排他性订阅或车队政策；先完成德国—法国—荷兰代表路线试充。",
+      "entities": ["Tesla Supercharger", "IONITY"],
+      "level": "product_service",
+      "dimension": "找站支付与故障体验",
+      "materiality": "critical",
+      "time_scope": "未来 12 个月",
+      "geography": ["德国", "法国", "荷兰"],
+      "metric_definition": "路线级可达、启动成功、实际费用、绕行、排队和客服验证",
+      "support": [
+        {"source_id": "ionity-network", "locator": "可核验的找站与实时入口", "support_type": "context", "quote": null, "quote_sha256": null},
+        {"source_id": "tesla-other-ev-support", "locator": "车型开放与价格未取得", "support_type": "context", "quote": null, "quote_sha256": null}
+      ],
+      "uncertainty": "小样本试点不能替代全网统计，但能验证目标车型和路线的决策适配。",
+      "recommendation_conditions": ["年度订阅、车队政策或合作承诺", "跨境路线依赖公共快充"]
+    },
+    {
+      "claim_id": "ocb007-r02-flip-thresholds",
+      "claim_type": "recommendation",
+      "text": "只有当某网络在目标路线覆盖、目标车型兼容、同口径总成本和启动成功四项中均达到预设门槛，才应成为默认网络；任一关键项失败则保留双网络策略。",
+      "entities": ["Tesla Supercharger", "IONITY"],
+      "level": "product_service",
+      "dimension": "网络覆盖与走廊可达性",
+      "materiality": "critical",
+      "time_scope": "未来 12 个月",
+      "geography": ["德国", "法国", "荷兰"],
+      "metric_definition": "门槛由决策者预先冻结，不由测试结果事后调整",
+      "support": [],
+      "uncertainty": "本 Reference 不替决策者设定业务可接受阈值。",
+      "recommendation_conditions": ["完成价格快照与路线试点", "预先冻结覆盖、成本、成功率和支持门槛"]
+    },
+    {
+      "claim_id": "ocb007-u07-oem-partnership",
+      "claim_type": "unknown",
+      "text": "整车厂与 Tesla Supercharger 或 IONITY 建立充电合作所需的漫游或 Plug & Charge 集成、车辆识别、结算、数据共享、品牌呈现、服务 SLA、区域扩张承诺和退出条款为 Unknown。",
+      "entities": ["Tesla Supercharger", "IONITY"],
+      "level": "industry_market",
+      "dimension": "竞争位置与用户锁定",
+      "materiality": "critical",
+      "time_scope": "未来 12 个月合作决策",
+      "geography": ["德国", "法国", "荷兰"],
+      "metric_definition": "整车厂充电合作的技术、商业、运营和退出合同字段",
+      "support": [],
+      "uncertainty": "现有固定来源没有双方对等的合作接口、商务条款、SLA 或数据治理材料。",
+      "recommendation_conditions": ["取得双方 NDA 材料、接口文档、商务报价和合同草案后再评价"]
+    },
+    {
+      "claim_id": "ocb007-r03-oem-gate",
+      "claim_type": "recommendation",
+      "text": "整车厂在签订充电合作协议前，应分别完成接口与车辆识别 POC、三国覆盖与容量承诺核验、结算对账、数据与隐私评审、服务升级演练及退出迁移测试；任一关键门槛未满足时不得签订排他协议。",
+      "entities": ["Tesla Supercharger", "IONITY"],
+      "level": "industry_market",
+      "dimension": "竞争位置与用户锁定",
+      "materiality": "critical",
+      "time_scope": "签订合作协议前",
+      "geography": ["德国", "法国", "荷兰"],
+      "metric_definition": "OEM 充电合作的签约门禁与可退出性",
+      "support": [],
+      "uncertainty": "具体门槛取决于车型、销售国家、预计充电量和整车厂客户承诺。",
+      "recommendation_conditions": ["涉及整车集成、联合品牌、漫游结算或长期排他承诺"]
+    }
+  ]
+}

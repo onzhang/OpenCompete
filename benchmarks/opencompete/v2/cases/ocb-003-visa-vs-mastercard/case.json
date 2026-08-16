@@ -1,0 +1,76 @@
+{
+  "schema_version": 2,
+  "reference_mode": "mixed",
+  "case_id": "ocb-003-visa-vs-mastercard",
+  "title": "Visa 与 Mastercard：跨境发卡项目网络合作策略",
+  "as_of": "2026-07-17",
+  "decision_context": {
+    "audience": "计划在北美和欧洲推出跨境卡产品的支付 FinTech 战略负责人、支付产品负责人和风险委员会",
+    "decision": "确定主要卡网络、第二网络和增值服务合作策略，并形成双网络 RFP、尽调和 PoC 的淘汰条件",
+    "horizon": "未来三年的发卡、跨境支付和增值服务合作",
+    "geography": "北美与欧洲；全球网络披露只作背景，不替代目标市场合同和监管判断",
+    "assumptions": [
+      "目标企业需要消费者和中小企业卡、跨境交易、数字钱包、欺诈与身份服务",
+      "公开资料不能获得客户实际费率、返利、最低承诺、授权率和争议处理 SLA",
+      "支付量、GDV、处理交易、卡片、凭证和受理点只有在定义与期间一致时才能比较",
+      "监管诉讼中的主张必须标记为指控，不能写成已裁定事实"
+    ]
+  },
+  "research_request": {
+    "query": "以 2026-07-17 为截止日，为在北美和欧洲开展跨境发卡业务的支付 FinTech 比较 Visa 与 Mastercard。覆盖商业模式、网络规模与口径、财务、增值服务、合作生态、网络经济、方案费与议价、监管、替代支付轨道和合作伙伴适配。必须区分公司披露、监管结论、诉讼指控和分析判断；公开资料不足的费率、返利、授权率、欺诈率和合同 SLA 写为 Unknown，并形成双网络 RFP、尽调和 PoC 建议。",
+    "entities": [{"name": "Visa"}, {"name": "Mastercard"}],
+    "levels": ["company_organization", "industry_market"],
+    "dimensions": {
+      "company_organization": [
+        "positioning_strategy", "business_model", "go_to_market", "operations_capabilities", "partnerships_ecosystem",
+        "network_scale_definitions", "financial_scale", "value_added_services", "partner_fit"
+      ],
+      "industry_market": [
+        "market_size_growth", "customer_segments_demand", "competitive_landscape", "regulation_standards", "trends_risks",
+        "network_economics", "scheme_fees_bargaining", "alternative_payment_rails", "regional_regulatory_exposure"
+      ]
+    },
+    "exclusions": [
+      "不增加 American Express、Discover、银联或其他核心比较对象",
+      "不把不同定义的支付量、GDV、交易或卡片指标直接计算为全球份额",
+      "不把公司风险披露或司法诉讼指控写成监管已裁定事实",
+      "不基于公开公司规模直接宣布唯一合作网络",
+      "不提供证券投资建议或未来股价预测"
+    ],
+    "allowed_urls": [
+      "https://annualreport.visa.com/",
+      "https://www.sec.gov/edgar/browse/?CIK=1403161&owner=exclude",
+      "https://investor.mastercard.com/financials-and-sec-filings/annual-reports-and-proxy/default.aspx",
+      "https://www.sec.gov/edgar/browse/?CIK=1141391&owner=exclude",
+      "https://www.psr.org.uk/publications/market-reviews/mr22110-market-review-of-card-scheme-and-processing-fees-final-report/",
+      "https://www.federalreserve.gov/paymentsystems/regii-about.htm",
+      "https://www.justice.gov/archives/opa/pr/justice-department-sues-visa-monopolizing-debit-markets",
+      "https://www.ecb.europa.eu/stats/payment_statistics/html/index.en.html"
+    ],
+    "discover_candidates": false
+  },
+  "expected_scope": {
+    "entities": [{"name": "Visa"}, {"name": "Mastercard"}],
+    "levels": ["company_organization", "industry_market"],
+    "dimensions": {
+      "company_organization": [
+        "positioning_strategy", "business_model", "go_to_market", "operations_capabilities", "partnerships_ecosystem",
+        "network_scale_definitions", "financial_scale", "value_added_services", "partner_fit"
+      ],
+      "industry_market": [
+        "market_size_growth", "customer_segments_demand", "competitive_landscape", "regulation_standards", "trends_risks",
+        "network_economics", "scheme_fees_bargaining", "alternative_payment_rails", "regional_regulatory_exposure"
+      ]
+    },
+    "exclusions": [
+      "不增加 American Express、Discover、银联或其他核心比较对象",
+      "不把不同定义的支付量、GDV、交易或卡片指标直接计算为全球份额",
+      "不把公司风险披露或司法诉讼指控写成监管已裁定事实",
+      "不基于公开公司规模直接宣布唯一合作网络",
+      "不提供证券投资建议或未来股价预测"
+    ],
+    "confirmed_at": null,
+    "revision": 0,
+    "frozen": false
+  }
+}

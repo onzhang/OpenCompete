@@ -1,0 +1,24 @@
+{
+  "schema_version": 2,
+  "case_id": "ocb-004-ups-vs-fedex",
+  "sources": [
+    {
+      "source_id": "ups-2025-10k", "title": "UPS 2025 Form 10-K", "publisher": "United Parcel Service, Inc. / SEC", "url": "https://www.sec.gov/Archives/edgar/data/1090727/000162828026008432/ups-20251231.htm", "authority": "filing", "as_of": "2025-12-31", "published_at": "2026-02-17", "retrieved_at": "2026-07-17", "valid_as_of": "2026-07-17", "geography": "global", "content_type": "text/html", "retrieval_status": "live_verified", "content_sha256": null, "archive_locator": null, "methodology_note": "SEC 固定申报文件。Reference 中的短摘录从实际读取正文归一化空白后保存，并对摘录 UTF-8 原文计算 SHA256。"
+    },
+    {
+      "source_id": "fedex-fy2025-10k", "title": "FedEx FY2025 Form 10-K", "publisher": "FedEx Corporation / SEC", "url": "https://www.sec.gov/Archives/edgar/data/1048911/000104891125000011/fdx-20250531.htm", "authority": "filing", "as_of": "2025-05-31", "published_at": "2025-07-21", "retrieved_at": "2026-07-17", "valid_as_of": "2026-07-17", "geography": "global", "content_type": "text/html", "retrieval_status": "live_verified", "content_sha256": null, "archive_locator": null, "methodology_note": "SEC 固定申报文件；FedEx 财年与 UPS 日历年不同。Reference 中的短摘录从实际读取正文归一化空白后保存，并对摘录 UTF-8 原文计算 SHA256。"
+    },
+    {
+      "source_id": "ups-us-services", "title": "UPS Shipping Services", "publisher": "UPS", "url": "https://www.ups.com/us/en/support/shipping-support/shipping-services", "authority": "official", "as_of": "2026-07-17", "published_at": null, "retrieved_at": "2026-07-17", "valid_as_of": "2026-07-17", "geography": "United States", "content_type": "text/html", "retrieval_status": "live_verified", "content_sha256": null, "archive_locator": null, "methodology_note": "动态服务页；仅支持页面明确列出的服务和概括时效。短摘录已由实际正文验证并计算 UTF-8 SHA256；未保存全页历史快照。"
+    },
+    {
+      "source_id": "fedex-us-services", "title": "FedEx Shipping Services", "publisher": "FedEx", "url": "https://www.fedex.com/en-us/shipping/services.html", "authority": "official", "as_of": "2026-07-17", "published_at": null, "retrieved_at": "2026-07-17", "valid_as_of": "2026-07-17", "geography": "United States", "content_type": "text/html", "retrieval_status": "live_verified", "content_sha256": null, "archive_locator": null, "methodology_note": "动态服务页；仅支持页面明确列出的服务和概括时效。短摘录已由实际正文验证并计算 UTF-8 SHA256；未保存全页历史快照。"
+    },
+    {
+      "source_id": "ups-developer-portal", "title": "UPS Developer Portal", "publisher": "UPS", "url": "https://developer.ups.com/", "authority": "official", "as_of": "2026-07-17", "published_at": null, "retrieved_at": "2026-07-17", "valid_as_of": "2026-07-17", "geography": "global", "content_type": "text/html", "retrieval_status": "live_verified", "content_sha256": null, "archive_locator": null, "methodology_note": "入口可访问，但核心目录由客户端脚本渲染，本轮未取得足以支持 API 覆盖、限制或迁移工时事实的稳定短摘录，因此相关结论保持 Unknown。"
+    },
+    {
+      "source_id": "fedex-developer-catalog", "title": "FedEx Developer API Catalog", "publisher": "FedEx", "url": "https://developer.fedex.com/api/en-us/catalog.html", "authority": "official", "as_of": "2026-07-17", "published_at": null, "retrieved_at": "2026-07-17", "valid_as_of": "2026-07-17", "geography": "United States", "content_type": "text/html", "retrieval_status": "live_verified", "content_sha256": null, "archive_locator": null, "methodology_note": "入口可访问，但本轮未取得足以支持 API 覆盖、限制或迁移工时事实的稳定短摘录，因此相关结论保持 Unknown。"
+    }
+  ]
+}

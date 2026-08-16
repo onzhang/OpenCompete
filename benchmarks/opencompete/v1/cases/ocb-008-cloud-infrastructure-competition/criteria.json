@@ -1,0 +1,48 @@
+{
+  "case_id": "ocb-008-cloud-infrastructure-competition",
+  "race": {
+    "comprehensiveness": [
+      "覆盖 Amazon Web Services、Microsoft Azure、Google Cloud 以及任务指定的全部层级和维度。",
+      "明确列出证据不足、不可比信息与截止日期限制。"
+    ],
+    "depth": [
+      "不仅罗列功能或数字，还解释差异的原因、影响与适用边界。",
+      "跨层案例需要说明公司行为与市场结构之间的关系。"
+    ],
+    "instruction_following": [
+      "不增加未获任务授权的核心比较对象、层级或分析维度。",
+      "重要事实有可定位引用，证据不足时使用 Unknown。"
+    ],
+    "readability": [
+      "使用清晰标题、对比结构和一致的对象命名。",
+      "事实、分析判断、限制和建议彼此区分。"
+    ]
+  },
+  "fact": [
+    {
+      "criterion_id": "fact-financials",
+      "description": "云业务收入、增长率或利润结论必须说明公司披露口径及报告期间。",
+      "source_ids": [
+        "microsoft-annual-reports",
+        "alphabet-investor"
+      ]
+    },
+    {
+      "criterion_id": "fact-ecosystem",
+      "description": "产品生态或服务范围结论应引用厂商官方资料，不以营销表述直接推导市场优势。",
+      "source_ids": [
+        "aws-about",
+        "microsoft-annual-reports",
+        "alphabet-investor"
+      ]
+    },
+    {
+      "criterion_id": "fact-regulation",
+      "description": "竞争政策或监管风险结论应引用监管机构材料并注明适用法域。",
+      "source_ids": [
+        "ftc-tech"
+      ]
+    }
+  ]
+}
+

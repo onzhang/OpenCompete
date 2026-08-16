@@ -1,0 +1,96 @@
+{
+  "schema_version": 2,
+  "case_id": "ocb-001-aws-lambda-vs-azure-functions",
+  "title": "AWS Lambda 与 Azure Functions：事件驱动计算平台选型",
+  "as_of": "2026-07-17",
+  "reference_mode": "positive",
+  "decision_context": {
+    "audience": "中型 SaaS 企业的平台工程负责人和云架构评审委员会",
+    "decision": "为突发型 HTTP API、消息与文件异步处理、延迟敏感型常驻容量和有状态工作流选择默认函数计算平台，并确定需要 PoC 验证的淘汰条件",
+    "horizon": "未来 24 个月的新建工作负载与增量迁移",
+    "geography": "美国东部区域；价格仅允许在同币种、同日期、同工作负载快照下比较",
+    "assumptions": [
+      "组织同时具备 AWS 与 Azure 企业账户，但不会为未经证明的多云可移植性承担双份运维复杂度",
+      "核心语言为 Python、JavaScript/TypeScript 和 C#",
+      "生产工作负载要求公开 HTTP 入口、消息事件、私网资源访问、集中日志和基础追踪",
+      "没有冻结价格快照、企业折扣或实测数据时，成本、冷启动和开发效率胜者必须写为 Unknown"
+    ]
+  },
+  "research_request": {
+    "query": "以 2026-07-17 为截止日，为中型 SaaS 企业比较 AWS Lambda 与 Azure Functions 的工作负载适配、托管与扩缩容模型、运行限制、可靠性与 SLA、网络安全、可观测性治理、同口径成本、生态集成、支持和迁移锁定。必须按突发 API、异步事件、延迟敏感常驻容量、有状态工作流四类场景给出条件化建议；没有冻结价格或同负载实测时输出 Unknown。",
+    "entities": [
+      {"name": "AWS Lambda"},
+      {"name": "Azure Functions"}
+    ],
+    "levels": ["product_service"],
+    "dimensions": {
+      "product_service": [
+        "capabilities",
+        "pricing",
+        "user_experience",
+        "technology_integrations",
+        "service_support",
+        "workload_fit",
+        "runtime_limits_scaling",
+        "reliability_sla",
+        "network_security",
+        "observability_governance",
+        "total_cost_of_ownership",
+        "portability_migration"
+      ]
+    },
+    "exclusions": [
+      "不增加 Google Cloud Functions、Cloudflare Workers 或其他核心比较对象",
+      "不依据未经冻结的动态价格页计算精确 TCO 胜者",
+      "不把厂商宣称的集成数量直接解释为集成质量",
+      "不把产品页便利性描述解释为真实开发效率或冷启动性能"
+    ],
+    "allowed_urls": [
+      "https://aws.amazon.com/lambda/",
+      "https://aws.amazon.com/lambda/pricing/",
+      "https://docs.aws.amazon.com/lambda/latest/dg/gettingstarted-limits.html",
+      "https://docs.aws.amazon.com/lambda/latest/dg/lambda-concurrency.html",
+      "https://aws.amazon.com/lambda/sla/",
+      "https://docs.aws.amazon.com/lambda/latest/dg/configuration-vpc.html",
+      "https://learn.microsoft.com/en-us/azure/azure-functions/functions-overview",
+      "https://azure.microsoft.com/en-us/pricing/details/functions/",
+      "https://learn.microsoft.com/en-us/azure/azure-functions/functions-scale",
+      "https://www.microsoft.com/licensing/docs/view/Service-Level-Agreements-SLA-for-Online-Services?lang=1",
+      "https://learn.microsoft.com/en-us/azure/azure-functions/functions-networking-options",
+      "https://learn.microsoft.com/en-us/azure/azure-functions/functions-monitoring"
+    ],
+    "discover_candidates": false
+  },
+  "expected_scope": {
+    "entities": [
+      {"name": "AWS Lambda"},
+      {"name": "Azure Functions"}
+    ],
+    "levels": ["product_service"],
+    "dimensions": {
+      "product_service": [
+        "capabilities",
+        "pricing",
+        "user_experience",
+        "technology_integrations",
+        "service_support",
+        "workload_fit",
+        "runtime_limits_scaling",
+        "reliability_sla",
+        "network_security",
+        "observability_governance",
+        "total_cost_of_ownership",
+        "portability_migration"
+      ]
+    },
+    "exclusions": [
+      "不增加 Google Cloud Functions、Cloudflare Workers 或其他核心比较对象",
+      "不依据未经冻结的动态价格页计算精确 TCO 胜者",
+      "不把厂商宣称的集成数量直接解释为集成质量",
+      "不把产品页便利性描述解释为真实开发效率或冷启动性能"
+    ],
+    "confirmed_at": null,
+    "revision": 0,
+    "frozen": false
+  }
+}

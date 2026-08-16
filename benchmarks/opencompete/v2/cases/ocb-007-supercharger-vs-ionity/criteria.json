@@ -1,0 +1,123 @@
+{
+  "schema_version": 2,
+  "case_id": "ocb-007-supercharger-vs-ionity",
+  "dimension_weights": {
+    "decision_relevance": 0.15,
+    "comparison_rigor": 0.25,
+    "causal_synthesis": 0.20,
+    "evidence_grounding": 0.25,
+    "recommendation_quality": 0.15
+  },
+  "dimensions": {
+    "decision_relevance": {
+      "definition": "围绕欧洲跨境补能的四类使用场景和整车厂合作决策组织分析，而非泛化介绍充电网络。",
+      "criteria": [
+        {
+          "criterion_id": "ocb007-dec-context",
+          "description": "明确欧洲、三国、车型、四类使用场景和整车厂合作，并区分当前选择、年度订阅与长期合作承诺。",
+          "weight": 0.55,
+          "critical": true,
+          "anchors": {"0": "没有决策问题或地区车型边界。", "4": "提到欧洲和用户，但没有形成不同决策场景。", "6": "主要范围正确，能回答部分用户场景。", "8": "四类用户场景、OEM 合作和长期承诺边界清晰。", "10": "所有用户与合作分析均可追溯到明确决策、假设和结论改变条件。"}
+        },
+        {
+          "criterion_id": "ocb007-dec-thresholds",
+          "description": "将默认网络、双网络和长期订阅分别绑定到预先冻结的覆盖、兼容、成本和启动成功门槛。",
+          "weight": 0.45,
+          "critical": false,
+          "anchors": {"0": "直接宣布统一赢家。", "4": "提到条件但没有改变建议。", "6": "主要建议带部分门槛。", "8": "默认、备用和长期承诺均有明确门槛与翻转条件。", "10": "门槛在测试前冻结，并能处理车型、路线和频率变化。"}
+        }
+      ]
+    },
+    "comparison_rigor": {
+      "definition": "统一国家、日期、车型、网络单位、运营状态、价格和功率口径。",
+      "criteria": [
+        {
+          "criterion_id": "ocb007-cmp-network",
+          "description": "站点、充电点、在建、地区和日期分列，不用单边数据排名。",
+          "weight": 0.40,
+          "critical": true,
+          "anchors": {"0": "混用单位或直接做错误排名。", "4": "列出数字但口径不完整。", "6": "主要口径正确但仍有少量含混。", "8": "网络比较完全同口径，缺口明确。", "10": "进一步处理路线覆盖、每站密度和敏感性。"}
+        },
+        {
+          "criterion_id": "ocb007-cmp-price-performance",
+          "description": "按国家、账户、车型和订阅条件比较价格，并区分额定功率与实际速度。",
+          "weight": 0.35,
+          "critical": false,
+          "anchors": {"0": "无条件宣称更便宜或更快。", "4": "知道存在差异但未统一条件。", "6": "大部分条件明确，部分字段 Unknown。", "8": "价格和性能均采用可复算情景。", "10": "提供敏感性、盈亏平衡和真实车型边界。"}
+        },
+        {
+          "criterion_id": "ocb007-cmp-access-reliability",
+          "description": "车型开放、支付、可靠性和客服只在定义与样本一致时比较。",
+          "weight": 0.25,
+          "critical": false,
+          "anchors": {"0": "以品牌或个案替代兼容与可靠性证据。", "4": "罗列体验功能但没有结果口径。", "6": "区分功能入口与结果指标。", "8": "兼容、支付和可靠性条件完整。", "10": "包含代表路线和时段的稳健验证。"}
+        }
+      ]
+    },
+    "causal_synthesis": {
+      "definition": "解释基础设施、数字入口、车型生态和监管如何影响跨境补能竞争。",
+      "criteria": [
+        {
+          "criterion_id": "ocb007-cau-network-experience",
+          "description": "连接网络部署、路线可达、数字入口和用户结果，同时避免把功能存在当作体验优势。",
+          "weight": 0.55,
+          "critical": false,
+          "anchors": {"0": "只有功能列表。", "4": "有影响判断但缺少边界。", "6": "形成基本因果链。", "8": "因果链同时处理替代解释和数据缺口。", "10": "能说明不同用户条件下机制为何变化。"}
+        },
+        {
+          "criterion_id": "ocb007-cau-regulation",
+          "description": "只在具体条款可用时分析 AFIR 对支付、互操作和部署竞争的影响。",
+          "weight": 0.45,
+          "critical": false,
+          "anchors": {"0": "从法规名称伪造义务或合规结论。", "4": "提到监管但没有适用性。", "6": "承认证据边界并给出有限影响。", "8": "条款、适用对象和竞争影响完整。", "10": "进一步处理实施时间和不同站点状态。"}
+        }
+      ]
+    },
+    "evidence_grounding": {
+      "definition": "正确使用动态官方来源、访问失败和 Unknown，不以常识填补缺口。",
+      "criteria": [
+        {
+          "criterion_id": "ocb007-evi-asymmetry",
+          "description": "承认 Tesla 与 IONITY 证据不对称，重要事实带日期、地区和来源定位。",
+          "weight": 0.60,
+          "critical": true,
+          "anchors": {"0": "伪造或隐藏证据不对称。", "4": "有引用但重要限定缺失。", "6": "主要事实可追溯且 Unknown 合理。", "8": "动态性、访问失败和来源类型均处理。", "10": "还提供反证、来源冲突及解决方法。"}
+        },
+        {
+          "criterion_id": "ocb007-evi-unknown",
+          "description": "价格、兼容、可靠性和法规不足时明确 Unknown，并说明关闭缺口所需证据。",
+          "weight": 0.40,
+          "critical": false,
+          "anchors": {"0": "用无来源结论替代 Unknown。", "4": "写了限制但仍作确定排名。", "6": "重要 Unknown 基本完整。", "8": "Unknown 对结论和下一步的影响清晰。", "10": "对每个重大 Unknown 给出最小验证设计。"}
+        }
+      ]
+    },
+    "recommendation_quality": {
+      "definition": "为四类用户和整车厂合作负责人提供有条件、可执行且可退出的建议。",
+      "criteria": [
+        {
+          "criterion_id": "ocb007-rec-scenarios",
+          "description": "分别覆盖 Tesla 高频、非 Tesla 高频、偶发、多车型车队和整车厂合作。",
+          "weight": 0.55,
+          "critical": true,
+          "anchors": {"0": "输出无条件统一赢家。", "4": "建议泛化且没有用户差异。", "6": "主要用户场景有条件建议。", "8": "四类用户、OEM 合作、风险和不推荐条件完整。", "10": "包含成本阈值、路线条件、合作门禁、退出和结论改变触发器。"}
+        },
+        {
+          "criterion_id": "ocb007-rec-validation",
+          "description": "在证据不足时提出逐国价格核验和真实车型代表路线试点。",
+          "weight": 0.45,
+          "critical": false,
+          "anchors": {"0": "没有下一步或建议直接长期锁定。", "4": "只说继续研究。", "6": "提出可执行核验。", "8": "试点指标、路线和决策门槛明确。", "10": "试点能最小成本关闭全部重大不确定性。"}
+        }
+      ]
+    }
+  },
+  "fact": [
+    {"criterion_id": "ocb007-fact-ionity-page", "description": "IONITY 国家覆盖、实时入口和开放/建设状态只能使用实际 quote 支撑，不得推导路线、可靠性或运营数量优势。", "reference_claim_ids": ["ocb007-f01-ionity-europe", "ocb007-f02-ionity-realtime", "ocb007-f03-ionity-status"], "critical": true},
+    {"criterion_id": "ocb007-fact-tesla-unknown", "description": "Tesla 网络覆盖和非 Tesla 开放在固定入口不可访问时必须保持 Unknown。", "reference_claim_ids": ["ocb007-u01-tesla-footprint", "ocb007-u02-tesla-access"], "critical": true},
+    {"criterion_id": "ocb007-fact-price-performance", "description": "没有逐国快照和同车型测试时，价格、订阅盈亏平衡和实际充电性能必须保持 Unknown。", "reference_claim_ids": ["ocb007-u03-pricing", "ocb007-u04-performance"], "critical": true},
+    {"criterion_id": "ocb007-fact-reliability-regulation", "description": "没有方法透明数据或可定位法规正文时，可靠性和 AFIR 合规不得写成事实。", "reference_claim_ids": ["ocb007-u05-reliability", "ocb007-u06-afir"], "critical": true},
+    {"criterion_id": "ocb007-fact-decision", "description": "默认网络建议必须经过预先冻结的覆盖、兼容、成本和启动成功门槛。", "reference_claim_ids": ["ocb007-a01-no-winner", "ocb007-a02-alternatives", "ocb007-r01-staged-pilot", "ocb007-r02-flip-thresholds"], "critical": true},
+    {"criterion_id": "ocb007-fact-oem-partnership", "description": "缺少对等接口、商务、SLA、数据和退出材料时，整车厂合作能力必须保持 Unknown，排他协议必须经过 POC 和合同门禁。", "reference_claim_ids": ["ocb007-u07-oem-partnership", "ocb007-r03-oem-gate"], "critical": true}
+  ]
+}

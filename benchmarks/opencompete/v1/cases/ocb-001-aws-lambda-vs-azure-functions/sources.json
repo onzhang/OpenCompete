@@ -1,0 +1,39 @@
+{
+  "schema_version": 1,
+  "case_id": "ocb-001-aws-lambda-vs-azure-functions",
+  "sources": [
+    {
+      "source_id": "aws-lambda-product",
+      "title": "AWS Lambda 产品页",
+      "publisher": "Amazon Web Services",
+      "url": "https://aws.amazon.com/lambda/",
+      "authority": "official",
+      "as_of": "2026-07-15"
+    },
+    {
+      "source_id": "aws-lambda-pricing",
+      "title": "AWS Lambda 定价页",
+      "publisher": "Amazon Web Services",
+      "url": "https://aws.amazon.com/lambda/pricing/",
+      "authority": "official",
+      "as_of": "2026-07-15"
+    },
+    {
+      "source_id": "azure-functions-overview",
+      "title": "Azure Functions 官方概览",
+      "publisher": "Microsoft",
+      "url": "https://learn.microsoft.com/en-us/azure/azure-functions/functions-overview",
+      "authority": "official",
+      "as_of": "2026-07-15"
+    },
+    {
+      "source_id": "azure-functions-pricing",
+      "title": "Azure Functions 定价页",
+      "publisher": "Microsoft",
+      "url": "https://azure.microsoft.com/en-us/pricing/details/functions/",
+      "authority": "official",
+      "as_of": "2026-07-15"
+    }
+  ]
+}
+

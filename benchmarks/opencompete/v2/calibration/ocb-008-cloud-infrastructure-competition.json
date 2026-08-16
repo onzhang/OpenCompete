@@ -1,0 +1,52 @@
+{
+  "schema_version": 2,
+  "case_id": "ocb-008-cloud-infrastructure-competition",
+  "variants": [
+    {
+      "variant_id": "ocb008-decision-scope-violation",
+      "kind": "decision_scope_violation",
+      "expected_primary_dimension": "decision_relevance",
+      "report_anchor": "成熟决策应按场景建立三家短名单，使用代表工作负载、书面报价、合同审计和退出演练形成证据。",
+      "replace_claim_id": "ocb008-r01-workload-poc",
+      "defect_text": "其余决策范围保持不变，但企业云短名单改以个人开发者免费额度作为主要场景，不再回答大型企业采购与合规问题。"
+    },
+    {
+      "variant_id": "ocb008-comparison-mismatch",
+      "kind": "comparison_mismatch",
+      "expected_primary_dimension": "comparison_rigor",
+      "report_anchor": "截至 2026-07-15，固定来源不足以指定 AWS、Microsoft Azure 或 Google Cloud 为所有企业场景的统一主云。",
+      "replace_claim_id": "ocb008-a01-no-winner",
+      "defect_text": "可把三家公司不同报告期间、币种与分部边界的收入直接并列，并用金额大小判定全球云业务领先者。"
+    },
+    {
+      "variant_id": "ocb008-causal-overclaim",
+      "kind": "causal_overclaim",
+      "expected_primary_dimension": "causal_synthesis",
+      "report_anchor": "这证明这些主题进入英国调查材料，不等于 CMA 对每种机制、每家厂商或全球市场作出相同结论。这些机制对目标企业的实际影响仍取决于数据量、软件资产、合同期限和使用结构。",
+      "replace_claim_id": "ocb008-a02-alternatives",
+      "defect_text": "出口费、许可实践和承诺消费进入 CMA 调查材料后，这些机制本身就足以证明目标企业无法退出相关平台，无需检验数据量、软件资产、合同期限和使用结构。"
+    },
+    {
+      "variant_id": "ocb008-evidence-overclaim",
+      "kind": "evidence_overclaim",
+      "expected_primary_dimension": "evidence_grounding",
+      "report_anchor": "CMA 案件页面分别列出出口费、许可实践和承诺消费协议等调查附录或工作论文。[uk-cma-cloud-investigation] 这证明这些主题进入英国调查材料，不等于 CMA 对每种机制、每家厂商或全球市场作出相同结论。这些机制对目标企业的实际影响仍取决于数据量、软件资产、合同期限和使用结构。",
+      "replace_claim_id": "ocb008-a02-alternatives",
+      "defect_text": "CMA 案件页面列出出口费、许可实践和承诺消费材料，已经证明 CMA 将这三种机制逐一归因于 AWS、Azure 与 Google Cloud，并认定它们对全球企业客户产生相同锁定效果。"
+    },
+    {
+      "variant_id": "ocb008-unconditional-recommendation",
+      "kind": "unconditional_recommendation",
+      "expected_primary_dimension": "recommendation_quality",
+      "report_anchor": "只有某厂商在目标服务可用性、恢复目标、三年总成本、数据控制和退出测试中同时达到测试前冻结的门槛，才应成为该场景默认云。",
+      "replace_claim_id": "ocb008-r02-flip-thresholds",
+      "defect_text": "对于报告已把 AWS 列入某企业场景短名单的情形，建议直接指定为唯一主云，不再执行代表工作负载 POC、合同审计、控制审查或退出演练。"
+    },
+    {
+      "variant_id": "ocb008-style-only",
+      "kind": "style_only",
+      "expected_primary_dimension": null,
+      "defect_text": ""
+    }
+  ]
+}

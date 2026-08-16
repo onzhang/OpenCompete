@@ -1,0 +1,6 @@
+{
+  "schema_version": 3,
+  "case_id": "ocb-006-spotify-vs-apple-music",
+  "status": "expert_ai_dual_reviewed",
+  "notes": "v3 迁移首案：四维 Criteria 与用户向 prompt 已重建；Reference 自 v2 用户报告改写基线继承并重置审核说明。"
+}

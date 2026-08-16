@@ -1,0 +1,54 @@
+{
+  "schema_version": 2,
+  "case_id": "ocb-002-m365-vs-google-workspace",
+  "dimension_weights": {"decision_relevance": 0.15, "comparison_rigor": 0.25, "causal_synthesis": 0.20, "evidence_grounding": 0.25, "recommendation_quality": 0.15},
+  "dimensions": {
+    "decision_relevance": {
+      "definition": "报告是否服务于 250 人组织的套件、SKU 与迁移决策。",
+      "criteria": [
+        {"criterion_id": "ocb002-dr-personas", "description": "区分 Office 重度、浏览器优先和受监管组织的工作流与控制要求。", "weight": 0.55, "critical": true, "anchors": {"0": "没有组织场景", "4": "泛称不同用户", "6": "覆盖两类主要场景", "8": "三类场景均有需求与取舍", "10": "还能按角色、任务和控制要求形成优先级"}},
+        {"criterion_id": "ocb002-dr-switching", "description": "把现有身份、终端、文件权限、培训、双轨和退出成本纳入决策。", "weight": 0.45, "critical": false, "anchors": {"0": "只看产品功能或席位价", "4": "提到迁移但不展开", "6": "覆盖主要迁移项", "8": "形成三年切换成本框架", "10": "还能量化决策阈值和退出条件"}}
+      ]
+    },
+    "comparison_rigor": {
+      "definition": "是否在等价 SKU、同地区、同合同和一致功能定义下比较。",
+      "criteria": [
+        {"criterion_id": "ocb002-cr-sku", "description": "先映射等价 SKU，再比较桌面、存储、会议、安全和 AI 权益。", "weight": 0.55, "critical": true, "anchors": {"0": "基础版与高级版混比", "4": "列出 SKU 但错配权益", "6": "大部分权益能按层级比较", "8": "所有关键控制与功能均绑定具体 SKU", "10": "还识别附加许可、上限和升级触发条件"}},
+        {"criterion_id": "ocb002-cr-commercial", "description": "价格必须统一地区、币种、合同期限、席位数和附加许可。", "weight": 0.45, "critical": false, "anchors": {"0": "跨地区或跨期限宣布价格胜者", "4": "承认口径但仍混用数字", "6": "主要价格有基本口径", "8": "无快照时全部明确 Unknown", "10": "提供可复算三年模型和敏感性分析"}}
+      ]
+    },
+    "causal_synthesis": {
+      "definition": "是否解释产品组织方式如何影响采用、治理和切换成本。",
+      "criteria": [
+        {"criterion_id": "ocb002-cs-workflow", "description": "连接桌面/浏览器、共同编辑、身份终端与用户工作方式。", "weight": 0.55, "critical": false, "anchors": {"0": "只有应用清单", "4": "偶尔提到体验", "6": "解释主要工作流影响", "8": "形成工作流—采用—运维因果链", "10": "还能指出反例、用户分群和验证指标"}},
+        {"criterion_id": "ocb002-cs-governance", "description": "解释 SKU、身份、设备、数据控制与合规运营之间的关系。", "weight": 0.45, "critical": false, "anchors": {"0": "把品牌等同于合规", "4": "罗列安全功能", "6": "解释部分版本前提", "8": "形成控制—许可—配置—运营链", "10": "还能识别残余风险和组织责任"}}
+      ]
+    },
+    "evidence_grounding": {
+      "definition": "关键权益、价格、SLA 和迁移能力是否由恰当官方资料支撑。",
+      "criteria": [
+        {"criterion_id": "ocb002-eg-entitlements", "description": "版本、用户上限、安全和迁移结论必须引用具体官方说明。", "weight": 0.55, "critical": true, "anchors": {"0": "关键事实无来源或引用失效来源", "4": "主要依赖营销摘要", "6": "多数事实有官方来源", "8": "关键权益均有具体版本来源", "10": "还区分产品页、合同、服务说明和实际验证证据"}},
+        {"criterion_id": "ocb002-eg-unknown", "description": "动态价格、生产率、安全效果和迁移工时无证据时明确 Unknown。", "weight": 0.45, "critical": false, "anchors": {"0": "伪造效果或成本胜负", "4": "有免责声明但正文越界", "6": "主要缺口标记 Unknown", "8": "所有重大缺口均说明原因", "10": "每个 Unknown 都绑定关闭它所需的数据或试点"}}
+      ]
+    },
+    "recommendation_quality": {
+      "definition": "建议是否按场景、SKU 和迁移门槛可执行。",
+      "criteria": [
+        {"criterion_id": "ocb002-rq-conditional", "description": "按三类组织场景给出条件化选择和不建议场景。", "weight": 0.55, "critical": true, "anchors": {"0": "无条件宣布胜者", "4": "建议泛化", "6": "覆盖主要场景", "8": "场景、条件、SKU 和不建议完整", "10": "还能给出升级、保留现状和退出阈值"}},
+        {"criterion_id": "ocb002-rq-pilot", "description": "提供迁移盘点和 30–60 天试点，验证兼容、采用、安全与工单。", "weight": 0.45, "critical": false, "anchors": {"0": "无实施建议", "4": "只说先试用", "6": "列出基本试点内容", "8": "定义用户群、任务、指标和通过条件", "10": "还能覆盖回退、双轨期、培训和决策复盘"}}
+      ]
+    }
+  },
+  "fact": [
+    {"criterion_id": "fact-microsoft-business-scope", "description": "Microsoft Business 方案名称、最多 300 用户边界与 Business Premium 目标规模必须准确引用官方服务说明。", "reference_claim_ids": ["ocb002-f01", "ocb002-f02"], "critical": true},
+    {"criterion_id": "fact-microsoft-security-device", "description": "Microsoft Business Premium 的安全访问和跨平台设备管理能力必须绑定具体 SKU，且不得解释为租户已正确配置。", "reference_claim_ids": ["ocb002-f03", "ocb002-f04"], "critical": false},
+    {"criterion_id": "fact-sku-comparison-method", "description": "双方 SKU 不得按版本名称或价格层级机械配对，必须先按工作流、容量、身份终端和治理控制映射。", "reference_claim_ids": ["ocb002-a01"], "critical": true},
+    {"criterion_id": "fact-capability-outcome-boundary", "description": "不得把功能、安全权益或迁移工具的存在直接解释为生产率、合规或无损迁移结果。", "reference_claim_ids": ["ocb002-a02"], "critical": false},
+    {"criterion_id": "fact-tco-unknown", "description": "没有冻结报价和完整迁移成本时不得宣布三年 TCO 胜者。", "reference_claim_ids": ["ocb002-u01"], "critical": true},
+    {"criterion_id": "fact-productivity-unknown", "description": "没有同任务租户试点时不得宣布生产率或安全效果胜者。", "reference_claim_ids": ["ocb002-u02"], "critical": true},
+    {"criterion_id": "fact-google-business-limit", "description": "Google Business 版本的 1–300 用户边界必须由官方版本资料支撑。", "reference_claim_ids": ["ocb002-f06"], "critical": true},
+    {"criterion_id": "fact-google-entitlements", "description": "Google 存储、Vault 与会议容量必须按版本表准确呈现。", "reference_claim_ids": ["ocb002-f07", "ocb002-f08", "ocb002-f09"], "critical": false},
+    {"criterion_id": "fact-migration-paths", "description": "双方迁移文档只证明所列迁移路径，不得推断无损迁移。", "reference_claim_ids": ["ocb002-f05", "ocb002-f10", "ocb002-f11"], "critical": false},
+    {"criterion_id": "fact-support-unknown", "description": "支持合同和 SLA 未按同一口径冻结时不得宣布胜者。", "reference_claim_ids": ["ocb002-u03"], "critical": false}
+  ]
+}

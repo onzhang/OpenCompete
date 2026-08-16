@@ -1,0 +1,39 @@
+{
+  "schema_version": 1,
+  "case_id": "ocb-006-spotify-vs-apple-music",
+  "sources": [
+    {
+      "source_id": "spotify-premium",
+      "title": "Spotify Premium 官方页",
+      "publisher": "Spotify",
+      "url": "https://www.spotify.com/premium/",
+      "authority": "official",
+      "as_of": "2026-07-15"
+    },
+    {
+      "source_id": "spotify-financials",
+      "title": "Spotify 投资者财务资料入口",
+      "publisher": "Spotify",
+      "url": "https://investors.spotify.com/financials/default.aspx",
+      "authority": "filing",
+      "as_of": "2026-07-15"
+    },
+    {
+      "source_id": "apple-music-product",
+      "title": "Apple Music 官方产品页",
+      "publisher": "Apple",
+      "url": "https://www.apple.com/apple-music/",
+      "authority": "official",
+      "as_of": "2026-07-15"
+    },
+    {
+      "source_id": "apple-music-support",
+      "title": "Apple Music 订阅官方支持页",
+      "publisher": "Apple",
+      "url": "https://support.apple.com/en-us/118295",
+      "authority": "official",
+      "as_of": "2026-07-15"
+    }
+  ]
+}
+

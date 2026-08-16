@@ -1,0 +1,119 @@
+{
+  "schema_version": 2,
+  "case_id": "ocb-008-cloud-infrastructure-competition",
+  "title": "企业云战略决策：AWS、Microsoft Azure 与 Google Cloud 竞争位置",
+  "as_of": "2026-07-15",
+  "reference_mode": "evidence_scarcity_challenge",
+  "decision_context": {
+    "audience": "大型企业云战略、采购、架构、风险与监管合规负责人",
+    "decision": "判断 AWS、Microsoft Azure 与 Google Cloud 在主云、数据与 AI 平台、受监管工作负载和退出敏感场景中的适用条件，并形成进入招标或技术验证阶段的供应商短名单。",
+    "horizon": "未来 24 至 36 个月的主云、第二云和退出策略",
+    "geography": ["全球", "英国", "欧盟"],
+    "assumptions": [
+      "不把三家披露口径不同的财务数字强行合并排名。",
+      "Region、Availability Zone、Zone、Geography 和 Location 按厂商定义分别解释。",
+      "SLA 必须绑定具体服务和部署拓扑，不存在统一平台 SLA。",
+      "公开标价、承诺折扣、企业协议、软件许可和出口成本分别处理。",
+      "第三方市场份额必须固定市场定义、统计期和地区。"
+    ]
+  },
+  "research_request": {
+    "query": "以 2026-07-15 为截止日，为大型企业云战略与采购团队分析 Amazon Web Services、Microsoft Azure 与 Google Cloud 的竞争位置。比较定位、商业模式、基础设施、服务级 SLA、生态、市场结构、迁移锁定、主权云与监管；财务、市场份额和价格必须使用同期间、同定义口径。分别为 Microsoft 既有栈企业、数据与 AI 原生团队、全球基础设施型企业和退出敏感企业给出条件化建议。证据不足写 Unknown。",
+    "entities": [
+      {"name": "Amazon Web Services"},
+      {"name": "Microsoft Azure"},
+      {"name": "Google Cloud"}
+    ],
+    "levels": ["company_organization", "industry_market"],
+    "dimensions": {
+      "company_organization": [
+        "positioning_strategy",
+        "business_model",
+        "go_to_market",
+        "operations_capabilities",
+        "partnerships_ecosystem",
+        "云业务财务披露与边界",
+        "全球基础设施与故障域",
+        "服务级 SLA 与运营能力",
+        "产品生态伙伴与既有栈协同",
+        "价格承诺与商业模式"
+      ],
+      "industry_market": [
+        "market_size_growth",
+        "customer_segments_demand",
+        "competitive_landscape",
+        "regulation_standards",
+        "trends_risks",
+        "市场定义份额与竞争位置",
+        "出口费许可与承诺消费锁定",
+        "主权云数据驻留与控制边界",
+        "AI 基础设施与数据平台竞争",
+        "多云退出与监管风险"
+      ]
+    },
+    "exclusions": [
+      "把其他云厂商增加为核心比较对象",
+      "没有固定配置的笼统价格排名",
+      "把公司级或组合级指标冒充独立云业务指标",
+      "将单个服务 SLA 冒充整个平台可靠性",
+      "未获证据支持的全球监管或主权云合规结论"
+    ],
+    "allowed_urls": [
+      "https://aws.amazon.com/about-aws/",
+      "https://aws.amazon.com/about-aws/global-infrastructure/",
+      "https://aws.amazon.com/compute/sla/",
+      "https://www.microsoft.com/en-us/annualreports",
+      "https://azure.microsoft.com/en-us/explore/global-infrastructure/geographies/",
+      "https://azure.microsoft.com/en-us/support/legal/sla/",
+      "https://abc.xyz/investor/",
+      "https://cloud.google.com/about/locations",
+      "https://cloud.google.com/terms/sla",
+      "https://www.gov.uk/cma-cases/cloud-services-market-investigation"
+    ],
+    "discover_candidates": false
+  },
+  "expected_scope": {
+    "entities": [
+      {"name": "Amazon Web Services"},
+      {"name": "Microsoft Azure"},
+      {"name": "Google Cloud"}
+    ],
+    "levels": ["company_organization", "industry_market"],
+    "dimensions": {
+      "company_organization": [
+        "positioning_strategy",
+        "business_model",
+        "go_to_market",
+        "operations_capabilities",
+        "partnerships_ecosystem",
+        "云业务财务披露与边界",
+        "全球基础设施与故障域",
+        "服务级 SLA 与运营能力",
+        "产品生态伙伴与既有栈协同",
+        "价格承诺与商业模式"
+      ],
+      "industry_market": [
+        "market_size_growth",
+        "customer_segments_demand",
+        "competitive_landscape",
+        "regulation_standards",
+        "trends_risks",
+        "市场定义份额与竞争位置",
+        "出口费许可与承诺消费锁定",
+        "主权云数据驻留与控制边界",
+        "AI 基础设施与数据平台竞争",
+        "多云退出与监管风险"
+      ]
+    },
+    "exclusions": [
+      "把其他云厂商增加为核心比较对象",
+      "没有固定配置的笼统价格排名",
+      "把公司级或组合级指标冒充独立云业务指标",
+      "将单个服务 SLA 冒充整个平台可靠性",
+      "未获证据支持的全球监管或主权云合规结论"
+    ],
+    "confirmed_at": null,
+    "revision": 0,
+    "frozen": false
+  }
+}

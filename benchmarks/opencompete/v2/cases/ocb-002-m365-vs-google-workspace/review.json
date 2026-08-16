@@ -1,0 +1,83 @@
+{
+  "schema_version": 2,
+  "case_id": "ocb-002-m365-vs-google-workspace",
+  "status": "expert_ai_dual_reviewed",
+  "review_kind": "expert_ai_dual_review",
+  "author_agent": {
+    "agent_id": "/root/expert_cases_001_003",
+    "role": "企业协作套件竞品分析 Reference 作者",
+    "model": "codex:expert-agent",
+    "prompt_sha256": "c59b4aee8b37752eb0d9897c455b6e67ea7d1430e25daf38305112dd6417588a"
+  },
+  "reviewer_agent": {
+    "agent_id": "/root/expert_cases_007_008_bench",
+    "role": "独立企业协作套件竞品分析 Reviewer",
+    "model": "codex:expert-agent",
+    "prompt_sha256": "d6351209f99ebf9269df19fe3cad55338097a78c6875f0783b2ab0f3efc8dce2"
+  },
+  "review_rounds": 2,
+  "issues": [
+    {
+      "issue_id": "ocb002-r2-fact-audit",
+      "severity": "critical",
+      "subject_id": "ocb002-f01..ocb002-f11",
+      "decision": "accept",
+      "description": "逐项核对 11 条事实 Claim 的来源角色、定位、实际摘录和 UTF-8 quote_sha256，并检查正文是否超出证据边界。",
+      "resolved": true,
+      "resolution": "全部直接摘录哈希可复算；用户边界、设备管理、Vault、会议容量和迁移入口的措辞均未超出官方摘录，动态价格未被用于精确 TCO。"
+    },
+    {
+      "issue_id": "ocb002-r2-fact-criteria-mapping",
+      "severity": "critical",
+      "subject_id": "criteria.json#fact",
+      "decision": "revise",
+      "description": "作者版前四条 FACT Criterion 的描述与 reference_claim_ids 错配，会让 SKU、设备和迁移边界审查落到错误 Claim。",
+      "resolved": true,
+      "resolution": "重新映射 Microsoft 商业版范围、安全与设备能力，并把关键 SKU 比较方法和能力—结果边界纳入 FACT Criterion；其余 Google 权益、迁移路径及三类 Unknown 保持独立覆盖。"
+    },
+    {
+      "issue_id": "ocb002-r2-comparison-rigor",
+      "severity": "major",
+      "subject_id": "ocb002-a01,reference.md#SKU 与控制项映射",
+      "decision": "accept",
+      "description": "检查是否把 Starter、Basic、Plus、Premium 等版本名称或名义存储数字机械等价。",
+      "resolved": true,
+      "resolution": "Reference 明确要求先定义工作流和治理控制，再选择最低满足条件的 SKU；池化与非池化存储、会议容量和安全权益均保留口径边界。"
+    },
+    {
+      "issue_id": "ocb002-r2-unknowns",
+      "severity": "critical",
+      "subject_id": "ocb002-u01,ocb002-u02,ocb002-u03",
+      "decision": "accept",
+      "description": "三年 TCO、生产率与安全运营效果、支持质量和合同 SLA 缺少同口径冻结证据。",
+      "resolved": true,
+      "resolution": "三类结论均保持 Unknown，并分别绑定同日书面报价与迁移盘点、30–60 天同任务试点、双方适用合同与支持计划。"
+    },
+    {
+      "issue_id": "ocb002-r2-recommendations",
+      "severity": "major",
+      "subject_id": "ocb002-r01,ocb002-r02,ocb002-r03",
+      "decision": "accept",
+      "description": "建议必须覆盖 Office 重度、浏览器优先、受监管和保留现状场景，且不能把产品能力直接写成组织结果。",
+      "resolved": true,
+      "resolution": "建议均附带工作流或控制条件；Reference 包含不建议迁移场景、淘汰条件、结论翻转门槛、试点指标和回退要求。"
+    },
+    {
+      "issue_id": "ocb002-r2-criteria",
+      "severity": "major",
+      "subject_id": "criteria.json",
+      "decision": "accept",
+      "description": "检查五维权重、Criteria 数量、关键项、锚点可判定性以及 FACT 对关键事实和关键 Unknown 的覆盖。",
+      "resolved": true,
+      "resolution": "五维权重归一化；每维 2 项、总计 10 项、4 项 critical；修正映射后，全部 critical 事实、分析边界和 Unknown 均有 FACT Criterion。"
+    }
+  ],
+  "unresolved_material_issues": 0,
+  "limitations": [
+    "本 Reference 由两个 AI 专家角色完成作者与独立复核，未经过人类专家审核",
+    "双方动态定价和套餐页面没有同地区冻结快照或企业报价",
+    "未执行真实租户的文档兼容、生产率、安全控制和迁移试点",
+    "Microsoft 支持与 SLA 未固定到具体合同版本，双方支持质量保持 Unknown",
+    "产品治理能力只证明可用权益，不构成租户配置完成或组织法律合规结论"
+  ]
+}

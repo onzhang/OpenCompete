@@ -196,6 +196,7 @@ uv run pytest -q
   3. 确认 `.env`、`opencompete.toml`、`.opencompete-data/`、`.tmp-*/`、`.agents/`、`.omo/`、`frontend/.dist-*/` 均未入库。
 - 本地数据与构建产物靠 `.gitignore` 排除。新出现的本地目录（尤其 `.` 开头的隐藏目录，例如 `.dist-qa-*`，不会被 `dist/` 规则覆盖）要先把 ignore 规则补进 `.gitignore` 再提交。
 - 提交后用 `git status --short` 确认工作区干净；发现误提交立即修正（未推送时优先 `git commit --amend`）。
+- 远程防护：本仓库没有 `origin`；`upstream`（官方仓库）和 `baseline`（本地对照仓库）的 push 地址必须保持 `DISABLE`，`main` 不跟踪任何远程分支，裸 `git push` 应直接失败。要发布到自有远程时先新建 `origin` 并确认指向自己的仓库。
 
 ## 实现纪律
 

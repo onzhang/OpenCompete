@@ -184,6 +184,19 @@ uv run pytest -q
 
 每项持久化改动至少覆盖：进程退出后恢复、确认点恢复、预算耗尽、单个 Researcher 失败、产物对账，以及使用固定秘密哨兵扫描 SQLite 与全部产物确认密钥不落盘。每项上游核心改动至少覆盖原行为的特征测试。
 
+## 提交规范
+
+- 不主动提交或推送；只在用户明确要求时执行。提交在本地 `main` 直接进行。
+- 提交信息使用简体中文，标题采用 conventional 前缀加范围，例如 `feat(core): ...`、`fix(web): ...`、`docs: ...`、`chore: ...`；正文用列表说明关键改动，不写空话。
+- 按逻辑边界拆分提交：上游适配层（`src/open_deep_research`）、OpenCompete 核心（`src/opencompete` 与测试）、前端（`frontend`）、文档与基准数据分别成提交；不把无关改动混进同一提交。提交顺序遵循依赖方向：上游适配 → 核心 → 前端 → 文档。
+- 对 `src/open_deep_research/` 的修改，提交信息正文必须单独列出相对上游基线 `upstream-b764481f` 的核心修改点，与交付说明保持一致。
+- 提交前必查：
+  1. `git status --short` 逐项确认，未知文件先弄清来源，再决定提交、忽略还是删除；
+  2. 扫描待提交文件中的密钥模式（`sk-` 前缀、非空 `*_API_KEY=` 赋值等）；测试固定哨兵除外；
+  3. 确认 `.env`、`opencompete.toml`、`.opencompete-data/`、`.tmp-*/`、`.agents/`、`.omo/`、`frontend/.dist-*/` 均未入库。
+- 本地数据与构建产物靠 `.gitignore` 排除。新出现的本地目录（尤其 `.` 开头的隐藏目录，例如 `.dist-qa-*`，不会被 `dist/` 规则覆盖）要先把 ignore 规则补进 `.gitignore` 再提交。
+- 提交后用 `git status --short` 确认工作区干净；发现误提交立即修正（未推送时优先 `git commit --amend`）。
+
 ## 实现纪律
 
 - 先读规格和相关源码，再改代码；不为未经确认的未来需求预留分布式或服务端抽象。

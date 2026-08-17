@@ -12,6 +12,7 @@ from langgraph.graph import END, START, StateGraph
 from langgraph.types import Command, interrupt
 
 import open_deep_research.deep_researcher as researcher_module
+from open_deep_research.configuration import Configuration
 from open_deep_research.prompts import research_system_prompt
 from opencompete.analysis import build_draft_scope
 from opencompete.application import ApplicationRunner
@@ -55,6 +56,29 @@ def _tool_call(name: str, identifier: str) -> dict[str, Any]:
 
 def _ai(*calls: dict[str, Any]) -> AIMessage:
     return AIMessage(content="", tool_calls=list(calls))
+
+
+def test_per_model_thinking_mapping_preserves_global_fallback_behavior() -> None:
+    default = Configuration(
+        model_thinking={"type": "enabled"},
+        model_thinking_by_model={"anthropic:deepseek": {"type": "disabled"}},
+    )
+    routed = Configuration(
+        model_thinking_by_model={"anthropic:deepseek": {"type": "disabled"}},
+    )
+
+    assert default.model_thinking_by_model["anthropic:deepseek"] == {
+        "type": "disabled"
+    }
+    assert default.model_thinking == {"type": "enabled"}
+    assert routed.model_thinking is None
+    assert researcher_module._runtime_model_options(  # noqa: SLF001
+        default, "openai:primary"
+    ) == {"thinking": {"type": "enabled"}}
+    assert researcher_module._runtime_model_options(  # noqa: SLF001
+        default, "anthropic:deepseek"
+    ) == {"thinking": {"type": "disabled"}}
+
 
 
 def _config(*, model_turns: int = 6, research_calls: int = 3) -> dict[str, Any]:
@@ -1131,7 +1155,6 @@ async def test_fixed_scope_runner_uses_default_shared_graph_and_sqlite_namespace
         max_react_tool_calls=2,
         max_research_tool_calls=1,
         max_tavily_calls=4,
-        long_form_streaming=False,
     )
     request_base = ResearchRequest(
         query="比较 Alpha 与 Beta",

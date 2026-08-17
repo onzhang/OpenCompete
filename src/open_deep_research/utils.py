@@ -185,8 +185,12 @@ async def tavily_search(
             fallback_model=fallback_model,
         ),
     }
-    if configurable.model_thinking is not None:
-        primary_options["thinking"] = configurable.model_thinking
+    primary_thinking = configurable.model_thinking_by_model.get(
+        configurable.summarization_model,
+        configurable.model_thinking,
+    )
+    if primary_thinking is not None:
+        primary_options["thinking"] = primary_thinking
     fallback_options: dict[str, Any] | None = None
     if fallback_model is not None:
         fallback_options = {
@@ -208,8 +212,13 @@ async def tavily_search(
         }
         if configurable.fallback_disable_thinking:
             fallback_options["thinking"] = {"type": "disabled"}
-        elif configurable.model_thinking is not None:
-            fallback_options["thinking"] = configurable.model_thinking
+        else:
+            fallback_thinking = configurable.model_thinking_by_model.get(
+                fallback_model,
+                configurable.model_thinking,
+            )
+            if fallback_thinking is not None:
+                fallback_options["thinking"] = fallback_thinking
     summarization_model = build_resilient_model(
         init_chat_model(
             configurable_fields=(

@@ -166,6 +166,7 @@ class Configuration(BaseModel):
         default=None,
         description="Optional provider-neutral thinking configuration",
     )
+    model_thinking_by_model: dict[str, dict[str, str]] = Field(default_factory=dict)
     fallback_model: str | None = Field(
         default=None,
         description="Optional fallback model used only after transient failures",

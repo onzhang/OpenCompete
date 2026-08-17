@@ -75,11 +75,16 @@ configurable_model = init_chat_model(
 )
 
 
-def _runtime_model_options(configurable: Configuration) -> dict[str, object]:
-    """Return optional model capabilities without naming a provider."""
-    if configurable.model_thinking is None:
-        return {}
-    return {"thinking": configurable.model_thinking}
+def _runtime_model_options(
+    configurable: Configuration,
+    model: str,
+) -> dict[str, object]:
+    """Return optional model capabilities for the actual model route."""
+    thinking = configurable.model_thinking_by_model.get(
+        model,
+        configurable.model_thinking,
+    )
+    return {} if thinking is None else {"thinking": thinking}
 
 
 def _resilient_model(
@@ -122,7 +127,7 @@ def _resilient_model(
                 ),
                 fallback_model=fallback_model,
             ),
-            **_runtime_model_options(configurable),
+            **_runtime_model_options(configurable, model),
         },
     )
     fallback_config: RunnableConfig | None = None
@@ -147,8 +152,10 @@ def _resilient_model(
         }
         if configurable.fallback_disable_thinking:
             fallback_options["thinking"] = {"type": "disabled"}
-        elif configurable.model_thinking is not None:
-            fallback_options["thinking"] = configurable.model_thinking
+        else:
+            fallback_options.update(
+                _runtime_model_options(configurable, fallback_model)
+            )
         fallback_config = cast(RunnableConfig, fallback_options)
 
     return build_resilient_model(

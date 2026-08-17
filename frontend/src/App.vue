@@ -31,6 +31,12 @@ const navItems = [
     label: '历史卷宗',
     icon: 'M4 5h16v4H4zM6 9v10h12V9M10 13h4',
   },
+  {
+    name: 'settings',
+    to: '/settings',
+    label: '设置',
+    icon: 'M12 3v3M12 18v3M3 12h3M18 12h3M5.64 5.64l2.12 2.12M16.24 16.24l2.12 2.12M18.36 5.64l-2.12 2.12M7.76 16.24l-2.12 2.12M12 8.5a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7',
+  },
 ]
 
 const activeRuns = computed(() => store.activeRuns.slice(0, 4))
@@ -317,8 +323,72 @@ function isActive(item) {
   transform: translateY(8px);
 }
 
-.page-leave-to {
-  opacity: 0;
-  transform: translateY(-4px);
-}
-</style>
+	.page-leave-to {
+	  opacity: 0;
+	  transform: translateY(-4px);
+	}
+
+	@media (max-width: 760px) {
+	  .shell {
+	    display: block;
+	  }
+
+	  .rail {
+	    width: 100%;
+	    height: auto;
+	    min-height: 0;
+	    position: static;
+	    border-right: 0;
+	    border-bottom: 3px solid var(--vermilion);
+	  }
+
+	  .brand {
+	    padding: 14px 16px 12px;
+	    border-bottom: 1px solid rgba(244, 238, 225, 0.14);
+	  }
+
+	  .brand-seal {
+	    width: 32px;
+	    height: 32px;
+	    font-size: 13px;
+	  }
+
+	  .brand-name {
+	    font-size: 17px;
+	  }
+
+	  .brand-sub,
+	  .rail-section,
+	  .rail-foot {
+	    display: none;
+	  }
+
+	  .nav {
+	    flex-direction: row;
+	    overflow-x: auto;
+	    gap: 3px;
+	    padding: 8px 10px;
+	  }
+
+	  .nav-item {
+	    flex: 0 0 auto;
+	    gap: 7px;
+	    padding: 8px 10px;
+	    font-size: 12px;
+	  }
+
+	  .nav-item svg {
+	    width: 16px;
+	    height: 16px;
+	  }
+
+	  .nav-item--active::before {
+	    left: 7px;
+	    right: 7px;
+	    top: auto;
+	    bottom: -8px;
+	    width: auto;
+	    height: 3px;
+	  }
+	}
+	</style>

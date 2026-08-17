@@ -60,6 +60,10 @@ async function request(path, { method = 'GET', body, timeoutMs = READ_TIMEOUT_MS
 export const api = {
   health: () => request('/health'),
   config: () => request('/config'),
+  settings: () => request('/settings'),
+  updateSettings: (body) => request('/settings', { method: 'PUT', body, timeoutMs: ACTION_TIMEOUT_MS }),
+  updateCredential: (body) => request('/settings/credentials', { method: 'PUT', body, timeoutMs: ACTION_TIMEOUT_MS }),
+  testConnection: (target) => request(`/settings/connections/${target}/test`, { method: 'POST', timeoutMs: ACTION_TIMEOUT_MS }),
   listRuns: () => request('/runs'),
   getRun: (runId) => request(`/runs/${runId}`),
   getBundle: (runId) => request(`/runs/${runId}/bundle`),

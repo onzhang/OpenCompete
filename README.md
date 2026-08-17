@@ -87,9 +87,10 @@ curl http://127.0.0.1:8123/api/health    # 返回 HTTP 200
 - **研究进行中请勿停止 API 服务**：完整研究在服务进程内后台执行，进程退出会把任务留在无法自动恢复的中间态（界面会标注「可能已中断」，可用 `uv run opencompete resume <run_id>` 从 CLI 恢复）。
 - 查看历史任务与报告不需要任何 API Key；发起新研究需要 `.env` 中的模型与 Tavily 密钥，且外部调用只在范围确认冻结后才开始。
 - Web 层的补充索引写在 `.opencompete-data/api-meta/`（仅缓存研究问题与对象名单等展示字段）；任务状态、预算与产物一律以 `runs/<run_id>/manifest.json` 为准。
-- 设置页面保存的模型、预算、并发、搜索和传输参数只影响**新建任务**。每个任务在创建时冻结非秘密快照，恢复旧任务不会读取后续修改。
+- 设置页面只展示会直接影响研究体验的模型与连接、研究预算、研究深度与速度、搜索范围；修改只影响**新建任务**。每个任务在创建时冻结完整非秘密快照，恢复旧任务不会读取后续修改。
 - 页面管理的 Key 与兼容端点 Base URL 只写入本机 `.env`，输入框始终为空，响应不回显真实值或遮掩片段。模型/Tavily“测试连接”由用户主动触发，可能产生少量费用。
 - 进程外环境变量优先于 `.env` 与 TOML；被外部环境管理的字段不能从页面保存。存在 draft、待确认、冻结或执行中任务时，页面和 API 都会拒绝替换或清除凭据，需先完成或停止旧任务。
+- 设置项右侧的圆形 `!` 会说明它影响的任务阶段，以及数值增减对研究范围、速度、质量或预算的作用。Judge、费率、传输和编排保护阈值仅供开发与评测使用，继续通过 TOML 管理，不会出现在用户设置页。
 
 ## 命令一览
 
@@ -186,12 +187,12 @@ uv run opencompete-race score .opencompete-tools/deep_research_bench \
 
 - `opencompete.example.toml` 是不含密钥的配置模板；复制为 `opencompete.toml` 后可调整模型、并发和预算。
 - `llm_request_timeout_seconds` 控制一次模型 SDK 请求的最长等待；`llm_sdk_max_retries = 0` 关闭 SDK 内部不可观测重试。
-- `long_form_streaming = true` 只让压缩和最终报告使用 LangChain 官方流式聚合，避免兼容网关在长时间非流响应期间关闭连接；工具调用和结构化输出保持非流。
+- 压缩和最终报告固定使用 LangChain 官方流式聚合，避免兼容网关在长时间非流响应期间关闭连接；工具调用和结构化输出保持非流。该保护由系统管理，不在用户设置页或 TOML 中提供开关。
 - `final_report_model_max_tokens` 与 `artifact_extraction_model_max_tokens` 分别控制可读报告和结构化提取，不能再共用一个输出上限。
 - `max_concurrent_summarizations` 限制单个搜索结果批次中的网页摘要并发；摘要使用统一 SDK timeout，不再另设 60 秒硬超时。
 - 可选模型降级封装在单次 LangChain Runnable 调用边界，默认最多五次真实尝试：主供应商三次、备用供应商两次。只有限流、超时、连接错误和 HTTP 5xx 会继续重试或切换；认证、权限和参数错误立即停止。Application Runner 不重试整张 Graph，因此并行成功调用不会因兄弟失败而重放。
 - 可在 TOML 设置 `fallback_model = "anthropic:<model>"`，也可在 `.env` 设置 `ANTHROPIC_MODEL`、`ANTHROPIC_API_KEY` 和 `ANTHROPIC_BASE_URL`。DeepSeek Thinking 模型作为备用时默认关闭 Thinking，以兼容 LangChain 的结构化输出和强制工具选择。
-- 主模型为 DeepSeek Thinking 系列（如经 Anthropic 兼容端点直连 `anthropic:deepseek-v4-flash`）时，需在 TOML 设置 `primary_disable_thinking = true`：研究、范围规划、候选发现、产物提取和 Judge 的全部主模型调用会统一注入 `thinking: disabled`。注意此时不能再配置 OpenAI 系备用模型——thinking 参数会作为未知参数发给 OpenAI 兼容端点并直接失败；临时错误只会在主供应商内重试。
+- DeepSeek Thinking 系列经 Anthropic 兼容端点（如 `anthropic:deepseek-v4-flash`）运行时，系统会仅对该具体模型路由自动注入 `thinking: disabled`，以兼容结构化输出和强制工具选择。OpenAI、Google 和 Claude 路由不会收到该参数，因此可与 DeepSeek 路由安全混用，包括作为备用模型。
 - 重试期间 CLI 会显示当前阶段、“正在重新连接 n/5”或“正在切换备用模型 n/5”，并展示脱敏后的具体异常摘要。最终错误会继续显示异常类型、底层原因类型、枚举化传输原因、HTTP 状态、供应商错误码和请求 ID；原始异常链正文、响应正文、Header、请求正文、Key 与 Base URL 不会显示或持久化。
 - `tavily_max_queries_per_call` 与 `tavily_max_results_per_query` 只约束上游 Researcher 的单次 Tavily 工具调用。Web 候选发现单独使用 `discovery_search_results_per_query`：默认每次获取最相关的 5 个公开来源，以避免大量无关长网页同时进入绑定模型；它不是候选产品数、查询数或来源总数上限。发现会按模型生成的独立检索词逐条搜索、聚合和去重；每轮来源绑定后，覆盖审计可为尚未覆盖的竞争空间追加去重检索词。只有覆盖饱和、预算耗尽或检索前沿耗尽才停止。`discovery_binding_max_input_chars` 只把过大的来源正文分批送入绑定模型，所有批次都会继续参与候选聚合和去重，并复用 `max_concurrent_summarizations` 的并发上限；`max_content_length`、`tavily_extract_excerpt_max_chars` 和 `final_report_input_max_chars` 控制进入兼容模型与业务 Evidence 的内容规模。
 - Tavily Search 每条 query 和 Extract 返回的官方 credit 共用 `max_tavily_calls` 兼容预算字段；`llm_*_cost_per_million_usd`、`tavily_cost_per_call_usd` 和 `price_config_version` 只用于本地保守预留与复算，不代表供应商最终账单。

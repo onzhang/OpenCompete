@@ -17,7 +17,7 @@ fallback_provider_name = "DeepSeek"
 primary_model_attempts = 3
 fallback_model_attempts = 2
 model_retry_delays_seconds = [2.0, 5.0, 10.0, 20.0]
-fallback_disable_thinking = true
+# DeepSeek 经 Anthropic 兼容端点时，OpenCompete 会自动关闭 Thinking；不需要配置开关。
 # 报告 Judge 默认关闭；只有取消下一行注释并配置模型后才会产生 RACE/FACT 调用费用。
 # judge_model = "openai:gpt-4.1"
 research_model_max_tokens = 10000
@@ -36,8 +36,7 @@ judge_prompt_version = "opencompete-race-fact-v1"
 # 单次模型 HTTP 请求最长等待时间；SDK 隐式重试保持关闭。
 llm_request_timeout_seconds = 300
 llm_sdk_max_retries = 0
-# 只对压缩和最终报告两个纯文本长响应启用流式聚合。
-long_form_streaming = true
+# 压缩和最终报告固定使用流式聚合，避免兼容网关截断长响应，无需配置开关。
 
 # 研究编排与结构化输出限制。该值只控制上游 Researcher 的单次 Search 页大小。
 max_content_length = 50000

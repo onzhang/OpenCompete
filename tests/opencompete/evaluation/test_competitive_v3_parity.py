@@ -211,15 +211,49 @@ def test_aggregate_matches_official_calculator_fixture() -> None:
         )
 
 
+def test_official_score_calculator_ignores_non_scalar_judge_scores() -> None:
+    """Judge 返回的对象、布尔值和空值不能进入官方算术。."""
+    score = calculate_weighted_scores_official(
+        {
+            "comprehensiveness": (
+                {
+                    "criterion": "coverage",
+                    "article_1_score": 8,
+                    "article_2_score": 6,
+                },
+                {
+                    "criterion": "coverage",
+                    "article_1_score": {"invalid": 1},
+                    "article_2_score": 10,
+                },
+                {
+                    "criterion": "coverage",
+                    "article_1_score": True,
+                    "article_2_score": 10,
+                },
+            )
+        },
+        {
+            "dimension_weight": {"comprehensiveness": 1.0},
+            "criterions": {
+                "comprehensiveness": ({"criterion": "coverage", "weight": 1.0},)
+            },
+        },
+    )
+
+    assert score["target"]["total"] == pytest.approx(8.0)
+    assert score["reference"]["total"] == pytest.approx(6.0)
+
+
 def test_result_v3_model_rejects_official_race_and_five_dims() -> None:
+    from opencompete.evaluation.competitive_models import (
+        CompetitiveEvaluationStatus,
+        CompetitiveFactEvaluation,
+    )
     from opencompete.evaluation.competitive_v3_models import (
         CompetitiveEvaluationResultV3,
         CompetitiveV3Eligibility,
         CompetitiveV3RaceBlock,
-    )
-    from opencompete.evaluation.competitive_models import (
-        CompetitiveEvaluationStatus,
-        CompetitiveFactEvaluation,
     )
     from opencompete.evaluation.models import (
         CostMetrics,

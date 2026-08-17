@@ -83,6 +83,7 @@ opencompete.toml
 # 个人本地工具与会话状态
 .agents/
 .omo/
+.zcode/
 
 # 前端 QA 构建产物（隐藏目录）
 frontend/.dist-*/

@@ -9,6 +9,7 @@ from typing import TypeVar
 
 from pydantic import BaseModel
 
+from opencompete.evaluation.competitive_models import CompetitiveReviewStatus
 from opencompete.evaluation.competitive_v3_models import (
     CompetitiveV3BenchmarkCase,
     CompetitiveV3BenchmarkDataset,
@@ -21,7 +22,6 @@ from opencompete.evaluation.competitive_v3_models import (
     competitive_v3_case_content_sha256,
     normalize_v3_task_text,
 )
-from opencompete.evaluation.competitive_models import CompetitiveReviewStatus
 
 _REQUIRED = {
     "case.json",

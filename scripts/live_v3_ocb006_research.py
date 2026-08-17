@@ -10,14 +10,23 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 
-from opencompete.application import ApplicationRunner
-from opencompete.evaluation.competitive_v3_dataset import load_competitive_v3_dataset
-from opencompete.evaluation.competitive_v3_models import normalize_v3_task_text
-from opencompete.models import utc_now
-from opencompete.settings import load_settings
+
+def _emit(*parts: object) -> None:
+    """向标准输出写入单行运行诊断。."""
+    sys.stdout.write(" ".join(str(part) for part in parts) + "\n")
+    sys.stdout.flush()
 
 
 async def main() -> int:
+    """执行一个固定范围的 v3 真实研究并写入最后一次运行摘要。."""
+    from opencompete.application import ApplicationRunner
+    from opencompete.evaluation.competitive_v3_dataset import (
+        load_competitive_v3_dataset,
+    )
+    from opencompete.evaluation.competitive_v3_models import normalize_v3_task_text
+    from opencompete.models import utc_now
+    from opencompete.settings import load_settings
+
     settings = load_settings(config_path=ROOT / "opencompete.toml")
     dataset = load_competitive_v3_dataset(ROOT / "benchmarks" / "opencompete" / "v3")
     case = dataset.get("ocb-006-spotify-vs-apple-music")
@@ -28,16 +37,16 @@ async def main() -> int:
     query = normalize_v3_task_text(case.prompt)
     request = case.research_request.model_copy(update={"query": query})
     runner = ApplicationRunner(settings)
-    print("START_LIVE_RESEARCH", flush=True)
-    print("case_id", case.case_id, flush=True)
-    print("task_input_sha256", case.normalized_task_sha256, flush=True)
+    _emit("START_LIVE_RESEARCH")
+    _emit("case_id", case.case_id)
+    _emit("task_input_sha256", case.normalized_task_sha256)
     handle = await runner.create_fixed_scope_run(
         request,
         frozen,
         benchmark_case_id=case.case_id,
     )
-    print("RUN_ID", handle.run_id, flush=True)
-    print("STATUS", handle.status.value if hasattr(handle.status, "value") else handle.status, flush=True)
+    _emit("RUN_ID", handle.run_id)
+    _emit("STATUS", handle.status.value if hasattr(handle.status, "value") else handle.status)
     summary = {
         "run_id": handle.run_id,
         "status": getattr(handle.status, "value", str(handle.status)),
@@ -46,7 +55,7 @@ async def main() -> int:
     }
     out = ROOT / ".opencompete-data" / "live-v3-ocb006-last.json"
     out.write_text(json.dumps(summary, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
-    print("WROTE", out, flush=True)
+    _emit("WROTE", out)
     return 0
 
 

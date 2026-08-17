@@ -67,6 +67,7 @@ class PublicationGateResult(FrozenModel):
 
     @staticmethod
     def passed(codes: Sequence[str] = (), hints: Sequence[str] = ()) -> PublicationGateResult:
+        """构造通过门禁的结果并去重保留提示。."""
         return PublicationGateResult(
             ok=True,
             error_codes=tuple(dict.fromkeys(codes)),
@@ -75,6 +76,7 @@ class PublicationGateResult(FrozenModel):
 
     @staticmethod
     def failed(codes: Sequence[str], hints: Sequence[str] = ()) -> PublicationGateResult:
+        """构造失败门禁的结果并去重保留提示。."""
         unique = tuple(dict.fromkeys(codes))
         return PublicationGateResult(
             ok=False,

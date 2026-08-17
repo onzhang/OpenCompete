@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import asyncio
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -17,11 +16,9 @@ from opencompete.models import (
     Claim,
     ClaimStatus,
     Comparison,
-    Evidence,
     ResearchEntity,
     RunStatus,
     ScopeSpec,
-    Source,
 )
 from opencompete.report_publication_gate import (
     DECISION_SUMMARY_MISSING,
@@ -33,7 +30,6 @@ from opencompete.report_publication_gate import (
     evaluate_report_publication_gate,
     resolve_published_report,
 )
-
 
 BAD_REPORT = """
 # product_service 审计报告

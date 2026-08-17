@@ -8,7 +8,6 @@ from typing import Any
 
 from langchain.chat_models import init_chat_model
 from langchain_core.messages import HumanMessage, SystemMessage
-from pydantic import ValidationError
 
 from opencompete.evaluation.competitive_models import (
     CompetitiveFactJudgeOutput,
@@ -43,6 +42,7 @@ class LangChainCompetitiveV3RaceJudge:
         max_output_attempts: int = 3,
         disable_thinking: bool = False,
     ) -> None:
+        """保存 Judge 的非秘密模型调用参数与成本计数器。."""
         if not model.strip():
             raise ValueError("Judge 模型标识不能为空")
         self.model_name = model
@@ -58,6 +58,7 @@ class LangChainCompetitiveV3RaceJudge:
 
     @property
     def evaluation_cost(self) -> CostMetrics:
+        """返回当前实例累计的 Judge token 成本。."""
         return CostMetrics(
             input_tokens=self._input_tokens,
             output_tokens=self._output_tokens,
@@ -72,6 +73,7 @@ class LangChainCompetitiveV3RaceJudge:
         *,
         target_first: bool,
     ) -> tuple[RaceDimensionRawScores, ...]:
+        """比较 Target 和 Reference，按官方四维返回 Criterion 原始分。."""
         target_md = bundle.report.markdown
         reference_md = case.reference
         article_1, article_2 = (
@@ -104,6 +106,7 @@ class LangChainCompetitiveV3RaceJudge:
         case: CompetitiveV3BenchmarkCase,
         bundle: RunBundle,
     ) -> CompetitiveFactJudgeOutput:
+        """核验 Reference 覆盖、Target 结论和证据关系。."""
         payload = {
             "reference_claims": [
                 {
@@ -292,26 +295,26 @@ def _parse_fact(
     for item in raw.get("reference_claims") or []:
         if not isinstance(item, dict):
             continue
-        status_raw = str(item.get("status") or "omitted")
+        reference_status_raw = str(item.get("status") or "omitted")
         try:
-            status = ReferenceCoverageStatus(status_raw)
+            reference_status = ReferenceCoverageStatus(reference_status_raw)
         except ValueError:
-            status = ReferenceCoverageStatus.OMITTED
+            reference_status = ReferenceCoverageStatus.OMITTED
         ref_items.append(
             ReferenceClaimCoverage(
                 reference_claim_id=str(item.get("reference_claim_id") or ""),
-                status=status,
+                status=reference_status,
                 target_claim_ids=(),
                 reason=str(item.get("reason") or "judge"),
             )
         )
     # ensure all case claims present
     have = {item.reference_claim_id for item in ref_items}
-    for claim in case.reference_claims:
-        if claim.claim_id not in have:
+    for reference_claim in case.reference_claims:
+        if reference_claim.claim_id not in have:
             ref_items.append(
                 ReferenceClaimCoverage(
-                    reference_claim_id=claim.claim_id,
+                    reference_claim_id=reference_claim.claim_id,
                     status=ReferenceCoverageStatus.OMITTED,
                     target_claim_ids=(),
                     reason="judge omitted",
@@ -322,15 +325,15 @@ def _parse_fact(
     for item in raw.get("target_claims") or []:
         if not isinstance(item, dict):
             continue
-        status_raw = str(item.get("status") or "unsupported")
+        target_status_raw = str(item.get("status") or "unsupported")
         try:
-            status = TargetClaimSupportStatus(status_raw)
+            target_status = TargetClaimSupportStatus(target_status_raw)
         except ValueError:
-            status = TargetClaimSupportStatus.UNSUPPORTED
+            target_status = TargetClaimSupportStatus.UNSUPPORTED
         target_items.append(
             TargetClaimSupportAssessment(
                 claim_id=str(item.get("claim_id") or ""),
-                status=status,
+                status=target_status,
                 evidence_ids=(),
                 reason=str(item.get("reason") or "judge"),
             )
@@ -353,11 +356,11 @@ def _parse_fact(
         )
     # default relationships from bundle if empty
     if not rel_items:
-        for claim in bundle.claims:
-            for evidence_id in claim.evidence_ids:
+        for bundle_claim in bundle.claims:
+            for evidence_id in bundle_claim.evidence_ids:
                 rel_items.append(
                     FactSupport(
-                        claim_id=claim.claim_id,
+                        claim_id=bundle_claim.claim_id,
                         evidence_id=evidence_id,
                         supported=True,
                         reason="bundle-declared relationship defaulted true",

@@ -84,7 +84,7 @@ class RunMetaStore:
             logger.warning("api-meta 删除失败: %s", run_id, exc_info=True)
 
     def merge(self, run_id: str, **fields: Any) -> dict[str, Any]:
-        """读取-合并-写回，返回合并后的索引。"""
+        """读取、合并并写回索引，返回合并后的索引。."""
         merged = {**(self.read(run_id) or _PLACEHOLDER), **fields}
         self.write(run_id, merged)
         return merged

@@ -9,6 +9,7 @@ import pytest
 
 from opencompete.evaluation.competitive_models import CompetitiveDimension
 from opencompete.evaluation.competitive_v3_dataset import load_competitive_v3_dataset
+from opencompete.evaluation.competitive_v3_judge import _parse_fact
 from opencompete.evaluation.competitive_v3_models import CompetitiveEvaluationRequestV3
 from opencompete.evaluation.competitive_v3_race import (
     OFFICIAL_RACE_DIMENSIONS,
@@ -127,6 +128,40 @@ class _OfflineV3Judge:
             target_claims=(),
             target_relationships=(),
         )
+
+
+def test_v3_fact_parser_keeps_reference_and_target_status_types(valid_bundle) -> None:
+    """FACT 的两套状态必须分别落入各自的枚举与结果字段。."""
+    case = load_competitive_v3_dataset(V3_DATASET).get(
+        "ocb-006-spotify-vs-apple-music"
+    )
+    bundle = valid_bundle.model_copy(update={"run_id": "run-v3-fact"})
+    result = _parse_fact(
+        case,
+        bundle,
+        {
+            "reference_claims": [
+                {
+                    "reference_claim_id": case.reference_claims[0].claim_id,
+                    "status": "partially_supported",
+                    "reason": "部分覆盖",
+                }
+            ],
+            "target_claims": [
+                {
+                    "claim_id": bundle.claims[0].claim_id,
+                    "status": "unsupported",
+                    "reason": "证据不足",
+                }
+            ],
+            "target_relationships": [],
+        },
+        "test-v3-fact",
+    )
+
+    assert result.reference_claims[0].status.value == "partially_supported"
+    assert result.target_claims[0].status.value == "unsupported"
+    assert result.target_relationships[0].claim_id == bundle.claims[0].claim_id
 
 
 @pytest.mark.asyncio

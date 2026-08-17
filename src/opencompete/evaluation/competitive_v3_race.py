@@ -69,6 +69,7 @@ class RaceDimensionRawScores(FrozenModel):
 
     @model_validator(mode="after")
     def validate_dimension(self) -> RaceDimensionRawScores:
+        """校验官方维度标识与维内权重总和。."""
         if self.dimension not in OFFICIAL_RACE_DIMENSIONS:
             raise ValueError(f"非法 RACE 维度：{self.dimension}")
         if abs(sum(item.weight for item in self.criteria) - 1.0) > 1e-9:
@@ -98,6 +99,7 @@ class RaceAggregateResult(FrozenModel):
 
     @model_validator(mode="after")
     def validate_shape(self) -> RaceAggregateResult:
+        """校验本地 RACE 结果只保留官方四维。."""
         keys = [item.dimension for item in self.dimensions]
         if set(keys) != set(OFFICIAL_RACE_DIMENSIONS) or len(keys) != 4:
             raise ValueError("RACE 结果必须且只能包含官方四维")
@@ -126,7 +128,7 @@ def calculate_weighted_scores_official(
     llm_output_json: Mapping[str, Sequence[Mapping[str, object]]],
     criteria_data: Mapping[str, object],
 ) -> dict[str, dict[str, object]]:
-    """复刻官方 ``utils.score_calculator.calculate_weighted_scores`` 的核心算术。
+    """复刻官方 ``utils.score_calculator.calculate_weighted_scores`` 的核心算术。.
 
     输入形态与官方一致：
     - criteria_data.dimension_weight
@@ -180,13 +182,8 @@ def calculate_weighted_scores_official(
             criterion_text = (
                 criterion_raw.strip() if isinstance(criterion_raw, str) else None
             )
-            a1 = score_item.get("article_1_score")
-            a2 = score_item.get("article_2_score")
-            try:
-                article_1 = float(a1) if a1 is not None else None
-                article_2 = float(a2) if a2 is not None else None
-            except (TypeError, ValueError):
-                continue
+            article_1 = _coerce_raw_score(score_item.get("article_1_score"))
+            article_2 = _coerce_raw_score(score_item.get("article_2_score"))
             if criterion_text is None or article_1 is None:
                 continue
             weight = dim_map.get(criterion_text)
@@ -224,6 +221,16 @@ def calculate_weighted_scores_official(
     results["target"]["total"] = total_target
     results["reference"]["total"] = total_reference
     return results
+
+
+def _coerce_raw_score(value: object) -> float | None:
+    """将 Judge 的标量分数安全转换为浮点数，其他值视为缺失。."""
+    if value is None or isinstance(value, bool) or not isinstance(value, str | int | float):
+        return None
+    try:
+        return float(value)
+    except (OverflowError, ValueError):
+        return None
 
 
 def aggregate_race_v3(

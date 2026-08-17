@@ -29,9 +29,9 @@ from opencompete.evaluation.competitive_v3_models import (
 from opencompete.evaluation.competitive_v3_race import (
     OFFICIAL_RACE_DIMENSIONS,
     OPENCOMPETE_LOCAL_RACE,
+    V2_FIVE_DIMENSION_KEYS,
     RaceCriterionRawScore,
     RaceDimensionRawScores,
-    V2_FIVE_DIMENSION_KEYS,
     aggregate_race_v3,
     build_stability_diagnostic,
 )
@@ -76,6 +76,7 @@ class CompetitiveEvaluationServiceV3:
         repository: RunRepository,
         judge: CompetitiveV3RaceJudge | None = None,
     ) -> None:
+        """绑定产物仓库和可选的 v3 Judge 实现。."""
         self._repository = repository
         self._judge = judge
 
@@ -83,6 +84,7 @@ class CompetitiveEvaluationServiceV3:
         self,
         request: CompetitiveEvaluationRequestV3,
     ) -> CompetitiveEvaluationBatchResultV3:
+        """执行请求中的 v3 评测目标并将结果持久化。."""
         dataset = load_competitive_v3_dataset(
             request.dataset,
             allow_authored=request.allow_authored,
@@ -269,6 +271,7 @@ def save_competitive_evaluation_v3(
     *,
     data_root: str | Path,
 ) -> Path:
+    """原子写入一个 v3 评测结果，并拒绝秘密和旧五维主分。."""
     run_dir = Path(data_root) / "runs" / result.target.run_id
     if not run_dir.is_dir():
         raise FileNotFoundError(f"评测目标任务目录不存在：{result.target.run_id}")

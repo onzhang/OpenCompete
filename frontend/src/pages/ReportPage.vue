@@ -1,5 +1,5 @@
 <script setup>
-import { computed, nextTick, onMounted, ref, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { marked } from 'marked'
 import { useRunsStore } from '../stores/runs.js'
@@ -24,6 +24,8 @@ const loading = ref(true)
 const loadError = ref(null)
 
 onMounted(async () => {
+  window.addEventListener('scroll', updateBackToTop, { passive: true })
+  updateBackToTop()
   try {
     await Promise.all([
       store.fetchRunDetail(runId.value).catch(() => {}),
@@ -37,6 +39,10 @@ onMounted(async () => {
   buildToc()
 })
 
+onBeforeUnmount(() => {
+  window.removeEventListener('scroll', updateBackToTop)
+})
+
 const tab = ref('report')
 const tabs = [
   { key: 'report', label: '报告正文' },
@@ -48,6 +54,7 @@ const tabs = [
 const articleRef = ref(null)
 const toc = ref([])
 const activeSource = ref(null)
+const showBackToTop = ref(false)
 
 const sourceByRef = computed(() => {
   const map = {}
@@ -91,6 +98,14 @@ function onArticleClick(e) {
 
 function scrollTo(id) {
   document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+}
+
+function updateBackToTop() {
+  showBackToTop.value = window.scrollY > 560
+}
+
+function backToTop() {
+  window.scrollTo({ top: 0, behavior: 'smooth' })
 }
 
 watch(renderedHtml, buildToc)
@@ -176,6 +191,21 @@ function exportMarkdown() {
         导出 report.md
       </button>
     </div>
+
+    <Transition name="back-to-top">
+      <button
+        v-if="showBackToTop"
+        class="back-to-top"
+        :class="{ 'back-to-top--raised': activeSource }"
+        type="button"
+        title="返回报告卷首"
+        aria-label="返回报告卷首"
+        @click="backToTop"
+      >
+        <span class="back-to-top-mark" aria-hidden="true">↑</span>
+        <span class="back-to-top-label">卷首</span>
+      </button>
+    </Transition>
 
     <!-- Tab 切换 -->
     <div class="tabbar">
@@ -1161,6 +1191,67 @@ function exportMarkdown() {
   margin: 12px 0 22px;
 }
 
+.back-to-top {
+  position: fixed;
+  right: 28px;
+  bottom: 26px;
+  z-index: 55;
+  display: grid;
+  justify-items: center;
+  gap: 2px;
+  width: 54px;
+  min-height: 54px;
+  padding: 6px 5px 5px;
+  border: 1.5px solid var(--ink);
+  border-radius: var(--radius);
+  background: var(--paper-raised);
+  box-shadow: var(--shadow-press-sm), var(--shadow-paper);
+  color: var(--ink);
+  cursor: pointer;
+  transition: transform 0.12s ease, background 0.15s ease, box-shadow 0.12s ease;
+}
+
+.back-to-top:hover {
+  background: var(--vermilion-wash);
+  transform: translate(-1px, -1px);
+  box-shadow: 4px 4px 0 var(--ink), var(--shadow-paper);
+}
+
+.back-to-top:active {
+  transform: translate(2px, 2px);
+  box-shadow: 1px 1px 0 var(--ink);
+}
+
+.back-to-top--raised {
+  bottom: min(460px, calc(100vh - 110px));
+}
+
+.back-to-top-mark {
+  color: var(--vermilion);
+  font-family: var(--font-serif);
+  font-size: 23px;
+  font-weight: 700;
+  line-height: 0.9;
+}
+
+.back-to-top-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+
+.back-to-top-enter-active,
+.back-to-top-leave-active {
+  transition: opacity 0.16s ease, transform 0.16s ease;
+}
+
+.back-to-top-enter-from,
+.back-to-top-leave-to {
+  opacity: 0;
+  transform: translateY(10px);
+}
+
 @media (max-width: 1080px) {
   .report-layout {
     grid-template-columns: 1fr;
@@ -1183,6 +1274,15 @@ function exportMarkdown() {
   }
   .src-list {
     grid-template-columns: 1fr;
+  }
+  .back-to-top {
+    right: 14px;
+    bottom: 14px;
+    width: 48px;
+    min-height: 48px;
+  }
+  .back-to-top--raised {
+    bottom: min(460px, calc(100vh - 96px));
   }
 }
 </style>

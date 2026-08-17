@@ -28,7 +28,6 @@ async def test_reconfigured_defaults_only_apply_to_new_run_snapshots(
             summarization_model="openai:updated-model",
             compression_model="openai:updated-model",
             final_report_model="openai:updated-model",
-            primary_disable_thinking=False,
             max_input_tokens=123456,
         ),
         revision=7,

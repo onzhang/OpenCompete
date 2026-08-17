@@ -3,7 +3,13 @@ from pathlib import Path
 import pytest
 
 from opencompete.errors import ConfigurationError
-from opencompete.settings import OpenCompeteSettings, load_settings
+from opencompete.settings import (
+    MANAGEABLE_SETTINGS_FIELDS,
+    SETTINGS_GROUPS,
+    OpenCompeteSettings,
+    load_settings,
+    thinking_disable_options,
+)
 
 
 def test_settings_precedence_is_cli_then_environment_then_toml_then_default(
@@ -77,12 +83,50 @@ def test_agent_control_limits_enter_runnable_config() -> None:
     assert configurable["max_supervisor_model_turns"] == 7
 
 
-def test_openai_model_cannot_receive_thinking_disable_parameter() -> None:
-    with pytest.raises(ValueError, match="OpenAI 兼容"):
-        OpenCompeteSettings(
-            research_model="openai:test-model",
-            primary_disable_thinking=True,
-        )
+def test_user_settings_exclude_development_and_transport_controls() -> None:
+    hidden = {
+        "judge_model",
+        "judge_model_max_tokens",
+        "primary_disable_thinking",
+        "fallback_disable_thinking",
+        "long_form_streaming",
+        "llm_input_cost_per_million_usd",
+        "llm_output_cost_per_million_usd",
+        "tavily_cost_per_call_usd",
+        "price_config_version",
+        "llm_sdk_max_retries",
+        "max_content_length",
+        "max_structured_output_retries",
+        "max_concurrent_summarizations",
+        "max_supervisor_model_turns",
+        "max_react_tool_calls",
+        "tavily_max_queries_per_call",
+        "tavily_extract_excerpt_max_chars",
+    }
+
+    assert not hidden & MANAGEABLE_SETTINGS_FIELDS
+    assert set().union(*SETTINGS_GROUPS.values()) == MANAGEABLE_SETTINGS_FIELDS
+    assert {
+        "judge_model",
+        "judge_model_max_tokens",
+        "llm_input_cost_per_million_usd",
+        "llm_output_cost_per_million_usd",
+        "tavily_cost_per_call_usd",
+        "price_config_version",
+        "llm_sdk_max_retries",
+        "max_content_length",
+        "max_structured_output_retries",
+        "max_concurrent_summarizations",
+        "max_supervisor_model_turns",
+        "max_react_tool_calls",
+        "tavily_max_queries_per_call",
+        "tavily_extract_excerpt_max_chars",
+    } <= set(OpenCompeteSettings.model_fields)
+    assert {
+        "primary_disable_thinking",
+        "fallback_disable_thinking",
+        "long_form_streaming",
+    }.isdisjoint(OpenCompeteSettings.model_fields)
 
 
 def test_model_turn_limit_must_allow_search_reflection_pairs() -> None:
@@ -109,7 +153,6 @@ def test_model_transport_limits_are_explicit_and_enter_runnable_config() -> None
         discovery_search_results_per_query=8,
         final_report_input_max_chars=24000,
         artifact_extraction_model_max_tokens=9000,
-        long_form_streaming=True,
         max_concurrent_summarizations=2,
     )
 
@@ -257,65 +300,36 @@ def test_anthropic_model_from_dotenv_becomes_fallback_before_settings_load(
     assert settings.fallback_model == "anthropic:deepseek-from-dotenv"
 
 
-def test_fallback_runnable_config_switches_all_model_roles_and_thinking() -> None:
-    settings = OpenCompeteSettings(fallback_model="anthropic:deepseek-fallback")
-
-    configurable = settings.to_runnable_config(
-        "run-fallback",
-        model_override=settings.fallback_model,
-        disable_thinking=True,
-    )["configurable"]
-
-    assert configurable["research_model"] == "anthropic:deepseek-fallback"
-    assert configurable["summarization_model"] == "anthropic:deepseek-fallback"
-    assert configurable["compression_model"] == "anthropic:deepseek-fallback"
-    assert configurable["final_report_model"] == "anthropic:deepseek-fallback"
-    assert configurable["model_thinking"] == {"type": "disabled"}
-    assert configurable["max_structured_output_retries"] == (
-        settings.max_structured_output_retries
+def test_thinking_is_automatically_disabled_only_for_deepseek_routes() -> None:
+    settings = OpenCompeteSettings(
+        research_model="anthropic:deepseek-v4-flash",
+        summarization_model="openai:fast-model",
+        compression_model="anthropic:deepseek-v4-flash",
+        final_report_model="openai:report-model",
+        fallback_model="openai:fallback-model",
     )
 
+    configurable = settings.to_runnable_config("run-thinking")["configurable"]
 
-def test_primary_disable_thinking_defaults_off_and_toml_can_enable(
-    tmp_path: Path,
-) -> None:
-    # 仓库根目录的 opencompete.toml 已启用该开关；用空 tempdir TOML 验证默认值。
-    empty_config = tmp_path / "opencompete.toml"
-    empty_config.write_text("", encoding="utf-8")
-    assert load_settings(empty_config).primary_disable_thinking is False
-
-    enabled = OpenCompeteSettings(primary_disable_thinking=True)
-
-    configurable = enabled.to_runnable_config(
-        "run-primary-thinking",
-        disable_thinking=enabled.primary_disable_thinking,
-    )["configurable"]
-
-    assert configurable["model_thinking"] == {"type": "disabled"}
-    assert configurable["research_model"] == enabled.research_model
+    assert thinking_disable_options("anthropic:deepseek-v4-flash") == {
+        "thinking": {"type": "disabled"}
+    }
+    assert thinking_disable_options("anthropic:claude-sonnet") == {}
+    assert thinking_disable_options("openai:fast-model") == {}
+    assert configurable["model_thinking_by_model"] == {
+        "anthropic:deepseek-v4-flash": {"type": "disabled"}
+    }
+    assert configurable["fallback_disable_thinking"] is False
 
 
-def test_toml_primary_disable_thinking_round_trip(
-    tmp_path: Path,
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    monkeypatch.delenv("OPENCOMPETE_FALLBACK_MODEL", raising=False)
-    monkeypatch.delenv("ANTHROPIC_MODEL", raising=False)
-    config_path = tmp_path / "opencompete.toml"
-    config_path.write_text(
-        'research_model = "anthropic:deepseek-v4-flash"\n'
-        'summarization_model = "anthropic:deepseek-v4-flash"\n'
-        'compression_model = "anthropic:deepseek-v4-flash"\n'
-        'final_report_model = "anthropic:deepseek-v4-flash"\n'
-        "primary_disable_thinking = true\n",
-        encoding="utf-8",
-    )
-    (tmp_path / ".env").write_text("", encoding="utf-8")
+def test_long_form_streaming_remains_a_fixed_internal_reliability_guard() -> None:
+    settings = OpenCompeteSettings()
 
-    settings = load_settings(config_path)
-
-    assert settings.primary_disable_thinking is True
-    assert settings.fallback_model is None
+    assert "long_form_streaming" not in OpenCompeteSettings.model_fields
+    assert settings.to_runnable_config("run-streaming")["configurable"][
+        "long_form_streaming"
+    ] is True
+    assert "long_form_streaming" not in MANAGEABLE_SETTINGS_FIELDS
 
 
 def test_model_attempt_total_cannot_exceed_five() -> None:

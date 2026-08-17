@@ -45,6 +45,28 @@ async def test_public_view_excludes_credentials_and_marks_toml_source(
 
 
 @pytest.mark.asyncio
+async def test_public_view_excludes_internal_and_evaluation_fields(
+    service: SettingsService,
+) -> None:
+    view = await service.public_view()
+    hidden = {
+        "judge_model",
+        "primary_disable_thinking",
+        "fallback_disable_thinking",
+        "long_form_streaming",
+        "llm_input_cost_per_million_usd",
+        "llm_output_cost_per_million_usd",
+        "tavily_cost_per_call_usd",
+        "price_config_version",
+        "max_supervisor_model_turns",
+        "max_content_length",
+    }
+
+    assert not hidden & set(view["fields"])
+    assert set().union(*view["groups"].values()) == set(view["fields"])
+
+
+@pytest.mark.asyncio
 async def test_update_settings_preserves_comments_and_rejects_stale_revision(
     service: SettingsService,
 ) -> None:
@@ -64,6 +86,25 @@ async def test_update_settings_preserves_comments_and_rejects_stale_revision(
             {"max_output_tokens": 200000},
             expected_revision=current["revision"],
         )
+
+
+@pytest.mark.asyncio
+async def test_settings_page_rejects_internal_field_updates(
+    service: SettingsService,
+) -> None:
+    current = await service.public_view()
+
+    for name, value in (
+        ("judge_model", "openai:judge"),
+        ("primary_disable_thinking", True),
+        ("long_form_streaming", False),
+        ("llm_input_cost_per_million_usd", 1.0),
+        ("max_supervisor_model_turns", 11),
+    ):
+        with pytest.raises(DataValidationError, match="不允许由页面修改"):
+            await service.update_settings(
+                {name: value}, expected_revision=current["revision"]
+            )
 
 
 @pytest.mark.asyncio

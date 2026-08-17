@@ -12,7 +12,7 @@ from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from open_deep_research.model_routing import build_resilient_model, route_metadata
 from opencompete.models import AnalysisLevel, ResearchCommission, ScopeProposal
-from opencompete.settings import OpenCompeteSettings
+from opencompete.settings import OpenCompeteSettings, thinking_disable_options
 
 
 @runtime_checkable
@@ -154,8 +154,9 @@ class LlmScopePlanner:
                 fallback_model=settings.fallback_model,
             ),
         }
-        if settings.primary_disable_thinking:
-            primary_options["thinking"] = {"type": "disabled"}
+        primary_options.update(
+            thinking_disable_options(settings.summarization_model)
+        )
         fallback_options: dict[str, Any] | None = None
         if settings.fallback_model is not None:
             fallback_options = {
@@ -173,8 +174,7 @@ class LlmScopePlanner:
                     retry_delays_seconds=settings.model_retry_delays_seconds,
                 ),
             }
-            if settings.fallback_disable_thinking:
-                fallback_options["thinking"] = {"type": "disabled"}
+            fallback_options.update(thinking_disable_options(settings.fallback_model))
         base_model = init_chat_model(
             configurable_fields=(
                 "model",

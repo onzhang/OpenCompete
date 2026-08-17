@@ -44,6 +44,7 @@ from opencompete.models import (
 )
 from opencompete.providers import AsyncTavilyClient
 from opencompete.security import sanitized_error
+from opencompete.settings import thinking_disable_options
 
 router = APIRouter(prefix="/api")
 
@@ -248,7 +249,6 @@ async def test_connection(
         "compression": settings.compression_model,
         "final_report": settings.final_report_model,
         "artifact_extraction": settings.final_report_model,
-        "judge": settings.judge_model,
         "fallback": settings.fallback_model,
     }
     try:
@@ -264,6 +264,7 @@ async def test_connection(
             max_tokens=1,
             timeout=settings.llm_request_timeout_seconds,
             max_retries=0,
+            **thinking_disable_options(model),
         )
         await runnable.ainvoke(HumanMessage(content="Respond with OK."))
         provider, _, model_name = model.partition(":")

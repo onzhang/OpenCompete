@@ -30,8 +30,9 @@ MODEL_SETTINGS_FIELDS = (
 )
 MANAGEABLE_MODEL_PROVIDERS = frozenset({"openai", "anthropic", "google_genai"})
 
-# 设置工作台只管理会影响新建研究任务的非秘密运行参数。数据目录、遥测和
-# 调试开关仍由启动环境控制，避免页面保存后改变历史产物位置或遥测边界。
+# 设置工作台只管理普通用户能够理解且会直接影响后续研究范围、质量、速度或
+# 硬预算的非秘密参数。Judge、费率、传输与编排保护阈值仍可由 TOML 供开发与
+# 评测使用，但不能经用户 API 暴露或写入。
 MANAGEABLE_SETTINGS_FIELDS = frozenset(
     {
         "research_model",
@@ -39,104 +40,62 @@ MANAGEABLE_SETTINGS_FIELDS = frozenset(
         "compression_model",
         "final_report_model",
         "fallback_model",
-        "primary_provider_name",
-        "fallback_provider_name",
-        "primary_model_attempts",
-        "fallback_model_attempts",
-        "model_retry_delays_seconds",
-        "primary_disable_thinking",
-        "fallback_disable_thinking",
-        "judge_model",
         "research_model_max_tokens",
         "summarization_model_max_tokens",
         "compression_model_max_tokens",
         "final_report_model_max_tokens",
-        "artifact_extraction_model_max_tokens",
-        "final_report_input_max_chars",
-        "judge_model_max_tokens",
-        "llm_request_timeout_seconds",
-        "llm_sdk_max_retries",
-        "long_form_streaming",
-        "max_content_length",
         "tavily_max_results_per_query",
         "discovery_search_results_per_query",
-        "discovery_binding_max_input_chars",
-        "tavily_max_queries_per_call",
-        "tavily_extract_excerpt_max_chars",
-        "max_structured_output_retries",
         "max_concurrent_research_units",
-        "max_concurrent_summarizations",
         "max_researcher_iterations",
-        "max_supervisor_model_turns",
-        "max_react_tool_calls",
         "max_research_tool_calls",
         "max_tavily_calls",
         "max_input_tokens",
         "max_output_tokens",
         "max_cost_usd",
-        "llm_input_cost_per_million_usd",
-        "llm_output_cost_per_million_usd",
-        "tavily_cost_per_call_usd",
-        "price_config_version",
     }
 )
 
 SETTINGS_GROUPS: dict[str, tuple[str, ...]] = {
-    "模型路由": (
+    "模型与连接": (
         "research_model",
         "summarization_model",
         "compression_model",
         "final_report_model",
         "fallback_model",
-        "judge_model",
-        "primary_provider_name",
-        "fallback_provider_name",
-        "primary_model_attempts",
-        "fallback_model_attempts",
-        "model_retry_delays_seconds",
-        "primary_disable_thinking",
-        "fallback_disable_thinking",
-    ),
-    "模型输出": (
         "research_model_max_tokens",
         "summarization_model_max_tokens",
         "compression_model_max_tokens",
         "final_report_model_max_tokens",
-        "artifact_extraction_model_max_tokens",
-        "final_report_input_max_chars",
-        "judge_model_max_tokens",
     ),
-    "任务预算与成本": (
+    "研究预算": (
         "max_input_tokens",
         "max_output_tokens",
         "max_tavily_calls",
         "max_cost_usd",
-        "llm_input_cost_per_million_usd",
-        "llm_output_cost_per_million_usd",
-        "tavily_cost_per_call_usd",
-        "price_config_version",
     ),
-    "研究执行": (
+    "研究深度与速度": (
         "max_concurrent_research_units",
-        "max_concurrent_summarizations",
         "max_researcher_iterations",
-        "max_supervisor_model_turns",
-        "max_react_tool_calls",
         "max_research_tool_calls",
-        "max_structured_output_retries",
     ),
-    "传输与搜索": (
-        "llm_request_timeout_seconds",
-        "llm_sdk_max_retries",
-        "long_form_streaming",
-        "max_content_length",
+    "搜索范围": (
         "tavily_max_results_per_query",
         "discovery_search_results_per_query",
-        "discovery_binding_max_input_chars",
-        "tavily_max_queries_per_call",
-        "tavily_extract_excerpt_max_chars",
     ),
 }
+
+
+def thinking_disable_options(model: str | None) -> dict[str, Any]:
+    """按模型路由返回兼容的 Thinking 关闭参数。."""
+    if model is None:
+        return {}
+    provider, _, model_name = model.partition(":")
+    # DeepSeek 经 Anthropic 兼容端点时必须关闭 Thinking，才能稳定使用结构化
+    # 输出与强制工具调用。OpenAI、Google 或 Claude 路由不接收这个参数。
+    if provider == "anthropic" and "deepseek" in model_name.casefold():
+        return {"thinking": {"type": "disabled"}}
+    return {}
 
 
 class OpenCompeteSettings(BaseSettings):
@@ -163,14 +122,6 @@ class OpenCompeteSettings(BaseSettings):
     primary_model_attempts: int = Field(default=3, ge=1, le=5)
     fallback_model_attempts: int = Field(default=2, ge=1, le=5)
     model_retry_delays_seconds: tuple[float, ...] = (2.0, 5.0, 10.0, 20.0)
-    primary_disable_thinking: bool = Field(
-        default=False,
-        description=(
-            "主模型为 DeepSeek Thinking 系列时禁用 thinking，"
-            "以兼容结构化输出和强制工具选择。"
-        ),
-    )
-    fallback_disable_thinking: bool = True
     judge_model: str | None = Field(default=None, min_length=1)
     research_model_max_tokens: int = Field(default=10000, ge=1)
     summarization_model_max_tokens: int = Field(default=8192, ge=1)
@@ -181,7 +132,6 @@ class OpenCompeteSettings(BaseSettings):
     judge_model_max_tokens: int = Field(default=8192, ge=1)
     llm_request_timeout_seconds: float = Field(default=300.0, gt=0, le=3600)
     llm_sdk_max_retries: int = Field(default=0, ge=0, le=10)
-    long_form_streaming: bool = True
     judge_prompt_version: Literal["opencompete-race-fact-v1"] = (
         "opencompete-race-fact-v1"
     )
@@ -296,22 +246,6 @@ class OpenCompeteSettings(BaseSettings):
             raise ValueError("模型重试等待配置不足")
         if any(delay < 0 for delay in self.model_retry_delays_seconds):
             raise ValueError("模型重试等待时间不能为负数")
-        if self.primary_disable_thinking and any(
-            model.startswith("openai:")
-            for model in (
-                self.research_model,
-                self.summarization_model,
-                self.compression_model,
-                self.final_report_model,
-            )
-        ):
-            raise ValueError("OpenAI 兼容模型不能启用主模型 Thinking 关闭参数")
-        if (
-            self.fallback_disable_thinking
-            and self.fallback_model is not None
-            and self.fallback_model.startswith("openai:")
-        ):
-            raise ValueError("OpenAI 兼容备用模型不能启用 Thinking 关闭参数")
         if self.max_react_tool_calls < self.max_research_tool_calls * 2:
             raise ValueError(
                 "Researcher 模型轮次硬上限必须覆盖配置的搜索与反思交替"
@@ -345,7 +279,6 @@ class OpenCompeteSettings(BaseSettings):
         run_id: str,
         *,
         model_override: str | None = None,
-        disable_thinking: bool = False,
     ) -> dict[str, Any]:
         """生成不包含 API Key 的上游 RunnableConfig。."""
         if not run_id.strip():
@@ -354,6 +287,16 @@ class OpenCompeteSettings(BaseSettings):
         summarization_model = model_override or self.summarization_model
         compression_model = model_override or self.compression_model
         final_report_model = model_override or self.final_report_model
+        model_thinking_by_model = {
+            model: options["thinking"]
+            for model in (
+                research_model,
+                summarization_model,
+                compression_model,
+                final_report_model,
+            )
+            if (options := thinking_disable_options(model))
+        }
         configurable: dict[str, Any] = {
             "allow_clarification": False,
             "search_api": "tavily",
@@ -367,7 +310,7 @@ class OpenCompeteSettings(BaseSettings):
             "compression_model_max_tokens": self.compression_model_max_tokens,
             "final_report_model": final_report_model,
             "final_report_model_max_tokens": self.final_report_model_max_tokens,
-            "long_form_streaming": self.long_form_streaming,
+            "long_form_streaming": True,
             "final_report_input_max_chars": self.final_report_input_max_chars,
             "llm_request_timeout_seconds": self.llm_request_timeout_seconds,
             "llm_sdk_max_retries": self.llm_sdk_max_retries,
@@ -377,7 +320,9 @@ class OpenCompeteSettings(BaseSettings):
             "primary_model_attempts": self.primary_model_attempts,
             "fallback_model_attempts": self.fallback_model_attempts,
             "model_retry_delays_seconds": self.model_retry_delays_seconds,
-            "fallback_disable_thinking": self.fallback_disable_thinking,
+            "fallback_disable_thinking": bool(
+                thinking_disable_options(self.fallback_model)
+            ),
             "max_content_length": self.max_content_length,
             "tavily_max_results_per_query": self.tavily_max_results_per_query,
             "tavily_max_queries_per_call": self.tavily_max_queries_per_call,
@@ -392,8 +337,8 @@ class OpenCompeteSettings(BaseSettings):
             "max_react_tool_calls": self.max_react_tool_calls,
             "max_research_tool_calls": self.max_research_tool_calls,
         }
-        if disable_thinking:
-            configurable["model_thinking"] = {"type": "disabled"}
+        if model_thinking_by_model:
+            configurable["model_thinking_by_model"] = model_thinking_by_model
         configurable["thread_id"] = run_id
         return {
             "configurable": configurable,

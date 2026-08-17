@@ -63,7 +63,7 @@ from opencompete.providers import DiscoveryProvider, LazyLlmDiscoveryProvider
 from opencompete.research_contracts import estimated_report_output_tokens
 from opencompete.scope_planning import LazyScopePlanner, ScopePlanner
 from opencompete.security import sanitized_error, validate_public_http_url
-from opencompete.settings import OpenCompeteSettings
+from opencompete.settings import OpenCompeteSettings, thinking_disable_options
 
 if TYPE_CHECKING:
     from opencompete.evaluation.competitive_models import (
@@ -743,7 +743,9 @@ class ApplicationRunner:
                         self.settings.llm_request_timeout_seconds
                     ),
                     sdk_max_retries=self.settings.llm_sdk_max_retries,
-                    disable_thinking=self.settings.primary_disable_thinking,
+                    disable_thinking=bool(
+                        thinking_disable_options(self.settings.judge_model)
+                    ),
                 )
                 if self.settings.judge_model is not None
                 else None
@@ -785,7 +787,9 @@ class ApplicationRunner:
                 request_timeout_seconds=self.settings.llm_request_timeout_seconds,
                 sdk_max_retries=self.settings.llm_sdk_max_retries,
                 max_output_attempts=self.settings.max_structured_output_retries,
-                disable_thinking=self.settings.primary_disable_thinking,
+                disable_thinking=bool(
+                    thinking_disable_options(self.settings.judge_model)
+                ),
             )
             if self.settings.judge_model is not None
             else None
@@ -829,7 +833,9 @@ class ApplicationRunner:
                 request_timeout_seconds=self.settings.llm_request_timeout_seconds,
                 sdk_max_retries=self.settings.llm_sdk_max_retries,
                 max_output_attempts=self.settings.max_structured_output_retries,
-                disable_thinking=self.settings.primary_disable_thinking,
+                disable_thinking=bool(
+                    thinking_disable_options(self.settings.judge_model)
+                ),
             )
             result = await evaluate_case_calibration(
                 case,
@@ -1142,13 +1148,11 @@ class ApplicationRunner:
             max_retries=settings.primary_model_attempts,
             request_timeout_seconds=settings.llm_request_timeout_seconds,
             sdk_max_retries=settings.llm_sdk_max_retries,
-            disable_thinking=settings.primary_disable_thinking,
             fallback_model=settings.fallback_model,
             fallback_provider_name=settings.fallback_provider_name,
             primary_provider_name=settings.primary_provider_name,
             fallback_model_attempts=settings.fallback_model_attempts,
             retry_delays_seconds=settings.model_retry_delays_seconds,
-            fallback_disable_thinking=settings.fallback_disable_thinking,
         )
 
     async def _finalize_state(
@@ -1337,10 +1341,7 @@ class ApplicationRunner:
         effective_settings = settings or self.settings
         config = cast(
             RunnableConfig,
-            effective_settings.to_runnable_config(
-                run_id,
-                disable_thinking=effective_settings.primary_disable_thinking,
-            ),
+            effective_settings.to_runnable_config(run_id),
         )
         effective_report_tokens = effective_settings.final_report_model_max_tokens
         if scope is not None and scope.frozen:

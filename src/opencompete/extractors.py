@@ -26,6 +26,7 @@ from opencompete.models import (
     ScopeSpec,
     Source,
 )
+from opencompete.settings import thinking_disable_options
 
 
 class _CandidateClaim(LenientModel):
@@ -149,13 +150,11 @@ class LangChainArtifactExtractor:
         max_retries: int = 2,
         request_timeout_seconds: float = 300.0,
         sdk_max_retries: int = 0,
-        disable_thinking: bool = False,
         fallback_model: str | None = None,
         fallback_provider_name: str = "Fallback",
         primary_provider_name: str = "Primary",
         fallback_model_attempts: int = 2,
         retry_delays_seconds: Sequence[float] = (2.0, 5.0, 10.0, 20.0),
-        fallback_disable_thinking: bool = True,
     ) -> None:
         """配置模型、输出长度和结构化输出重试次数。."""
         self._model = model
@@ -163,13 +162,11 @@ class LangChainArtifactExtractor:
         self._max_retries = max_retries
         self._request_timeout_seconds = request_timeout_seconds
         self._sdk_max_retries = sdk_max_retries
-        self._disable_thinking = disable_thinking
         self._fallback_model = fallback_model
         self._fallback_provider_name = fallback_provider_name
         self._primary_provider_name = primary_provider_name
         self._fallback_model_attempts = fallback_model_attempts
         self._retry_delays_seconds = tuple(retry_delays_seconds)
-        self._fallback_disable_thinking = fallback_disable_thinking
 
     async def extract(
         self,
@@ -209,8 +206,7 @@ class LangChainArtifactExtractor:
                 fallback_model=self._fallback_model,
             ),
         }
-        if self._disable_thinking:
-            model_options["thinking"] = {"type": "disabled"}
+        model_options.update(thinking_disable_options(self._model))
         fallback_options: dict[str, Any] | None = None
         if self._fallback_model is not None:
             fallback_options = {
@@ -228,8 +224,7 @@ class LangChainArtifactExtractor:
                     retry_delays_seconds=self._retry_delays_seconds,
                 ),
             }
-            if self._fallback_disable_thinking:
-                fallback_options["thinking"] = {"type": "disabled"}
+            fallback_options.update(thinking_disable_options(self._fallback_model))
         base_model = init_chat_model(
             configurable_fields=(
                 "model",

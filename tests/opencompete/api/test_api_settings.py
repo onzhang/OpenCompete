@@ -11,7 +11,17 @@ from opencompete.settings import OpenCompeteSettings
 from opencompete.settings_service import SettingsService
 
 
-def _app(tmp_path: Path) -> Any:
+def _app(tmp_path: Path, monkeypatch: Any | None = None) -> Any:
+    if monkeypatch is not None:
+        for name in (
+            "OPENAI_API_KEY",
+            "OPENAI_BASE_URL",
+            "ANTHROPIC_API_KEY",
+            "ANTHROPIC_BASE_URL",
+            "GOOGLE_API_KEY",
+            "TAVILY_API_KEY",
+        ):
+            monkeypatch.delenv(name, raising=False)
     config_path = tmp_path / "opencompete.toml"
     config_path.write_text("research_model = \"openai:test-model\"\n", encoding="utf-8")
     settings = OpenCompeteSettings(
@@ -20,7 +30,6 @@ def _app(tmp_path: Path) -> Any:
         summarization_model="openai:test-model",
         compression_model="openai:test-model",
         final_report_model="openai:test-model",
-        primary_disable_thinking=False,
     )
     service = SettingsService(
         config_path,
@@ -37,6 +46,18 @@ def test_settings_get_put_and_legacy_budget_summary(tmp_path: Path) -> None:
         body = initial.json()
         assert body["fields"]["research_model"]["value"] == "openai:test-model"
         assert "api_key" not in body["fields"]
+        assert not {
+            "judge_model",
+            "primary_disable_thinking",
+            "fallback_disable_thinking",
+            "long_form_streaming",
+            "llm_input_cost_per_million_usd",
+            "llm_output_cost_per_million_usd",
+            "tavily_cost_per_call_usd",
+            "price_config_version",
+            "max_supervisor_model_turns",
+            "max_content_length",
+        } & set(body["fields"])
 
         saved = client.put(
             "/api/settings",
@@ -51,6 +72,28 @@ def test_settings_get_put_and_legacy_budget_summary(tmp_path: Path) -> None:
         legacy = client.get("/api/config")
         assert legacy.status_code == 200
         assert legacy.json()["budget_limit"]["input_tokens"] == 123456
+
+
+def test_settings_update_rejects_internal_fields(tmp_path: Path) -> None:
+    with TestClient(_app(tmp_path)) as client:
+        current = client.get("/api/settings").json()
+        for name, value in (
+            ("judge_model", "openai:judge"),
+            ("primary_disable_thinking", True),
+            ("long_form_streaming", False),
+            ("llm_input_cost_per_million_usd", 1.0),
+            ("max_supervisor_model_turns", 11),
+        ):
+            response = client.put(
+                "/api/settings",
+                json={
+                    "expected_revision": current["revision"],
+                    "values": {name: value},
+                },
+            )
+            assert response.status_code == 409
+            assert response.json()["error"]["code"] == "data_validation_error"
+
 
 
 def test_settings_revision_conflict_and_external_management(tmp_path: Path) -> None:
@@ -69,9 +112,10 @@ def test_settings_revision_conflict_and_external_management(tmp_path: Path) -> N
 
 def test_credential_never_echoes_value_and_active_run_blocks_rotation(
     tmp_path: Path,
+    monkeypatch: Any,
 ) -> None:
     secret = "API-SETTINGS-SECRET-SENTINEL"
-    with TestClient(_app(tmp_path)) as client:
+    with TestClient(_app(tmp_path, monkeypatch)) as client:
         current = client.get("/api/settings").json()
         saved = client.put(
             "/api/settings/credentials",
@@ -112,11 +156,11 @@ def test_credential_never_echoes_value_and_active_run_blocks_rotation(
         assert "未终态任务" in blocked.json()["error"]["message"]
 
 
-def test_connection_test_rejects_unknown_role_without_provider_call(
+def test_connection_test_rejects_development_or_unknown_roles_without_provider_call(
     tmp_path: Path,
 ) -> None:
     with TestClient(_app(tmp_path)) as client:
-        response = client.post("/api/settings/connections/unknown/test")
-
-    assert response.status_code == 409
-    assert response.json()["error"]["code"] == "data_validation_error"
+        for target in ("judge", "unknown"):
+            response = client.post(f"/api/settings/connections/{target}/test")
+            assert response.status_code == 409
+            assert response.json()["error"]["code"] == "data_validation_error"

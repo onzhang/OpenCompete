@@ -8,7 +8,7 @@
 from __future__ import annotations
 
 import re
-from typing import Any
+from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -30,6 +30,22 @@ class ApiModel(BaseModel):
     """API 请求体基类：拒绝未知字段，避免前端拼写错误被静默吞掉。."""
 
     model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
+
+
+class SettingsUpdateBody(ApiModel):
+    """页面保存的非秘密运行设置与乐观锁版本。."""
+
+    expected_revision: int = Field(ge=0, le=9_007_199_254_740_991)
+    values: dict[str, Any] = Field(min_length=1)
+
+
+class CredentialUpdateBody(ApiModel):
+    """单个本地受管凭据的设置或清除操作。."""
+
+    expected_revision: int = Field(ge=0, le=9_007_199_254_740_991)
+    name: str = Field(min_length=1)
+    operation: Literal["set", "clear"]
+    value: str | None = None
 
 
 class EntityBody(ApiModel):

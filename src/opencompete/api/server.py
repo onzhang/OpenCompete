@@ -10,7 +10,8 @@ from __future__ import annotations
 
 import argparse
 import logging
-from collections.abc import AsyncIterator
+import os
+from collections.abc import AsyncIterator, Mapping
 from contextlib import asynccontextmanager
 from pathlib import Path
 
@@ -22,12 +23,26 @@ from opencompete.api.meta import RunMetaStore
 from opencompete.api.routes import router
 from opencompete.api.tasks import ResearchTaskRegistry
 from opencompete.settings import OpenCompeteSettings, load_settings
+from opencompete.settings_service import SettingsService
 
 logger = logging.getLogger(__name__)
 
 
-def create_app(settings: OpenCompeteSettings) -> FastAPI:
+def create_app(
+    settings: OpenCompeteSettings,
+    *,
+    config_path: str | Path | None = None,
+    startup_environment: Mapping[str, str] | None = None,
+    settings_service: SettingsService | None = None,
+) -> FastAPI:
     """按给定配置装配 FastAPI 应用。."""
+    resolved_path = Path(config_path or "opencompete.toml").resolve()
+    environment = dict(startup_environment or os.environ)
+    service = settings_service or SettingsService(
+        resolved_path,
+        startup_environment=environment,
+        initial_settings=settings,
+    )
 
     @asynccontextmanager
     async def lifespan(app: FastAPI) -> AsyncIterator[None]:
@@ -38,11 +53,12 @@ def create_app(settings: OpenCompeteSettings) -> FastAPI:
 
         hub = EventHub()
         repository = RunRepository(settings.data_dir)
-        app.state.settings = settings
+        app.state.settings = service.settings
+        app.state.settings_service = service
         app.state.hub = hub
         app.state.repository = repository
         app.state.runner = ApplicationRunner(
-            settings, repository=repository, progress_sink=hub.sink
+            service.settings, repository=repository, progress_sink=hub.sink
         )
         app.state.registry = ResearchTaskRegistry(capacity=1)
         app.state.meta_store = RunMetaStore(Path(settings.data_dir))
@@ -84,8 +100,14 @@ def main() -> None:
         level=logging.INFO,
         format="%(asctime)s %(levelname)s %(name)s: %(message)s",
     )
-    settings = load_settings(config_path=args.config)
-    app = create_app(settings)
+    config_path = Path(args.config or "opencompete.toml").resolve()
+    startup_environment = dict(os.environ)
+    settings = load_settings(config_path=config_path)
+    app = create_app(
+        settings,
+        config_path=config_path,
+        startup_environment=startup_environment,
+    )
     # 传入应用对象即固定单 worker；研究进行中请勿停止服务，
     # 否则会留下无法自动恢复的中间态任务。
     uvicorn.run(app, host=args.host, port=args.port, log_level="info")

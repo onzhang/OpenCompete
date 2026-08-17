@@ -77,6 +77,14 @@ def test_agent_control_limits_enter_runnable_config() -> None:
     assert configurable["max_supervisor_model_turns"] == 7
 
 
+def test_openai_model_cannot_receive_thinking_disable_parameter() -> None:
+    with pytest.raises(ValueError, match="OpenAI 兼容"):
+        OpenCompeteSettings(
+            research_model="openai:test-model",
+            primary_disable_thinking=True,
+        )
+
+
 def test_model_turn_limit_must_allow_search_reflection_pairs() -> None:
     with pytest.raises(ValueError, match="搜索与反思"):
         OpenCompeteSettings(
@@ -296,6 +304,9 @@ def test_toml_primary_disable_thinking_round_trip(
     config_path = tmp_path / "opencompete.toml"
     config_path.write_text(
         'research_model = "anthropic:deepseek-v4-flash"\n'
+        'summarization_model = "anthropic:deepseek-v4-flash"\n'
+        'compression_model = "anthropic:deepseek-v4-flash"\n'
+        'final_report_model = "anthropic:deepseek-v4-flash"\n'
         "primary_disable_thinking = true\n",
         encoding="utf-8",
     )

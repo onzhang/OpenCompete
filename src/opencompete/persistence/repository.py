@@ -36,6 +36,7 @@ _SENSITIVE_KEYS = {
     "access_token",
     "refresh_token",
     "secret",
+    "base_url",
 }
 
 

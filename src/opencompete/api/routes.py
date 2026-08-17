@@ -7,13 +7,15 @@
 from __future__ import annotations
 
 import asyncio
-from contextlib import suppress
+from contextlib import asynccontextmanager, suppress
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
 from fastapi import APIRouter, Query, Request, Response
 from fastapi.responses import JSONResponse
+from langchain.chat_models import init_chat_model
+from langchain_core.messages import HumanMessage
 from sse_starlette.sse import EventSourceResponse
 
 from opencompete.api.errors import (
@@ -25,7 +27,9 @@ from opencompete.api.events import follow_events
 from opencompete.api.schemas import (
     CandidateSelectionBody,
     CreateRunBody,
+    CredentialUpdateBody,
     ScopeConfirmationBody,
+    SettingsUpdateBody,
     bundle_view,
     run_detail,
     run_list_item,
@@ -38,6 +42,8 @@ from opencompete.models import (
     RunStatus,
     ScopeSpec,
 )
+from opencompete.providers import AsyncTavilyClient
+from opencompete.security import sanitized_error
 
 router = APIRouter(prefix="/api")
 
@@ -54,6 +60,17 @@ class CachedConfirmation:
 def _state(request: Request) -> Any:
     """访问 lifespan 装配的单例集合。."""
     return request.app.state
+
+
+@asynccontextmanager
+async def _settings_creation_lock(state: Any):
+    """正式服务下串行化设置保存与任务初始化；兼容最小路由测试替身。."""
+    service = getattr(state, "settings_service", None)
+    if service is None:
+        yield
+        return
+    async with service.lock:
+        yield
 
 
 def _load_manifest(state: Any, run_id: str) -> RunManifest:
@@ -171,10 +188,112 @@ async def health() -> dict[str, str]:
     return {"status": "ok"}
 
 
+@router.get("/settings")
+async def get_settings(request: Request) -> dict[str, object]:
+    """读取本地设置的严格公开视图，绝不回显凭据或 Base URL。."""
+    return await _state(request).settings_service.public_view()
+
+
+@router.put("/settings")
+async def update_settings(
+    request: Request,
+    body: SettingsUpdateBody,
+) -> dict[str, object]:
+    """保存只影响后续新任务的非秘密设置。."""
+    state = _state(request)
+    view = await state.settings_service.update_settings(
+        body.values,
+        expected_revision=body.expected_revision,
+        on_updated=lambda settings, revision: state.runner.reconfigure_default_settings(
+            settings, revision=revision
+        ),
+    )
+    state.settings = state.settings_service.settings
+    return view
+
+
+@router.put("/settings/credentials")
+async def update_credential(
+    request: Request,
+    body: CredentialUpdateBody,
+) -> dict[str, object]:
+    """设置或清除单个 `.env` 凭据，未终态任务存在时拒绝轮换。."""
+    state = _state(request)
+
+    async def active_statuses() -> dict[str, RunStatus]:
+        return {
+            summary.run_id: summary.status
+            for summary in await state.runner.list_runs()
+        }
+
+    return await state.settings_service.update_credential(
+        body.name,
+        operation=body.operation,
+        value=body.value,
+        expected_revision=body.expected_revision,
+        active_statuses_loader=active_statuses,
+    )
+
+
+@router.post("/settings/connections/{target}/test", response_model=None)
+async def test_connection(
+    request: Request, target: str
+) -> dict[str, object] | JSONResponse:
+    """显式执行一次最小连接验证，不创建任务或持久化 Provider 输出。."""
+    settings = _state(request).settings_service.settings
+    normalized = target.strip()
+    model_by_role = {
+        "research": settings.research_model,
+        "summarization": settings.summarization_model,
+        "compression": settings.compression_model,
+        "final_report": settings.final_report_model,
+        "artifact_extraction": settings.final_report_model,
+        "judge": settings.judge_model,
+        "fallback": settings.fallback_model,
+    }
+    try:
+        if normalized == "tavily":
+            client = AsyncTavilyClient(api_key=None)
+            await client.search(query="OpenCompete connection check", max_results=1)
+            return {"target": "tavily", "status": "ok"}
+        model = model_by_role.get(normalized)
+        if model is None:
+            raise DataValidationError("该模型角色未配置或不支持连接测试")
+        runnable = init_chat_model(
+            model=model,
+            max_tokens=1,
+            timeout=settings.llm_request_timeout_seconds,
+            max_retries=0,
+        )
+        await runnable.ainvoke(HumanMessage(content="Respond with OK."))
+        provider, _, model_name = model.partition(":")
+        return {
+            "target": normalized,
+            "status": "ok",
+            "provider": provider,
+            "model": model_name,
+        }
+    except DataValidationError:
+        raise
+    except Exception as exc:
+        record = sanitized_error(exc)
+        return JSONResponse(
+            status_code=502 if not record.retryable else 503,
+            content={
+                "error": {
+                    "code": record.code,
+                    "category": record.category.value,
+                    "message": record.message,
+                    "retryable": record.retryable,
+                }
+            },
+        )
+
+
 @router.get("/config")
 async def get_config(request: Request) -> dict[str, Any]:
-    """暴露前端展示所需的预算上限（不含任何模型或密钥配置）。."""
-    settings = _state(request).settings
+    """兼容旧页面的预算摘要（不含模型或密钥配置）。."""
+    settings = _state(request).settings_service.settings
     return {
         "budget_limit": {
             "input_tokens": settings.max_input_tokens,
@@ -215,7 +334,9 @@ async def create_run(request: Request, body: CreateRunBody) -> JSONResponse:
     经事件直播接口跟踪，到达确认点后详情页自动切换确认表单。
     """
     state = _state(request)
-    startup = await state.runner.initialize_commission_run(body.to_domain())
+    async with _settings_creation_lock(state):
+        # 设置保存和任务初始化共用锁：刚创建的 Manifest 必然使用同一版本快照。
+        startup = await state.runner.initialize_commission_run(body.to_domain())
     run_id = startup.handle.run_id
     try:
         state.registry.reserve(run_id)

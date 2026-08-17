@@ -296,6 +296,16 @@ def test_nested_secret_configuration_key_is_rejected(tmp_path: Path) -> None:
         repository.initialize(manifest)
 
 
+def test_nested_base_url_configuration_key_is_rejected(tmp_path: Path) -> None:
+    repository = RunRepository(tmp_path / ".opencompete-data")
+    manifest = _manifest(RunStatus.RESEARCHING).model_copy(
+        update={"config_snapshot": {"provider": {"base_url": "https://api.example.com"}}}
+    )
+
+    with pytest.raises(PersistenceError, match="密钥字段"):
+        repository.initialize(manifest)
+
+
 def test_events_are_append_only_and_secret_sentinel_never_reaches_disk(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,

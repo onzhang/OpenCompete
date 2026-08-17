@@ -3,12 +3,13 @@
 from __future__ import annotations
 
 import os
+import re
 from collections.abc import Mapping
 from pathlib import Path
 from typing import Any, Literal
 
 from dotenv import load_dotenv
-from pydantic import Field, ValidationError, model_validator
+from pydantic import Field, ValidationError, field_validator, model_validator
 from pydantic_settings import (
     BaseSettings,
     PydanticBaseSettingsSource,
@@ -17,6 +18,125 @@ from pydantic_settings import (
 )
 
 from opencompete.errors import ConfigurationError
+
+_MODEL_IDENTIFIER_PATTERN = re.compile(r"^[a-z][a-z0-9_-]*:[^\s:][^\s]*$")
+MODEL_SETTINGS_FIELDS = (
+    "research_model",
+    "summarization_model",
+    "compression_model",
+    "final_report_model",
+    "fallback_model",
+    "judge_model",
+)
+MANAGEABLE_MODEL_PROVIDERS = frozenset({"openai", "anthropic", "google_genai"})
+
+# 设置工作台只管理会影响新建研究任务的非秘密运行参数。数据目录、遥测和
+# 调试开关仍由启动环境控制，避免页面保存后改变历史产物位置或遥测边界。
+MANAGEABLE_SETTINGS_FIELDS = frozenset(
+    {
+        "research_model",
+        "summarization_model",
+        "compression_model",
+        "final_report_model",
+        "fallback_model",
+        "primary_provider_name",
+        "fallback_provider_name",
+        "primary_model_attempts",
+        "fallback_model_attempts",
+        "model_retry_delays_seconds",
+        "primary_disable_thinking",
+        "fallback_disable_thinking",
+        "judge_model",
+        "research_model_max_tokens",
+        "summarization_model_max_tokens",
+        "compression_model_max_tokens",
+        "final_report_model_max_tokens",
+        "artifact_extraction_model_max_tokens",
+        "final_report_input_max_chars",
+        "judge_model_max_tokens",
+        "llm_request_timeout_seconds",
+        "llm_sdk_max_retries",
+        "long_form_streaming",
+        "max_content_length",
+        "tavily_max_results_per_query",
+        "discovery_search_results_per_query",
+        "discovery_binding_max_input_chars",
+        "tavily_max_queries_per_call",
+        "tavily_extract_excerpt_max_chars",
+        "max_structured_output_retries",
+        "max_concurrent_research_units",
+        "max_concurrent_summarizations",
+        "max_researcher_iterations",
+        "max_supervisor_model_turns",
+        "max_react_tool_calls",
+        "max_research_tool_calls",
+        "max_tavily_calls",
+        "max_input_tokens",
+        "max_output_tokens",
+        "max_cost_usd",
+        "llm_input_cost_per_million_usd",
+        "llm_output_cost_per_million_usd",
+        "tavily_cost_per_call_usd",
+        "price_config_version",
+    }
+)
+
+SETTINGS_GROUPS: dict[str, tuple[str, ...]] = {
+    "模型路由": (
+        "research_model",
+        "summarization_model",
+        "compression_model",
+        "final_report_model",
+        "fallback_model",
+        "judge_model",
+        "primary_provider_name",
+        "fallback_provider_name",
+        "primary_model_attempts",
+        "fallback_model_attempts",
+        "model_retry_delays_seconds",
+        "primary_disable_thinking",
+        "fallback_disable_thinking",
+    ),
+    "模型输出": (
+        "research_model_max_tokens",
+        "summarization_model_max_tokens",
+        "compression_model_max_tokens",
+        "final_report_model_max_tokens",
+        "artifact_extraction_model_max_tokens",
+        "final_report_input_max_chars",
+        "judge_model_max_tokens",
+    ),
+    "任务预算与成本": (
+        "max_input_tokens",
+        "max_output_tokens",
+        "max_tavily_calls",
+        "max_cost_usd",
+        "llm_input_cost_per_million_usd",
+        "llm_output_cost_per_million_usd",
+        "tavily_cost_per_call_usd",
+        "price_config_version",
+    ),
+    "研究执行": (
+        "max_concurrent_research_units",
+        "max_concurrent_summarizations",
+        "max_researcher_iterations",
+        "max_supervisor_model_turns",
+        "max_react_tool_calls",
+        "max_research_tool_calls",
+        "max_structured_output_retries",
+    ),
+    "传输与搜索": (
+        "llm_request_timeout_seconds",
+        "llm_sdk_max_retries",
+        "long_form_streaming",
+        "max_content_length",
+        "tavily_max_results_per_query",
+        "discovery_search_results_per_query",
+        "discovery_binding_max_input_chars",
+        "tavily_max_queries_per_call",
+        "tavily_extract_excerpt_max_chars",
+    ),
+}
 
 
 class OpenCompeteSettings(BaseSettings):
@@ -153,6 +273,17 @@ class OpenCompeteSettings(BaseSettings):
     )
     langsmith_tracing: bool = False
 
+    @field_validator(*MODEL_SETTINGS_FIELDS)
+    @classmethod
+    def validate_model_identifier(cls, value: str | None) -> str | None:
+        """模型角色必须使用 LangChain 支持的 ``provider:model`` 标识。."""
+        if value is None:
+            return None
+        normalized = value.strip()
+        if not _MODEL_IDENTIFIER_PATTERN.fullmatch(normalized):
+            raise ValueError("模型必须使用 provider:model 格式，且不能包含空白字符")
+        return normalized
+
     @model_validator(mode="after")
     def validate_model_failover(self) -> OpenCompeteSettings:
         """限制主备真实尝试总数，并保证退避配置完整。."""
@@ -165,6 +296,22 @@ class OpenCompeteSettings(BaseSettings):
             raise ValueError("模型重试等待配置不足")
         if any(delay < 0 for delay in self.model_retry_delays_seconds):
             raise ValueError("模型重试等待时间不能为负数")
+        if self.primary_disable_thinking and any(
+            model.startswith("openai:")
+            for model in (
+                self.research_model,
+                self.summarization_model,
+                self.compression_model,
+                self.final_report_model,
+            )
+        ):
+            raise ValueError("OpenAI 兼容模型不能启用主模型 Thinking 关闭参数")
+        if (
+            self.fallback_disable_thinking
+            and self.fallback_model is not None
+            and self.fallback_model.startswith("openai:")
+        ):
+            raise ValueError("OpenAI 兼容备用模型不能启用 Thinking 关闭参数")
         if self.max_react_tool_calls < self.max_research_tool_calls * 2:
             raise ValueError(
                 "Researcher 模型轮次硬上限必须覆盖配置的搜索与反思交替"

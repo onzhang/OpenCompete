@@ -727,6 +727,7 @@ class RunManifest(FrozenModel):
                     "refresh_token",
                     "secret",
                     "token",
+                    "base_url",
                 }
                 or normalized.endswith("_api_key")
                 or normalized.endswith("_secret")

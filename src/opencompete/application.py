@@ -16,6 +16,7 @@ from uuid import uuid4
 
 from langchain_core.runnables import RunnableConfig
 from langgraph.types import Command
+from pydantic import ValidationError
 
 from opencompete.analysis import freeze_scope as freeze_scope_spec
 from opencompete.budget import BudgetGuard, BudgetLedger
@@ -178,6 +179,7 @@ class ApplicationRunner:
     ) -> None:
         """绑定本地运行时；Saver 仍在每次命令内打开和关闭。."""
         self.settings = settings
+        self._default_settings_revision = 0
         database_path = Path(settings.data_dir) / "checkpoints.sqlite3"
         self._repository = repository or RunRepository(settings.data_dir)
         self._checkpoint_store = checkpoint_store or SqliteCheckpointStore(
@@ -193,12 +195,22 @@ class ApplicationRunner:
         self._graph_factory = graph_factory
         self._research_graph = research_graph
         self._extractor_override = extractor
-        self._discovery_provider = discovery_provider or LazyLlmDiscoveryProvider(
-            settings
-        )
-        self._scope_planner = scope_planner or LazyScopePlanner(settings)
+        self._discovery_provider_override = discovery_provider
+        self._scope_planner_override = scope_planner
         self._evaluation_service = evaluation_service
         self._progress_sink = progress_sink
+
+    def reconfigure_default_settings(
+        self,
+        settings: OpenCompeteSettings,
+        *,
+        revision: int,
+    ) -> None:
+        """替换仅供后续新任务使用的默认设置。."""
+        if settings.data_dir != self.settings.data_dir:
+            raise DataValidationError("运行中的服务不允许通过设置页变更数据目录")
+        self.settings = settings
+        self._default_settings_revision = revision
 
     async def create_run(self, request: ResearchRequest) -> RunHandle:
         """兼容 CLI 与旧调用方：用已规划的 ResearchRequest 创建任务。."""
@@ -244,14 +256,15 @@ class ApplicationRunner:
         """同步初始化 manifest 与 run_created 事件，返回 run_id。."""
         del initial_input  # 输入只在执行期进入 Graph
         run_id = str(uuid4())
-        limit = self._budget_limit()
+        settings = self.settings
+        limit = self._budget_limit(settings)
         initial_budget = BudgetSnapshot(limit=limit, remaining=limit)
         manifest = RunManifest(
             run_id=run_id,
             status=RunStatus.DRAFT,
             scope_revision=0,
             artifact_revision=0,
-            config_snapshot=self._config_snapshot(),
+            config_snapshot=self._config_snapshot(settings),
             budget_summary=initial_budget,
         )
         self._repository.initialize(manifest)
@@ -298,7 +311,8 @@ class ApplicationRunner:
         """跳过发现和 UX 确认，从正式 ``freeze_scope`` 后继路径运行。."""
         _validate_fixed_scope_input(request, scope)
         run_id = str(uuid4())
-        limit = self._budget_limit()
+        settings = self.settings
+        limit = self._budget_limit(settings)
         initial_budget = BudgetSnapshot(limit=limit, remaining=limit)
         manifest = RunManifest(
             run_id=run_id,
@@ -306,7 +320,7 @@ class ApplicationRunner:
             scope_revision=0,
             artifact_revision=0,
             config_snapshot={
-                **self._config_snapshot(),
+                **self._config_snapshot(settings),
                 "entry_mode": "fixed_scope_after_freeze_scope",
                 "benchmark_case_id": benchmark_case_id,
                 "task_input_sha256": hashlib.sha256(
@@ -421,10 +435,11 @@ class ApplicationRunner:
 
     async def inspect_run(self, run_id: str) -> RunInspection:
         """只读检查同一运行的 Checkpoint，绝不恢复、推进或写入状态。."""
-        budget_guard = self._budget_guard(run_id)
-        config = self._runnable_config(run_id, budget_guard)
+        settings = self._settings_for_run(run_id)
+        budget_guard = self._budget_guard(run_id, settings=settings)
+        config = self._runnable_config(run_id, budget_guard, settings=settings)
         async with self._checkpoint_store.open_saver() as saver:
-            graph = self._build_graph(saver, budget_guard)
+            graph = self._build_graph(saver, budget_guard, settings=settings)
             snapshot = await graph.aget_state(config)
         values = _state_values(snapshot)
         if not values:
@@ -499,10 +514,13 @@ class ApplicationRunner:
                 }
             )
             await self._execution_ledger.initialize()
-            budget_guard = self._budget_guard(run_id)
-            config = self._runnable_config(run_id, budget_guard, scope=frozen)
+            settings = self._settings_for_run(run_id)
+            budget_guard = self._budget_guard(run_id, settings=settings)
+            config = self._runnable_config(
+                run_id, budget_guard, settings=settings, scope=frozen
+            )
             async with self._checkpoint_store.open_saver() as saver:
-                graph = self._build_graph(saver, budget_guard)
+                graph = self._build_graph(saver, budget_guard, settings=settings)
                 updated = await graph.aupdate_state(
                     config,
                     {
@@ -560,10 +578,11 @@ class ApplicationRunner:
 
     async def _manifest_from_checkpoint(self, run_id: str) -> RunManifest:
         """读取 durable Graph state 并生成不信任业务文件的最小索引。."""
-        budget_guard = self._budget_guard(run_id)
-        config = self._runnable_config(run_id, budget_guard)
+        settings = self._settings_for_run(run_id)
+        budget_guard = self._budget_guard(run_id, settings=settings)
+        config = self._runnable_config(run_id, budget_guard, settings=settings)
         async with self._checkpoint_store.open_saver() as saver:
-            graph = self._build_graph(saver, budget_guard)
+            graph = self._build_graph(saver, budget_guard, settings=settings)
             snapshot = await graph.aget_state(config)
         values = _state_values(snapshot)
         if not values:
@@ -582,10 +601,11 @@ class ApplicationRunner:
         database_path = getattr(self._checkpoint_store, "database_path", None)
         if database_path is not None and not Path(database_path).exists():
             return None, None
-        budget_guard = self._budget_guard(run_id)
-        config = self._runnable_config(run_id, budget_guard)
+        settings = self._settings_for_run(run_id)
+        budget_guard = self._budget_guard(run_id, settings=settings)
+        config = self._runnable_config(run_id, budget_guard, settings=settings)
         async with self._checkpoint_store.open_saver() as saver:
-            graph = self._build_graph(saver, budget_guard)
+            graph = self._build_graph(saver, budget_guard, settings=settings)
             snapshot = await graph.aget_state(config)
         values = _state_values(snapshot)
         if not values:
@@ -651,7 +671,7 @@ class ApplicationRunner:
         recovered_config: dict[str, Any] = {
             "recovered_from_checkpoint": True,
             "original_config_available": False,
-            "resume_config": self._config_snapshot(),
+            "resume_config": self._config_snapshot(self.settings),
         }
         if request is not None:
             recovered_config["task_input_sha256"] = hashlib.sha256(
@@ -832,11 +852,13 @@ class ApplicationRunner:
     ) -> RunHandle:
         execution_id: str | None = None
         started: float | None = None
+        settings = self._settings_for_run(run_id)
         async with self._checkpoint_store.open_saver() as saver:
             if user_input is not None:
                 execution_id = str(uuid4())
                 budget_guard = self._budget_guard(
                     run_id,
+                    settings=settings,
                     execution_id=execution_id,
                     emit_attempt_events=True,
                 )
@@ -849,18 +871,18 @@ class ApplicationRunner:
                 started = perf_counter()
                 try:
                     config = self._runnable_config(
-                        run_id, budget_guard, scope=scope
+                        run_id, budget_guard, settings=settings, scope=scope
                     )
-                    graph = self._build_graph(saver, budget_guard)
+                    graph = self._build_graph(saver, budget_guard, settings=settings)
                     result = await graph.ainvoke(
                         Command(resume=user_input.model_dump(mode="json")),
                         config,
                     )
                 except BudgetExceededError as exc:
                     config = self._runnable_config(
-                        run_id, budget_guard, scope=scope
+                        run_id, budget_guard, settings=settings, scope=scope
                     )
-                    graph = self._build_graph(saver, budget_guard)
+                    graph = self._build_graph(saver, budget_guard, settings=settings)
                     result = await self._budget_partial_state(
                         graph,
                         run_id,
@@ -869,9 +891,13 @@ class ApplicationRunner:
                         exc,
                     )
             else:
-                read_budget_guard = self._budget_guard(run_id)
-                read_config = self._runnable_config(run_id, read_budget_guard)
-                read_graph = self._build_graph(saver, read_budget_guard)
+                read_budget_guard = self._budget_guard(run_id, settings=settings)
+                read_config = self._runnable_config(
+                    run_id, read_budget_guard, settings=settings
+                )
+                read_graph = self._build_graph(
+                    saver, read_budget_guard, settings=settings
+                )
                 snapshot = await read_graph.aget_state(read_config)
                 values = _state_values(snapshot)
                 if not values:
@@ -893,6 +919,7 @@ class ApplicationRunner:
                     execution_id = str(uuid4())
                     budget_guard = self._budget_guard(
                         run_id,
+                        settings=settings,
                         execution_id=execution_id,
                         emit_attempt_events=True,
                     )
@@ -905,15 +932,19 @@ class ApplicationRunner:
                     started = perf_counter()
                     try:
                         config = self._runnable_config(
-                            run_id, budget_guard, scope=scope
+                            run_id, budget_guard, settings=settings, scope=scope
                         )
-                        graph = self._build_graph(saver, budget_guard)
+                        graph = self._build_graph(
+                            saver, budget_guard, settings=settings
+                        )
                         result = await graph.ainvoke(None, config)
                     except BudgetExceededError as exc:
                         config = self._runnable_config(
-                            run_id, budget_guard, scope=scope
+                            run_id, budget_guard, settings=settings, scope=scope
                         )
-                        graph = self._build_graph(saver, budget_guard)
+                        graph = self._build_graph(
+                            saver, budget_guard, settings=settings
+                        )
                         result = await self._budget_partial_state(
                             graph,
                             run_id,
@@ -938,14 +969,16 @@ class ApplicationRunner:
         value: Mapping[str, Any],
     ) -> Mapping[str, Any]:
         execution_id = str(uuid4())
+        settings = self._settings_for_run(run_id)
         budget_guard = self._budget_guard(
             run_id,
+            settings=settings,
             execution_id=execution_id,
             emit_attempt_events=True,
         )
         async with self._checkpoint_store.open_saver() as saver:
-            config = self._runnable_config(run_id, budget_guard)
-            graph = self._build_graph(saver, budget_guard)
+            config = self._runnable_config(run_id, budget_guard, settings=settings)
+            graph = self._build_graph(saver, budget_guard, settings=settings)
             self._append_event(
                 run_id,
                 "graph_execution_started",
@@ -979,14 +1012,18 @@ class ApplicationRunner:
     ) -> Mapping[str, Any]:
         """用 LangGraph 状态更新能力进入正式 ``freeze_scope`` 后继边。."""
         execution_id = str(uuid4())
+        settings = self._settings_for_run(run_id)
         budget_guard = self._budget_guard(
             run_id,
+            settings=settings,
             execution_id=execution_id,
             emit_attempt_events=True,
         )
         async with self._checkpoint_store.open_saver() as saver:
-            config = self._runnable_config(run_id, budget_guard, scope=scope)
-            graph = self._build_graph(saver, budget_guard)
+            config = self._runnable_config(
+                run_id, budget_guard, settings=settings, scope=scope
+            )
+            graph = self._build_graph(saver, budget_guard, settings=settings)
             self._append_event(
                 run_id,
                 "graph_execution_started",
@@ -1072,39 +1109,46 @@ class ApplicationRunner:
         self,
         saver: object,
         budget_guard: BudgetGuard,
+        *,
+        settings: OpenCompeteSettings,
     ) -> ApplicationGraph:
-        extractor = self._extractor_for()
+        extractor = self._extractor_for(settings)
         return self._graph_factory(
             saver,
             research_graph=self._research_graph,
             extractor=extractor,
             budget_guard=budget_guard,
-            discovery_provider=self._discovery_provider,
-            scope_planner=self._scope_planner,
+            discovery_provider=(
+                self._discovery_provider_override
+                or LazyLlmDiscoveryProvider(settings)
+            ),
+            scope_planner=(
+                self._scope_planner_override or LazyScopePlanner(settings)
+            ),
             # 这是候选发现专用的单次 Tavily 请求页大小，绝不能再充当候选
             # 产品数量上限，也不能因上游 Researcher 的搜索配置而被静默收紧。
             discovery_search_results_per_query=(
-                self.settings.discovery_search_results_per_query
+                settings.discovery_search_results_per_query
             ),
         )
 
-    def _extractor_for(self) -> ArtifactExtractor:
-        """按通用模型路由创建提取器；测试注入始终优先。."""
+    def _extractor_for(self, settings: OpenCompeteSettings) -> ArtifactExtractor:
+        """按运行快照模型路由创建提取器；测试注入始终优先。."""
         if self._extractor_override is not None:
             return self._extractor_override
         return LangChainArtifactExtractor(
-            self.settings.final_report_model,
-            max_tokens=self.settings.artifact_extraction_model_max_tokens,
-            max_retries=self.settings.primary_model_attempts,
-            request_timeout_seconds=self.settings.llm_request_timeout_seconds,
-            sdk_max_retries=self.settings.llm_sdk_max_retries,
-            disable_thinking=self.settings.primary_disable_thinking,
-            fallback_model=self.settings.fallback_model,
-            fallback_provider_name=self.settings.fallback_provider_name,
-            primary_provider_name=self.settings.primary_provider_name,
-            fallback_model_attempts=self.settings.fallback_model_attempts,
-            retry_delays_seconds=self.settings.model_retry_delays_seconds,
-            fallback_disable_thinking=self.settings.fallback_disable_thinking,
+            settings.final_report_model,
+            max_tokens=settings.artifact_extraction_model_max_tokens,
+            max_retries=settings.primary_model_attempts,
+            request_timeout_seconds=settings.llm_request_timeout_seconds,
+            sdk_max_retries=settings.llm_sdk_max_retries,
+            disable_thinking=settings.primary_disable_thinking,
+            fallback_model=settings.fallback_model,
+            fallback_provider_name=settings.fallback_provider_name,
+            primary_provider_name=settings.primary_provider_name,
+            fallback_model_attempts=settings.fallback_model_attempts,
+            retry_delays_seconds=settings.model_retry_delays_seconds,
+            fallback_disable_thinking=settings.fallback_disable_thinking,
         )
 
     async def _finalize_state(
@@ -1258,6 +1302,7 @@ class ApplicationRunner:
         self,
         run_id: str,
         *,
+        settings: OpenCompeteSettings | None = None,
         execution_id: str | None = None,
         emit_attempt_events: bool = False,
     ) -> BudgetGuard:
@@ -1267,18 +1312,18 @@ class ApplicationRunner:
 
         return BudgetGuard(
             self._execution_ledger,
-            self._budget_limit(),
+            self._budget_limit(settings or self.settings),
             run_id,
             execution_id=execution_id,
             event_sink=(append_attempt_event if emit_attempt_events else None),
         )
 
-    def _budget_limit(self) -> BudgetEstimate:
+    def _budget_limit(self, settings: OpenCompeteSettings) -> BudgetEstimate:
         return BudgetEstimate(
-            input_tokens=self.settings.max_input_tokens,
-            output_tokens=self.settings.max_output_tokens,
-            tavily_calls=self.settings.max_tavily_calls,
-            cost_usd=self.settings.max_cost_usd,
+            input_tokens=settings.max_input_tokens,
+            output_tokens=settings.max_output_tokens,
+            tavily_calls=settings.max_tavily_calls,
+            cost_usd=settings.max_cost_usd,
         )
 
     def _runnable_config(
@@ -1286,16 +1331,18 @@ class ApplicationRunner:
         run_id: str,
         budget_guard: BudgetGuard,
         *,
+        settings: OpenCompeteSettings | None = None,
         scope: ScopeSpec | None = None,
     ) -> RunnableConfig:
+        effective_settings = settings or self.settings
         config = cast(
             RunnableConfig,
-            self.settings.to_runnable_config(
+            effective_settings.to_runnable_config(
                 run_id,
-                disable_thinking=self.settings.primary_disable_thinking,
+                disable_thinking=effective_settings.primary_disable_thinking,
             ),
         )
-        effective_report_tokens = self.settings.final_report_model_max_tokens
+        effective_report_tokens = effective_settings.final_report_model_max_tokens
         if scope is not None and scope.frozen:
             # max_tokens 是输出上限而非预留；范围矩阵越大，完整叙事报告
             # 所需容量线性增长。配置值只做下限，避免单次事故驱动常数。
@@ -1313,32 +1360,56 @@ class ApplicationRunner:
             BudgetCallback(
                 budget_guard,
                 default_max_output_tokens=max(
-                    self.settings.research_model_max_tokens,
-                    self.settings.summarization_model_max_tokens,
-                    self.settings.compression_model_max_tokens,
+                    effective_settings.research_model_max_tokens,
+                    effective_settings.summarization_model_max_tokens,
+                    effective_settings.compression_model_max_tokens,
                     effective_report_tokens,
-                    self.settings.artifact_extraction_model_max_tokens,
+                    effective_settings.artifact_extraction_model_max_tokens,
                 ),
                 llm_input_cost_per_million_usd=(
-                    self.settings.llm_input_cost_per_million_usd
+                    effective_settings.llm_input_cost_per_million_usd
                 ),
                 llm_output_cost_per_million_usd=(
-                    self.settings.llm_output_cost_per_million_usd
+                    effective_settings.llm_output_cost_per_million_usd
                 ),
                 tavily_cost_per_call_usd=(
-                    self.settings.tavily_cost_per_call_usd
+                    effective_settings.tavily_cost_per_call_usd
                 ),
                 tavily_max_queries_per_call=(
-                    self.settings.tavily_max_queries_per_call
+                    effective_settings.tavily_max_queries_per_call
                 ),
             )
         ]
         return config
 
-    def _config_snapshot(self) -> dict[str, Any]:
-        snapshot = self.settings.model_dump(mode="json")
-        snapshot["budget_calculation_version"] = "v2-tavily-credits"
-        return snapshot
+    def _settings_for_run(self, run_id: str) -> OpenCompeteSettings:
+        """恢复运行时从 Manifest 读取创建时冻结的非秘密设置。."""
+        try:
+            manifest = self._repository.load_manifest(run_id)
+        except PersistenceError:
+            # Manifest 损坏时由后续 Checkpoint 对账重建索引；此窗口保留历史
+            # 降级路径，避免为了读取快照阻断恢复。
+            return self.settings
+        snapshot = dict(manifest.config_snapshot)
+        settings_payload = snapshot.get("settings")
+        if not isinstance(settings_payload, Mapping):
+            # 早期任务没有封装快照；保留既有降级语义并使用当前默认设置。
+            return self.settings
+        try:
+            return OpenCompeteSettings.model_validate(dict(settings_payload))
+        except ValidationError as exc:
+            raise PersistenceError("任务设置快照无法通过当前配置契约校验") from exc
+
+    def _config_snapshot(self, settings: OpenCompeteSettings) -> dict[str, Any]:
+        """生成只含非秘密字段的版本化任务设置快照。."""
+        serialized = settings.model_dump(mode="json")
+        return {
+            **serialized,
+            "settings_schema_version": 1,
+            "settings_revision": self._default_settings_revision,
+            "settings": serialized,
+            "budget_calculation_version": "v2-tavily-credits",
+        }
 
     def _lock_for(self, run_id: str) -> asyncio.Lock:
         loop = asyncio.get_running_loop()

@@ -73,7 +73,7 @@ cd frontend
 npm run dev
 ```
 
-打开 `http://localhost:5178` 即可使用。前端经 Vite 代理把 `/api` 转发到 8123 端口；`opencompete-api` 支持 `--config`、`--host`、`--port` 参数。可先确认服务就绪：
+打开 `http://localhost:5178` 即可使用。首次启动后可从侧边栏进入“设置”，完成模型标识、预算、执行限制和本地凭据配置；前端经 Vite 代理把 `/api` 转发到 8123 端口；`opencompete-api` 支持 `--config`、`--host`、`--port` 参数。可先确认服务就绪：
 
 ```bash
 curl http://127.0.0.1:8123/api/health    # 返回 HTTP 200
@@ -87,6 +87,9 @@ curl http://127.0.0.1:8123/api/health    # 返回 HTTP 200
 - **研究进行中请勿停止 API 服务**：完整研究在服务进程内后台执行，进程退出会把任务留在无法自动恢复的中间态（界面会标注「可能已中断」，可用 `uv run opencompete resume <run_id>` 从 CLI 恢复）。
 - 查看历史任务与报告不需要任何 API Key；发起新研究需要 `.env` 中的模型与 Tavily 密钥，且外部调用只在范围确认冻结后才开始。
 - Web 层的补充索引写在 `.opencompete-data/api-meta/`（仅缓存研究问题与对象名单等展示字段）；任务状态、预算与产物一律以 `runs/<run_id>/manifest.json` 为准。
+- 设置页面保存的模型、预算、并发、搜索和传输参数只影响**新建任务**。每个任务在创建时冻结非秘密快照，恢复旧任务不会读取后续修改。
+- 页面管理的 Key 与兼容端点 Base URL 只写入本机 `.env`，输入框始终为空，响应不回显真实值或遮掩片段。模型/Tavily“测试连接”由用户主动触发，可能产生少量费用。
+- 进程外环境变量优先于 `.env` 与 TOML；被外部环境管理的字段不能从页面保存。存在 draft、待确认、冻结或执行中任务时，页面和 API 都会拒绝替换或清除凭据，需先完成或停止旧任务。
 
 ## 命令一览
 

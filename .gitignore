@@ -87,3 +87,6 @@ opencompete.toml
 
 # 前端 QA 构建产物（隐藏目录）
 frontend/.dist-*/
+
+# 本地浏览器验证截图
+gui-test-screenshots/

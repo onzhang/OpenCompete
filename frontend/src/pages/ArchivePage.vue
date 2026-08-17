@@ -1,6 +1,7 @@
 <script setup>
 import { computed, onMounted, ref } from 'vue'
 import { useRunsStore } from '../stores/runs.js'
+import ConfirmDialog from '../components/ConfirmDialog.vue'
 import StatusStamp from '../components/StatusStamp.vue'
 import { fmtDateTime, fmtUsd, shortId } from '../utils/format.js'
 
@@ -12,6 +13,10 @@ onMounted(() => {
 
 const query = ref('')
 const statusFilter = ref('all')
+const pendingDelete = ref(null)
+const deleteBusy = ref(false)
+const deleteError = ref('')
+const deleteTrigger = ref(null)
 
 const FILTERS = [
   { v: 'all', label: '全部' },
@@ -53,15 +58,42 @@ function hasReport(run) {
   return ['completed', 'partial'].includes(run.status)
 }
 
-async function deleteRun(run) {
-  const label = run.query || run.run_id
-  if (!window.confirm(`确定彻底删除“${label}”吗？该操作会删除报告、证据、事件与恢复记录，且不可恢复。`)) return
+function requestDelete(run, event) {
+  pendingDelete.value = run
+  deleteError.value = ''
+  deleteTrigger.value = event.currentTarget
+}
+
+function closeDeleteDialog() {
+  if (deleteBusy.value) return
+  pendingDelete.value = null
+  deleteError.value = ''
+}
+
+async function confirmDelete() {
+  if (!pendingDelete.value || deleteBusy.value) return
+  deleteBusy.value = true
+  deleteError.value = ''
   try {
-    await store.deleteRun(run.run_id)
+    await store.deleteRun(pendingDelete.value.run_id)
+    pendingDelete.value = null
   } catch (err) {
-    window.alert(err.message)
+    deleteError.value = err.message
+  } finally {
+    deleteBusy.value = false
   }
 }
+
+const deleteDetails = computed(() => {
+  const run = pendingDelete.value
+  if (!run) return []
+  const entities = (run.entities || []).filter(Boolean)
+  return [
+    entities.length ? `研究对象：${entities.join('、')}` : '研究对象：未记录',
+    '将删除报告、结构化证据、执行事件与恢复记录',
+    '此操作不可恢复',
+  ]
+})
 </script>
 
 <template>
@@ -153,7 +185,7 @@ async function deleteRun(run) {
             <button
               v-if="!ACTIVE_SET.includes(run.status)"
               class="action action--delete"
-              @click="deleteRun(run)"
+              @click="requestDelete(run, $event)"
             >
               删除
             </button>
@@ -175,6 +207,20 @@ async function deleteRun(run) {
       <p class="empty-desc">调整筛选条件，或发起一个新的竞品研究。</p>
       <RouterLink to="/new" class="btn btn--primary">发起新研究</RouterLink>
     </div>
+
+    <ConfirmDialog
+      :open="!!pendingDelete"
+      title="彻底删除卷宗"
+      :subject="pendingDelete?.query || '未记录研究问题'"
+      :details="deleteDetails"
+      confirm-label="彻底删除"
+      pending-label="正在删除卷宗…"
+      :pending="deleteBusy"
+      :error="deleteError"
+      :return-focus="deleteTrigger"
+      @cancel="closeDeleteDialog"
+      @confirm="confirmDelete"
+    />
   </div>
 </template>
 
@@ -448,6 +494,18 @@ async function deleteRun(run) {
   background: var(--vermilion);
   border-color: var(--vermilion);
   color: #fdf6ee;
+}
+
+.action--delete {
+  background: transparent;
+  border-color: transparent;
+  color: var(--ink-faint);
+}
+
+.action--delete:hover {
+  border-color: var(--vermilion);
+  background: var(--vermilion-wash);
+  color: var(--vermilion-deep);
 }
 
 /* 空状态 */

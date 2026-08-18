@@ -202,6 +202,7 @@ def test_primary_and_fallback_connection_tests_use_role_credentials(
 
     class FakeRunnable:
         async def ainvoke(self, message: Any) -> object:
+            assert message == "hi"
             captured.append({"message": message})
             return object()
 

@@ -15,7 +15,6 @@ from typing import Any
 from fastapi import APIRouter, Query, Request, Response
 from fastapi.responses import JSONResponse
 from langchain.chat_models import init_chat_model
-from langchain_core.messages import HumanMessage
 from sse_starlette.sse import EventSourceResponse
 
 from open_deep_research.utils import (
@@ -291,7 +290,7 @@ async def test_connection(
                 max_retries=0,
                 **thinking_disable_options(model),
             )
-            await runnable.ainvoke(HumanMessage(content="Respond with OK."))
+            await runnable.ainvoke("hi")
         provider, _, model_name = model.partition(":")
         return {
             "target": normalized,

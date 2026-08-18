@@ -7,6 +7,10 @@ import logging
 import os
 import re
 import warnings
+from collections.abc import Mapping
+from contextlib import contextmanager
+from contextvars import ContextVar
+from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 from typing import Annotated, Any, Dict, List, Literal, Optional, cast
 from urllib.parse import parse_qsl, urlsplit, urlunsplit
@@ -157,7 +161,11 @@ async def tavily_search(
     max_char_to_include = configurable.max_content_length
     
     # Initialize summarization model with retry logic
-    model_api_key = get_api_key_for_model(configurable.summarization_model, config)
+    model_api_key = get_api_key_for_model(
+        configurable.summarization_model,
+        config,
+        connection_role="primary",
+    )
     fallback_model = configurable.fallback_model
     fallback_attempts = (
         configurable.fallback_model_attempts if fallback_model is not None else 0
@@ -166,6 +174,11 @@ async def tavily_search(
         "model": configurable.summarization_model,
         "max_tokens": configurable.summarization_model_max_tokens,
         "api_key": model_api_key,
+        "base_url": get_base_url_for_model(
+            configurable.summarization_model,
+            config,
+            connection_role="primary",
+        ),
         "timeout": configurable.llm_request_timeout_seconds,
         "max_retries": configurable.llm_sdk_max_retries,
         "tags": ["langsmith:nostream"],
@@ -183,6 +196,7 @@ async def tavily_search(
                 else None
             ),
             fallback_model=fallback_model,
+            connection_role="primary",
         ),
     }
     primary_thinking = configurable.model_thinking_by_model.get(
@@ -196,7 +210,16 @@ async def tavily_search(
         fallback_options = {
             "model": fallback_model,
             "max_tokens": configurable.summarization_model_max_tokens,
-            "api_key": get_api_key_for_model(fallback_model, config),
+            "api_key": get_api_key_for_model(
+                fallback_model,
+                config,
+                connection_role="fallback",
+            ),
+            "base_url": get_base_url_for_model(
+                fallback_model,
+                config,
+                connection_role="fallback",
+            ),
             "timeout": configurable.llm_request_timeout_seconds,
             "max_retries": configurable.llm_sdk_max_retries,
             "tags": ["langsmith:nostream"],
@@ -208,6 +231,7 @@ async def tavily_search(
                 primary_attempts=configurable.primary_model_attempts,
                 fallback_attempts=fallback_attempts,
                 retry_delays_seconds=configurable.model_retry_delays_seconds,
+                connection_role="fallback",
             ),
         }
         if configurable.fallback_disable_thinking:
@@ -225,6 +249,7 @@ async def tavily_search(
                 "model",
                 "max_tokens",
                 "api_key",
+                "base_url",
                 "timeout",
                 "max_retries",
                 "thinking",
@@ -1457,8 +1482,50 @@ def get_config_value(value):
     else:
         return value.value
 
-def get_api_key_for_model(model_name: str, config: RunnableConfig):
-    """Get API key for a specific model from environment or config."""
+
+@dataclass(frozen=True)
+class RuntimeModelConnection:
+    """Process-local connection values selected for one model route."""
+
+    api_key: str | None = None
+    base_url: str | None = None
+
+
+_RUNTIME_MODEL_CONNECTIONS: ContextVar[
+    Mapping[str, RuntimeModelConnection] | None
+] = ContextVar("runtime_model_connections", default=None)
+
+
+@contextmanager
+def model_connection_context(
+    connections: Mapping[str, RuntimeModelConnection],
+):
+    """Bind non-persistent connection values for one graph execution window."""
+    token = _RUNTIME_MODEL_CONNECTIONS.set(dict(connections))
+    try:
+        yield
+    finally:
+        _RUNTIME_MODEL_CONNECTIONS.reset(token)
+
+
+def _runtime_connection(role: str | None) -> RuntimeModelConnection | None:
+    """Resolve a route-local connection without reading Graph configuration."""
+    if role is None:
+        return None
+    connections = _RUNTIME_MODEL_CONNECTIONS.get()
+    return None if connections is None else connections.get(role)
+
+
+def get_api_key_for_model(
+    model_name: str,
+    config: RunnableConfig,
+    *,
+    connection_role: str | None = None,
+):
+    """Get an API key from process-local routing or the legacy environment."""
+    connection = _runtime_connection(connection_role)
+    if connection is not None and connection.api_key:
+        return connection.api_key
     should_get_from_config = os.getenv("GET_API_KEYS_FROM_CONFIG", "false")
     model_name = model_name.lower()
     if should_get_from_config.lower() == "true":
@@ -1473,13 +1540,31 @@ def get_api_key_for_model(model_name: str, config: RunnableConfig):
             return api_keys.get("GOOGLE_API_KEY")
         return None
     else:
-        if model_name.startswith("openai:"): 
+        if model_name.startswith("openai:"):
             return os.getenv("OPENAI_API_KEY")
         elif model_name.startswith("anthropic:"):
             return os.getenv("ANTHROPIC_API_KEY")
         elif model_name.startswith("google"):
             return os.getenv("GOOGLE_API_KEY")
         return None
+
+
+def get_base_url_for_model(
+    model_name: str,
+    _config: RunnableConfig,
+    *,
+    connection_role: str | None = None,
+) -> str | None:
+    """Get a route-local Base URL without storing it in Graph state."""
+    connection = _runtime_connection(connection_role)
+    if connection is not None and connection.base_url:
+        return connection.base_url
+    normalized = model_name.lower()
+    if normalized.startswith("openai:"):
+        return os.getenv("OPENAI_BASE_URL")
+    if normalized.startswith("anthropic:"):
+        return os.getenv("ANTHROPIC_BASE_URL")
+    return None
 
 def get_tavily_api_key(config: RunnableConfig):
     """Get Tavily API key from environment or config."""

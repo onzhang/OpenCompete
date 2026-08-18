@@ -96,6 +96,7 @@ def route_metadata(
     retry_delays_seconds: Sequence[float],
     fallback_provider: str | None = None,
     fallback_model: str | None = None,
+    connection_role: str | None = None,
     existing: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
     """生成供预算回调和 CLI 使用的非秘密路由元数据。."""
@@ -118,6 +119,8 @@ def route_metadata(
         values["opencompete_fallback_provider"] = fallback_provider
     if fallback_model is not None:
         values["opencompete_fallback_model"] = fallback_model
+    if connection_role is not None:
+        values["opencompete_connection_role"] = connection_role
     return values
 
 

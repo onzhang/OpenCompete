@@ -52,6 +52,7 @@ from open_deep_research.utils import (
     anthropic_websearch_count,
     get_all_tools,
     get_api_key_for_model,
+    get_base_url_for_model,
     get_model_token_limit,
     get_notes_from_tool_calls,
     get_today_str,
@@ -67,6 +68,7 @@ configurable_model = init_chat_model(
         "model",
         "max_tokens",
         "api_key",
+        "base_url",
         "timeout",
         "max_retries",
         "streaming",
@@ -107,7 +109,12 @@ def _resilient_model(
         {
             "model": model,
             "max_tokens": max_tokens,
-            "api_key": get_api_key_for_model(model, config),
+            "api_key": get_api_key_for_model(
+                model, config, connection_role="primary"
+            ),
+            "base_url": get_base_url_for_model(
+                model, config, connection_role="primary"
+            ),
             "timeout": configurable.llm_request_timeout_seconds,
             "max_retries": configurable.llm_sdk_max_retries,
             "streaming": streaming,
@@ -126,6 +133,7 @@ def _resilient_model(
                     else None
                 ),
                 fallback_model=fallback_model,
+                connection_role="primary",
             ),
             **_runtime_model_options(configurable, model),
         },
@@ -135,7 +143,12 @@ def _resilient_model(
         fallback_options: dict[str, object] = {
             "model": fallback_model,
             "max_tokens": max_tokens,
-            "api_key": get_api_key_for_model(fallback_model, config),
+            "api_key": get_api_key_for_model(
+                fallback_model, config, connection_role="fallback"
+            ),
+            "base_url": get_base_url_for_model(
+                fallback_model, config, connection_role="fallback"
+            ),
             "timeout": configurable.llm_request_timeout_seconds,
             "max_retries": configurable.llm_sdk_max_retries,
             "streaming": streaming,
@@ -148,6 +161,7 @@ def _resilient_model(
                 primary_attempts=configurable.primary_model_attempts,
                 fallback_attempts=fallback_attempts,
                 retry_delays_seconds=configurable.model_retry_delays_seconds,
+                connection_role="fallback",
             ),
         }
         if configurable.fallback_disable_thinking:

@@ -18,6 +18,11 @@ from langchain.chat_models import init_chat_model
 from langchain_core.messages import HumanMessage
 from sse_starlette.sse import EventSourceResponse
 
+from open_deep_research.utils import (
+    get_api_key_for_model,
+    get_base_url_for_model,
+    model_connection_context,
+)
 from opencompete.api.errors import (
     RunAlreadyActiveError,
     RunNotActiveError,
@@ -34,6 +39,7 @@ from opencompete.api.schemas import (
     run_detail,
     run_list_item,
 )
+from opencompete.connections import runtime_model_connections
 from opencompete.errors import DataValidationError, PersistenceError
 from opencompete.models import (
     DiscoveryCandidate,
@@ -141,13 +147,14 @@ def _detail_response(
     handle: RunHandle | None = None,
     recoverable: bool = False,
     cache_handle: bool = True,
+    project_handle_status: bool = True,
 ) -> dict[str, Any]:
     """组装详情视图：manifest + meta + 待确认载荷。."""
     manifest = _load_manifest(state, run_id)
     meta = state.meta_store.ensure(run_id, state.repository)
     if handle is not None and cache_handle:
         _cache_from_handle(state, handle)
-    if handle is not None:
+    if handle is not None and project_handle_status:
         updates: dict[str, Any] = {"status": handle.status}
         if handle.scope is not None:
             updates["scope_revision"] = handle.scope.revision
@@ -236,6 +243,16 @@ async def update_credential(
     )
 
 
+@router.get("/settings/connections/{role}/api-key")
+async def reveal_connection_api_key(request: Request, role: str) -> Response:
+    """用户主动查看当前连接 Key；响应不缓存，服务端不记录值。."""
+    value = await _state(request).settings_service.reveal_connection_api_key(role)
+    return JSONResponse(
+        content={"role": role, "configured": value is not None, "api_key": value},
+        headers={"Cache-Control": "no-store"},
+    )
+
+
 @router.post("/settings/connections/{target}/test", response_model=None)
 async def test_connection(
     request: Request, target: str
@@ -243,12 +260,8 @@ async def test_connection(
     """显式执行一次最小连接验证，不创建任务或持久化 Provider 输出。."""
     settings = _state(request).settings_service.settings
     normalized = target.strip()
-    model_by_role = {
-        "research": settings.research_model,
-        "summarization": settings.summarization_model,
-        "compression": settings.compression_model,
-        "final_report": settings.final_report_model,
-        "artifact_extraction": settings.final_report_model,
+    model_by_target = {
+        "primary": settings.research_model,
         "fallback": settings.fallback_model,
     }
     try:
@@ -256,17 +269,29 @@ async def test_connection(
             client = AsyncTavilyClient(api_key=None)
             await client.search(query="OpenCompete connection check", max_results=1)
             return {"target": "tavily", "status": "ok"}
-        model = model_by_role.get(normalized)
+        model = model_by_target.get(normalized)
         if model is None:
-            raise DataValidationError("该模型角色未配置或不支持连接测试")
-        runnable = init_chat_model(
-            model=model,
-            max_tokens=1,
-            timeout=settings.llm_request_timeout_seconds,
-            max_retries=0,
-            **thinking_disable_options(model),
-        )
-        await runnable.ainvoke(HumanMessage(content="Respond with OK."))
+            raise DataValidationError("该连接未配置备用模型或连接角色不受支持")
+        connections = runtime_model_connections(settings)
+        with model_connection_context(connections):
+            runnable = init_chat_model(
+                model=model,
+                max_tokens=1,
+                api_key=get_api_key_for_model(
+                    model,
+                    {},
+                    connection_role=normalized,
+                ),
+                base_url=get_base_url_for_model(
+                    model,
+                    {},
+                    connection_role=normalized,
+                ),
+                timeout=settings.llm_request_timeout_seconds,
+                max_retries=0,
+                **thinking_disable_options(model),
+            )
+            await runnable.ainvoke(HumanMessage(content="Respond with OK."))
         provider, _, model_name = model.partition(":")
         return {
             "target": normalized,
@@ -376,17 +401,22 @@ async def get_run(request: Request, run_id: str) -> dict[str, Any]:
     if manifest.status in {
         RunStatus.COMPLETED,
         RunStatus.PARTIAL,
-        RunStatus.FAILED,
         RunStatus.CANCELLED,
     }:
         return _detail_response(state, run_id)
-    inspection = await state.runner.inspect_run(run_id)
+    try:
+        inspection = await state.runner.inspect_run(run_id)
+    except PersistenceError:
+        if manifest.status is RunStatus.FAILED:
+            return _detail_response(state, run_id)
+        raise
     return _detail_response(
         state,
         run_id,
         handle=inspection.handle,
         recoverable=inspection.recoverable,
         cache_handle=False,
+        project_handle_status=manifest.status is not RunStatus.FAILED,
     )
 
 

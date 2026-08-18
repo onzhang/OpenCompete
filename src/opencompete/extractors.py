@@ -15,6 +15,7 @@ from open_deep_research.model_routing import (
     build_resilient_model,
     route_metadata,
 )
+from open_deep_research.utils import get_api_key_for_model, get_base_url_for_model
 from opencompete.models import (
     AnalysisLevel,
     Claim,
@@ -188,6 +189,16 @@ class LangChainArtifactExtractor:
         model_options: dict[str, Any] = {
             "model": self._model,
             "max_tokens": effective_max_tokens,
+            "api_key": get_api_key_for_model(
+                self._model,
+                {},
+                connection_role="primary",
+            ),
+            "base_url": get_base_url_for_model(
+                self._model,
+                {},
+                connection_role="primary",
+            ),
             "timeout": self._request_timeout_seconds,
             "max_retries": self._sdk_max_retries,
             "metadata": route_metadata(
@@ -204,6 +215,7 @@ class LangChainArtifactExtractor:
                     else None
                 ),
                 fallback_model=self._fallback_model,
+                connection_role="primary",
             ),
         }
         model_options.update(thinking_disable_options(self._model))
@@ -212,6 +224,16 @@ class LangChainArtifactExtractor:
             fallback_options = {
                 "model": self._fallback_model,
                 "max_tokens": effective_max_tokens,
+                "api_key": get_api_key_for_model(
+                    self._fallback_model,
+                    {},
+                    connection_role="fallback",
+                ),
+                "base_url": get_base_url_for_model(
+                    self._fallback_model,
+                    {},
+                    connection_role="fallback",
+                ),
                 "timeout": self._request_timeout_seconds,
                 "max_retries": self._sdk_max_retries,
                 "metadata": route_metadata(
@@ -222,6 +244,7 @@ class LangChainArtifactExtractor:
                     primary_attempts=self._max_retries,
                     fallback_attempts=fallback_attempts,
                     retry_delays_seconds=self._retry_delays_seconds,
+                    connection_role="fallback",
                 ),
             }
             fallback_options.update(thinking_disable_options(self._fallback_model))
@@ -232,6 +255,8 @@ class LangChainArtifactExtractor:
                 "timeout",
                 "max_retries",
                 "thinking",
+                "api_key",
+                "base_url",
             )
         )
         model = build_resilient_model(

@@ -15,16 +15,22 @@ from urllib.parse import urlsplit, urlunsplit
 import tomlkit
 from pydantic import ValidationError
 
+from opencompete.connections import (
+    api_key_for_reveal,
+    connection_environment_names,
+    connection_values_for_view,
+    display_model_name,
+)
 from opencompete.errors import ConfigurationError, DataValidationError, PersistenceError
 from opencompete.models import RunStatus
 from opencompete.security import validate_public_http_url
 from opencompete.settings import (
-    MANAGEABLE_MODEL_PROVIDERS,
     MANAGEABLE_SETTINGS_FIELDS,
     MODEL_SETTINGS_FIELDS,
     SETTINGS_GROUPS,
     OpenCompeteSettings,
     load_settings,
+    model_identifier_for_connection,
 )
 
 SETTINGS_SCHEMA_VERSION = 1
@@ -38,9 +44,18 @@ _CREDENTIAL_ENV_NAMES = frozenset(
         "ANTHROPIC_BASE_URL",
         "GOOGLE_API_KEY",
         "TAVILY_API_KEY",
+        *connection_environment_names("primary"),
+        *connection_environment_names("fallback"),
     }
 )
-_BASE_URL_ENV_NAMES = frozenset({"OPENAI_BASE_URL", "ANTHROPIC_BASE_URL"})
+_BASE_URL_ENV_NAMES = frozenset(
+    {
+        "OPENAI_BASE_URL",
+        "ANTHROPIC_BASE_URL",
+        connection_environment_names("primary")[1],
+        connection_environment_names("fallback")[1],
+    }
+)
 _SECRET_ENV_MARKERS = ("API_KEY", "BASE_URL")
 _TERMINAL_RUN_STATUSES = frozenset(
     {
@@ -50,6 +65,13 @@ _TERMINAL_RUN_STATUSES = frozenset(
         RunStatus.CANCELLED,
     }
 )
+
+
+def _connection_role(value: str) -> Literal["primary", "fallback"]:
+    normalized = value.strip().casefold()
+    if normalized not in {"primary", "fallback"}:
+        raise DataValidationError("连接角色必须是 primary 或 fallback")
+    return normalized  # type: ignore[return-value]
 
 
 @dataclass(frozen=True)
@@ -136,19 +158,19 @@ class SettingsService:
             if unknown:
                 fields = ", ".join(sorted(unknown))
                 raise DataValidationError(f"设置包含不允许由页面修改的字段：{fields}")
-            locked = self._externally_managed_fields(set(updates))
+            normalized_updates = self._normalize_connection_updates(updates)
+            locked = self._externally_managed_fields(set(normalized_updates))
             if locked:
                 fields = ", ".join(sorted(locked))
                 raise DataValidationError(f"以下设置由外部环境管理，不能在页面保存：{fields}")
-            self._validate_manageable_model_providers(updates)
             try:
-                candidate = self._settings.model_copy(update=dict(updates))
+                candidate = self._settings.model_copy(update=dict(normalized_updates))
                 candidate = type(self._settings).model_validate(
                     candidate.model_dump(mode="python")
                 )
             except ValidationError as exc:
                 raise ConfigurationError(f"设置校验失败：{exc}") from exc
-            self._write_toml_updates(dict(updates))
+            self._write_toml_updates(dict(normalized_updates))
             self._settings = candidate
             self._revision += 1
             if on_updated is not None:
@@ -206,11 +228,17 @@ class SettingsService:
             self._revision += 1
             return self._public_view_unlocked()
 
+    async def reveal_connection_api_key(self, role: str) -> str | None:
+        """仅在用户主动请求时返回当前连接 Key，调用方不得持久化。."""
+        normalized = _connection_role(role)
+        async with self._lock:
+            return api_key_for_reveal(normalized, self._settings)
+
     def _public_view_unlocked(self) -> dict[str, object]:
         values = self._settings.model_dump(mode="json")
         fields = {
             name: {
-                "value": values[name],
+                "value": self._public_field_value(name, values[name]),
                 "source": self._field_source(name),
                 "group": next(
                     group for group, members in SETTINGS_GROUPS.items() if name in members
@@ -225,30 +253,57 @@ class SettingsService:
         return {
             "schema_version": SETTINGS_SCHEMA_VERSION,
             "revision": self._revision,
-            "effective_for": "仅新建任务；已创建任务继续使用创建时的非秘密设置快照",
+            "effective_for": (
+                "新建任务使用当前设置；可恢复任务在用户显式恢复时使用当前模型与连接，"
+                "范围、预算与已完成进度保持原任务契约"
+            ),
             "fields": fields,
             "groups": SETTINGS_GROUPS,
+            "connections": [
+                connection_values_for_view("primary", self._settings),
+                connection_values_for_view("fallback", self._settings),
+            ],
             "credentials": credentials,
         }
 
-    def _validate_manageable_model_providers(
+    def _normalize_connection_updates(
         self, updates: Mapping[str, Any]
-    ) -> None:
-        unsupported: list[str] = []
-        for name in MODEL_SETTINGS_FIELDS:
-            value = updates.get(name)
-            if value is None:
-                continue
-            if not isinstance(value, str):
-                continue
-            provider, _, _model = value.partition(":")
-            if provider not in MANAGEABLE_MODEL_PROVIDERS:
-                unsupported.append(name)
-        if unsupported:
-            fields = ", ".join(sorted(unsupported))
-            raise DataValidationError(
-                f"以下模型路由需由外部环境管理，页面暂不支持：{fields}"
+    ) -> dict[str, Any]:
+        """将设置页纯模型名规范化为内部路由，兼容旧 provider:model 输入。."""
+        normalized = dict(updates)
+        primary_format = normalized.get(
+            "primary_connection_format", self._settings.primary_connection_format
+        )
+        fallback_format = normalized.get(
+            "fallback_connection_format", self._settings.fallback_connection_format
+        )
+        primary_fields = (
+            "research_model",
+            "summarization_model",
+            "compression_model",
+            "final_report_model",
+        )
+        for name in primary_fields:
+            value = normalized.get(name)
+            if value is None and "primary_connection_format" in normalized:
+                value = display_model_name(getattr(self._settings, name))
+            if isinstance(value, str):
+                normalized[name] = model_identifier_for_connection(
+                    display_model_name(value), primary_format
+                )
+        fallback_model = normalized.get("fallback_model")
+        if fallback_model is None and "fallback_connection_format" in normalized:
+            fallback_model = display_model_name(self._settings.fallback_model)
+        if isinstance(fallback_model, str):
+            normalized["fallback_model"] = model_identifier_for_connection(
+                display_model_name(fallback_model), fallback_format
             )
+        return normalized
+
+    def _public_field_value(self, name: str, value: Any) -> Any:
+        if name in MODEL_SETTINGS_FIELDS:
+            return display_model_name(value)
+        return value
 
     def _field_source(self, name: str) -> str:
         if self._is_externally_managed(f"OPENCOMPETE_{name.upper()}"):

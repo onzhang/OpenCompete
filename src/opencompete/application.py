@@ -18,9 +18,11 @@ from langchain_core.runnables import RunnableConfig
 from langgraph.types import Command
 from pydantic import ValidationError
 
+from open_deep_research.utils import model_connection_context
 from opencompete.analysis import freeze_scope as freeze_scope_spec
 from opencompete.budget import BudgetGuard, BudgetLedger
 from opencompete.callbacks import BudgetCallback
+from opencompete.connections import runtime_model_connections
 from opencompete.errors import (
     BudgetExceededError,
     DataValidationError,
@@ -103,6 +105,28 @@ _RUN_LOCKS_BY_LOOP: weakref.WeakKeyDictionary[
     asyncio.AbstractEventLoop,
     dict[str, asyncio.Lock],
 ] = weakref.WeakKeyDictionary()
+_RESUME_RUNTIME_FIELDS = (
+    "research_model",
+    "summarization_model",
+    "compression_model",
+    "final_report_model",
+    "fallback_model",
+    "primary_connection_format",
+    "fallback_connection_format",
+    "primary_provider_name",
+    "fallback_provider_name",
+    "primary_model_attempts",
+    "fallback_model_attempts",
+    "model_retry_delays_seconds",
+    "research_model_max_tokens",
+    "summarization_model_max_tokens",
+    "compression_model_max_tokens",
+    "final_report_model_max_tokens",
+    "artifact_extraction_model_max_tokens",
+    "final_report_input_max_chars",
+    "llm_request_timeout_seconds",
+    "llm_sdk_max_retries",
+)
 
 
 class ApplicationGraph(Protocol):
@@ -377,7 +401,13 @@ class ApplicationRunner:
                     and scope is not None
                 ):
                     scope = freeze_scope_spec(scope, user_input)
-                return await self._resume_graph(run_id, user_input, scope=scope)
+                return await self._resume_graph(
+                    run_id,
+                    user_input,
+                    scope=scope,
+                    settings=self._resume_settings_for_run(run_id),
+                    resumed_with_current_settings=True,
+                )
             except Exception as exc:
                 await self._record_failure(run_id, exc)
                 raise
@@ -855,18 +885,29 @@ class ApplicationRunner:
         user_input: CandidateSelection | ScopeConfirmation | None,
         *,
         scope: ScopeSpec | None = None,
+        settings: OpenCompeteSettings | None = None,
+        resumed_with_current_settings: bool = False,
     ) -> RunHandle:
+        """继续 durable 图；模型路由取当前设置，预算契约取原任务快照。."""
         execution_id: str | None = None
         started: float | None = None
-        settings = self._settings_for_run(run_id)
+        settings = settings or self._settings_for_run(run_id)
+        budget_settings = self._settings_for_run(run_id)
+        connections = runtime_model_connections(settings)
         async with self._checkpoint_store.open_saver() as saver:
             if user_input is not None:
                 execution_id = str(uuid4())
                 budget_guard = self._budget_guard(
                     run_id,
-                    settings=settings,
+                    settings=budget_settings,
                     execution_id=execution_id,
                     emit_attempt_events=True,
+                )
+                self._append_resume_runtime_event(
+                    run_id,
+                    execution_id,
+                    settings,
+                    current_settings=resumed_with_current_settings,
                 )
                 self._append_event(
                     run_id,
@@ -877,16 +918,25 @@ class ApplicationRunner:
                 started = perf_counter()
                 try:
                     config = self._runnable_config(
-                        run_id, budget_guard, settings=settings, scope=scope
+                        run_id,
+                        budget_guard,
+                        settings=settings,
+                        budget_settings=budget_settings,
+                        scope=scope,
                     )
                     graph = self._build_graph(saver, budget_guard, settings=settings)
-                    result = await graph.ainvoke(
-                        Command(resume=user_input.model_dump(mode="json")),
-                        config,
-                    )
+                    with model_connection_context(connections):
+                        result = await graph.ainvoke(
+                            Command(resume=user_input.model_dump(mode="json")),
+                            config,
+                        )
                 except BudgetExceededError as exc:
                     config = self._runnable_config(
-                        run_id, budget_guard, settings=settings, scope=scope
+                        run_id,
+                        budget_guard,
+                        settings=settings,
+                        budget_settings=budget_settings,
+                        scope=scope,
                     )
                     graph = self._build_graph(saver, budget_guard, settings=settings)
                     result = await self._budget_partial_state(
@@ -897,9 +947,14 @@ class ApplicationRunner:
                         exc,
                     )
             else:
-                read_budget_guard = self._budget_guard(run_id, settings=settings)
+                read_budget_guard = self._budget_guard(
+                    run_id, settings=budget_settings
+                )
                 read_config = self._runnable_config(
-                    run_id, read_budget_guard, settings=settings
+                    run_id,
+                    read_budget_guard,
+                    settings=settings,
+                    budget_settings=budget_settings,
                 )
                 read_graph = self._build_graph(
                     saver, read_budget_guard, settings=settings
@@ -907,9 +962,7 @@ class ApplicationRunner:
                 snapshot = await read_graph.aget_state(read_config)
                 values = _state_values(snapshot)
                 if not values:
-                    raise PersistenceError(
-                        f"任务 {run_id} 没有可恢复的 Checkpoint"
-                    )
+                    raise PersistenceError(f"任务 {run_id} 没有可恢复的 Checkpoint")
                 state_status = _state_status(values)
                 if (
                     state_status is RunStatus.AWAITING_CONFIRMATION
@@ -925,9 +978,15 @@ class ApplicationRunner:
                     execution_id = str(uuid4())
                     budget_guard = self._budget_guard(
                         run_id,
-                        settings=settings,
+                        settings=budget_settings,
                         execution_id=execution_id,
                         emit_attempt_events=True,
+                    )
+                    self._append_resume_runtime_event(
+                        run_id,
+                        execution_id,
+                        settings,
+                        current_settings=resumed_with_current_settings,
                     )
                     self._append_event(
                         run_id,
@@ -938,15 +997,24 @@ class ApplicationRunner:
                     started = perf_counter()
                     try:
                         config = self._runnable_config(
-                            run_id, budget_guard, settings=settings, scope=scope
+                            run_id,
+                            budget_guard,
+                            settings=settings,
+                            budget_settings=budget_settings,
+                            scope=scope,
                         )
                         graph = self._build_graph(
                             saver, budget_guard, settings=settings
                         )
-                        result = await graph.ainvoke(None, config)
+                        with model_connection_context(connections):
+                            result = await graph.ainvoke(None, config)
                     except BudgetExceededError as exc:
                         config = self._runnable_config(
-                            run_id, budget_guard, settings=settings, scope=scope
+                            run_id,
+                            budget_guard,
+                            settings=settings,
+                            budget_settings=budget_settings,
+                            scope=scope,
                         )
                         graph = self._build_graph(
                             saver, budget_guard, settings=settings
@@ -993,7 +1061,8 @@ class ApplicationRunner:
             )
             started = perf_counter()
             try:
-                result = await graph.ainvoke(value, config)
+                with model_connection_context(runtime_model_connections(settings)):
+                    result = await graph.ainvoke(value, config)
             except BudgetExceededError as exc:
                 result = await self._budget_partial_state(
                     graph,
@@ -1049,7 +1118,8 @@ class ApplicationRunner:
             )
             resume_config = _merge_updated_graph_config(config, updated_config)
             try:
-                result = await graph.ainvoke(None, resume_config)
+                with model_connection_context(runtime_model_connections(settings)):
+                    result = await graph.ainvoke(None, resume_config)
             except BudgetExceededError as exc:
                 result = await self._budget_partial_state(
                     graph,
@@ -1336,9 +1406,11 @@ class ApplicationRunner:
         budget_guard: BudgetGuard,
         *,
         settings: OpenCompeteSettings | None = None,
+        budget_settings: OpenCompeteSettings | None = None,
         scope: ScopeSpec | None = None,
     ) -> RunnableConfig:
         effective_settings = settings or self.settings
+        effective_budget_settings = budget_settings or effective_settings
         config = cast(
             RunnableConfig,
             effective_settings.to_runnable_config(run_id),
@@ -1368,20 +1440,33 @@ class ApplicationRunner:
                     effective_settings.artifact_extraction_model_max_tokens,
                 ),
                 llm_input_cost_per_million_usd=(
-                    effective_settings.llm_input_cost_per_million_usd
+                    effective_budget_settings.llm_input_cost_per_million_usd
                 ),
                 llm_output_cost_per_million_usd=(
-                    effective_settings.llm_output_cost_per_million_usd
+                    effective_budget_settings.llm_output_cost_per_million_usd
                 ),
                 tavily_cost_per_call_usd=(
-                    effective_settings.tavily_cost_per_call_usd
+                    effective_budget_settings.tavily_cost_per_call_usd
                 ),
                 tavily_max_queries_per_call=(
-                    effective_settings.tavily_max_queries_per_call
+                    effective_budget_settings.tavily_max_queries_per_call
                 ),
             )
         ]
         return config
+
+    def _resume_settings_for_run(self, run_id: str) -> OpenCompeteSettings:
+        """合成恢复运行时设置：当前模型路由覆盖，原任务执行约束保留。."""
+        task_settings = self._settings_for_run(run_id)
+        current_settings = self.settings
+        values = task_settings.model_dump(mode="python")
+        values.update(
+            {
+                name: getattr(current_settings, name)
+                for name in _RESUME_RUNTIME_FIELDS
+            }
+        )
+        return OpenCompeteSettings.model_validate(values)
 
     def _settings_for_run(self, run_id: str) -> OpenCompeteSettings:
         """恢复运行时从 Manifest 读取创建时冻结的非秘密设置。."""
@@ -1400,6 +1485,30 @@ class ApplicationRunner:
             return OpenCompeteSettings.model_validate(dict(settings_payload))
         except ValidationError as exc:
             raise PersistenceError("任务设置快照无法通过当前配置契约校验") from exc
+
+    def _append_resume_runtime_event(
+        self,
+        run_id: str,
+        execution_id: str,
+        settings: OpenCompeteSettings,
+        *,
+        current_settings: bool,
+    ) -> None:
+        """记录恢复时选择的非秘密模型路由，不覆盖创建快照。."""
+        if not current_settings:
+            return
+        self._append_event(
+            run_id,
+            "resume_runtime_selected",
+            execution_id=execution_id,
+            settings_revision=self._default_settings_revision,
+            primary_connection_role="primary",
+            primary_model=settings.research_model,
+            fallback_connection_role=(
+                "fallback" if settings.fallback_model is not None else None
+            ),
+            fallback_model=settings.fallback_model,
+        )
 
     def _config_snapshot(self, settings: OpenCompeteSettings) -> dict[str, Any]:
         """生成只含非秘密字段的版本化任务设置快照。."""

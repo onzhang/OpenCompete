@@ -20,6 +20,10 @@ def _app(tmp_path: Path, monkeypatch: Any | None = None) -> Any:
             "ANTHROPIC_BASE_URL",
             "GOOGLE_API_KEY",
             "TAVILY_API_KEY",
+            "OPENCOMPETE_PRIMARY_API_KEY",
+            "OPENCOMPETE_PRIMARY_BASE_URL",
+            "OPENCOMPETE_FALLBACK_API_KEY",
+            "OPENCOMPETE_FALLBACK_BASE_URL",
         ):
             monkeypatch.delenv(name, raising=False)
     config_path = tmp_path / "opencompete.toml"
@@ -44,7 +48,7 @@ def test_settings_get_put_and_legacy_budget_summary(tmp_path: Path) -> None:
         initial = client.get("/api/settings")
         assert initial.status_code == 200
         body = initial.json()
-        assert body["fields"]["research_model"]["value"] == "openai:test-model"
+        assert body["fields"]["research_model"]["value"] == "test-model"
         assert "api_key" not in body["fields"]
         assert not {
             "judge_model",
@@ -164,3 +168,90 @@ def test_connection_test_rejects_development_or_unknown_roles_without_provider_c
             response = client.post(f"/api/settings/connections/{target}/test")
             assert response.status_code == 409
             assert response.json()["error"]["code"] == "data_validation_error"
+
+
+def test_connection_key_reveal_is_explicit_and_not_cached(
+    tmp_path: Path,
+    monkeypatch: Any,
+) -> None:
+    secret = "PRIMARY-REVEAL-SECRET-SENTINEL"
+    with TestClient(_app(tmp_path, monkeypatch)) as client:
+        monkeypatch.setenv("OPENCOMPETE_PRIMARY_API_KEY", secret)
+        public = client.get("/api/settings")
+        assert public.status_code == 200
+        assert secret not in public.text
+
+        revealed = client.get("/api/settings/connections/primary/api-key")
+        assert revealed.status_code == 200
+        assert revealed.headers["cache-control"] == "no-store"
+        assert revealed.json() == {
+            "role": "primary",
+            "configured": True,
+            "api_key": secret,
+        }
+
+        hidden_again = client.get("/api/settings")
+        assert secret not in hidden_again.text
+
+
+def test_primary_and_fallback_connection_tests_use_role_credentials(
+    tmp_path: Path,
+    monkeypatch: Any,
+) -> None:
+    captured: list[dict[str, Any]] = []
+
+    class FakeRunnable:
+        async def ainvoke(self, message: Any) -> object:
+            captured.append({"message": message})
+            return object()
+
+    def fake_init_chat_model(**kwargs: Any) -> FakeRunnable:
+        captured.append(dict(kwargs))
+        return FakeRunnable()
+
+    monkeypatch.setattr("opencompete.api.routes.init_chat_model", fake_init_chat_model)
+    monkeypatch.setenv("OPENCOMPETE_PRIMARY_API_KEY", "PRIMARY-CONNECTION-SECRET")
+    monkeypatch.setenv("OPENCOMPETE_PRIMARY_BASE_URL", "https://primary.example/v1")
+    monkeypatch.setenv("OPENCOMPETE_FALLBACK_API_KEY", "FALLBACK-CONNECTION-SECRET")
+    monkeypatch.setenv("OPENCOMPETE_FALLBACK_BASE_URL", "https://fallback.example/v1")
+    with TestClient(_app(tmp_path)) as client:
+        current = client.get("/api/settings").json()
+        updated = client.put(
+            "/api/settings",
+            json={
+                "expected_revision": current["revision"],
+                "values": {
+                    "fallback_model": "backup-model",
+                    "fallback_connection_format": "openai_chat_completions",
+                },
+            },
+        )
+        assert updated.status_code == 200
+
+        assert client.post("/api/settings/connections/primary/test").json() == {
+            "target": "primary",
+            "status": "ok",
+            "provider": "openai",
+            "model": "test-model",
+        }
+        assert client.post("/api/settings/connections/fallback/test").json() == {
+            "target": "fallback",
+            "status": "ok",
+            "provider": "openai",
+            "model": "backup-model",
+        }
+
+    model_calls = [item for item in captured if "model" in item]
+    assert [item["model"] for item in model_calls] == [
+        "openai:test-model",
+        "openai:backup-model",
+    ]
+    assert [item["api_key"] for item in model_calls] == [
+        "PRIMARY-CONNECTION-SECRET",
+        "FALLBACK-CONNECTION-SECRET",
+    ]
+    assert [item["base_url"] for item in model_calls] == [
+        "https://primary.example/v1",
+        "https://fallback.example/v1",
+    ]
+    assert all(item["max_retries"] == 0 for item in model_calls)

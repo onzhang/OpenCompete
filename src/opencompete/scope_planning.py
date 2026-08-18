@@ -11,6 +11,7 @@ from langchain_core.runnables import RunnableConfig
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from open_deep_research.model_routing import build_resilient_model, route_metadata
+from open_deep_research.utils import get_api_key_for_model, get_base_url_for_model
 from opencompete.models import AnalysisLevel, ResearchCommission, ScopeProposal
 from opencompete.settings import OpenCompeteSettings, thinking_disable_options
 
@@ -136,6 +137,16 @@ class LlmScopePlanner:
         primary_options: dict[str, Any] = {
             "model": settings.summarization_model,
             "max_tokens": settings.summarization_model_max_tokens,
+            "api_key": get_api_key_for_model(
+                settings.summarization_model,
+                {},
+                connection_role="primary",
+            ),
+            "base_url": get_base_url_for_model(
+                settings.summarization_model,
+                {},
+                connection_role="primary",
+            ),
             "timeout": settings.llm_request_timeout_seconds,
             "max_retries": settings.llm_sdk_max_retries,
             "metadata": route_metadata(
@@ -152,6 +163,7 @@ class LlmScopePlanner:
                     else None
                 ),
                 fallback_model=settings.fallback_model,
+                connection_role="primary",
             ),
         }
         primary_options.update(
@@ -162,6 +174,16 @@ class LlmScopePlanner:
             fallback_options = {
                 "model": settings.fallback_model,
                 "max_tokens": settings.summarization_model_max_tokens,
+                "api_key": get_api_key_for_model(
+                    settings.fallback_model,
+                    {},
+                    connection_role="fallback",
+                ),
+                "base_url": get_base_url_for_model(
+                    settings.fallback_model,
+                    {},
+                    connection_role="fallback",
+                ),
                 "timeout": settings.llm_request_timeout_seconds,
                 "max_retries": settings.llm_sdk_max_retries,
                 "metadata": route_metadata(
@@ -172,6 +194,7 @@ class LlmScopePlanner:
                     primary_attempts=settings.primary_model_attempts,
                     fallback_attempts=fallback_attempts,
                     retry_delays_seconds=settings.model_retry_delays_seconds,
+                    connection_role="fallback",
                 ),
             }
             fallback_options.update(thinking_disable_options(settings.fallback_model))
@@ -182,6 +205,8 @@ class LlmScopePlanner:
                 "timeout",
                 "max_retries",
                 "thinking",
+                "api_key",
+                "base_url",
             )
         )
         return build_resilient_model(

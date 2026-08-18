@@ -20,6 +20,8 @@ from pydantic_settings import (
 from opencompete.errors import ConfigurationError
 
 _MODEL_IDENTIFIER_PATTERN = re.compile(r"^[a-z][a-z0-9_-]*:[^\s:][^\s]*$")
+_MODEL_NAME_PATTERN = re.compile(r"^[^\s:][^\s]*$")
+_CONNECTION_FORMATS = frozenset({"openai_chat_completions", "anthropic_messages"})
 MODEL_SETTINGS_FIELDS = (
     "research_model",
     "summarization_model",
@@ -40,6 +42,8 @@ MANAGEABLE_SETTINGS_FIELDS = frozenset(
         "compression_model",
         "final_report_model",
         "fallback_model",
+        "primary_connection_format",
+        "fallback_connection_format",
         "research_model_max_tokens",
         "summarization_model_max_tokens",
         "compression_model_max_tokens",
@@ -63,6 +67,8 @@ SETTINGS_GROUPS: dict[str, tuple[str, ...]] = {
         "compression_model",
         "final_report_model",
         "fallback_model",
+        "primary_connection_format",
+        "fallback_connection_format",
         "research_model_max_tokens",
         "summarization_model_max_tokens",
         "compression_model_max_tokens",
@@ -84,6 +90,31 @@ SETTINGS_GROUPS: dict[str, tuple[str, ...]] = {
         "discovery_search_results_per_query",
     ),
 }
+
+
+def connection_provider(connection_format: str) -> str:
+    """将公开连接格式映射为 LangChain 内部 provider。."""
+    return "openai" if connection_format == "openai_chat_completions" else "anthropic"
+
+
+def model_identifier_for_connection(model_name: str | None, connection_format: str) -> str | None:
+    """把设置页的纯模型名规范化为内部 ``provider:model`` 路由。."""
+    if model_name is None:
+        return None
+    normalized = model_name.strip()
+    if not normalized:
+        return None
+    if not _MODEL_NAME_PATTERN.fullmatch(normalized):
+        raise ValueError("模型名称不能包含空白或 provider 分隔符")
+    return f"{connection_provider(connection_format)}:{normalized}"
+
+
+def display_model_name(model: str | None) -> str | None:
+    """将历史内部模型路由投影为页面可编辑的纯模型名。."""
+    if model is None:
+        return None
+    _provider, separator, model_name = model.partition(":")
+    return model_name if separator else model
 
 
 def thinking_disable_options(model: str | None) -> dict[str, Any]:
@@ -117,6 +148,12 @@ class OpenCompeteSettings(BaseSettings):
     compression_model: str = "openai:gpt-4.1"
     final_report_model: str = "openai:gpt-4.1"
     fallback_model: str | None = Field(default=None, min_length=1)
+    primary_connection_format: Literal[
+        "openai_chat_completions", "anthropic_messages"
+    ] = "openai_chat_completions"
+    fallback_connection_format: Literal[
+        "openai_chat_completions", "anthropic_messages"
+    ] = "anthropic_messages"
     primary_provider_name: str = Field(default="OpenAI", min_length=1)
     fallback_provider_name: str = Field(default="DeepSeek", min_length=1)
     primary_model_attempts: int = Field(default=3, ge=1, le=5)
@@ -223,16 +260,53 @@ class OpenCompeteSettings(BaseSettings):
     )
     langsmith_tracing: bool = False
 
+    @model_validator(mode="before")
+    @classmethod
+    def normalize_connection_model_names(cls, value: Any) -> Any:
+        """兼容旧路由，并把页面保存的纯模型名转为内部模型标识。."""
+        if not isinstance(value, Mapping):
+            return value
+        values = dict(value)
+        primary_format = values.get(
+            "primary_connection_format", "openai_chat_completions"
+        )
+        fallback_format = values.get(
+            "fallback_connection_format", "anthropic_messages"
+        )
+        for name in (
+            "research_model",
+            "summarization_model",
+            "compression_model",
+            "final_report_model",
+        ):
+            model = values.get(name)
+            if isinstance(model, str) and ":" not in model:
+                values[name] = model_identifier_for_connection(model, primary_format)
+        fallback_model = values.get("fallback_model")
+        if isinstance(fallback_model, str) and ":" not in fallback_model:
+            values["fallback_model"] = model_identifier_for_connection(
+                fallback_model, fallback_format
+            )
+        return values
+
     @field_validator(*MODEL_SETTINGS_FIELDS)
     @classmethod
     def validate_model_identifier(cls, value: str | None) -> str | None:
-        """模型角色必须使用 LangChain 支持的 ``provider:model`` 标识。."""
+        """内部模型路由使用 ``provider:model``，页面入口会先规范化。."""
         if value is None:
             return None
         normalized = value.strip()
         if not _MODEL_IDENTIFIER_PATTERN.fullmatch(normalized):
-            raise ValueError("模型必须使用 provider:model 格式，且不能包含空白字符")
+            raise ValueError("模型路由必须使用 provider:model 格式，且不能包含空白字符")
         return normalized
+
+    @field_validator("primary_connection_format", "fallback_connection_format")
+    @classmethod
+    def validate_connection_format(cls, value: str) -> str:
+        """连接格式只能是已支持的 OpenAI 或 Anthropic 兼容协议。."""
+        if value not in _CONNECTION_FORMATS:
+            raise ValueError("连接格式不受支持")
+        return value
 
     @model_validator(mode="after")
     def validate_model_failover(self) -> OpenCompeteSettings:

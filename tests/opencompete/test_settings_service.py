@@ -19,6 +19,10 @@ def service(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> SettingsService:
         "ANTHROPIC_BASE_URL",
         "GOOGLE_API_KEY",
         "TAVILY_API_KEY",
+        "OPENCOMPETE_PRIMARY_API_KEY",
+        "OPENCOMPETE_PRIMARY_BASE_URL",
+        "OPENCOMPETE_FALLBACK_API_KEY",
+        "OPENCOMPETE_FALLBACK_BASE_URL",
     ):
         monkeypatch.delenv(name, raising=False)
     config_path = tmp_path / "opencompete.toml"
@@ -35,11 +39,9 @@ async def test_public_view_excludes_credentials_and_marks_toml_source(
 ) -> None:
     view = await service.public_view()
 
-    assert view["fields"]["research_model"]["value"] == "openai:baseline"
+    assert view["fields"]["research_model"]["value"] == "baseline"
     assert view["fields"]["research_model"]["source"] == "TOML"
-    assert view["effective_for"] == (
-        "仅新建任务；已创建任务继续使用创建时的非秘密设置快照"
-    )
+    assert "可恢复任务在用户显式恢复时使用当前模型与连接" in view["effective_for"]
     assert "credential-sentinel-value" not in str(view)
     assert all("value" not in item for item in view["credentials"])
 
@@ -113,11 +115,10 @@ async def test_settings_page_rejects_unsupported_model_provider(
 ) -> None:
     current = await service.public_view()
 
-    with pytest.raises(DataValidationError, match="外部环境管理"):
-        await service.update_settings(
-            {"research_model": "unsupported:model"},
-            expected_revision=current["revision"],
-        )
+    updated = await service.update_settings(
+        {"research_model": "custom-model"}, expected_revision=current["revision"]
+    )
+    assert updated["fields"]["research_model"]["value"] == "custom-model"
 
 
 @pytest.mark.asyncio

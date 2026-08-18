@@ -3,12 +3,25 @@ import { NODE_LABELS, fmtTokens } from '../utils/format.js'
 
 defineProps({
   events: { type: Array, default: () => [] },
+  emptyLabel: { type: String, default: '等待事件流…' },
 })
 
 function timeOf(e) {
   const d = new Date(e.occurred_at)
   const p = (n) => String(n).padStart(2, '0')
   return `${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`
+}
+
+function clipped(value, limit = 72) {
+  if (!value) return ''
+  const text = String(value).replace(/\s+/g, ' ').trim()
+  return text.length > limit ? `${text.slice(0, limit)}…` : text
+}
+
+function providerLabel(e) {
+  if (e.fallback) return '备用模型'
+  if (e.provider && e.model) return '主模型'
+  return '模型'
 }
 
 const STATUS_TEXT = {
@@ -33,46 +46,47 @@ function tagOf(e) {
 }
 
 function describe(e) {
-  const node = NODE_LABELS[e.node] || e.node
+  const node = NODE_LABELS[e.node] || '执行步骤'
   switch (e.event) {
     case 'run_created':
-      return '任务已创建，草拟研究范围'
+      return '任务已提交，准备研究范围'
     case 'graph_execution_started':
-      return e.mode === 'resume' ? '从确认点恢复，继续执行研究流程' : '开始执行研究流程'
+      return e.mode === 'resume' ? '从确认点恢复，继续执行研究流程' : '开始准备研究范围'
     case 'graph_invoked':
     case 'graph_resumed':
-      return '本轮执行结束'
+      return '本轮后台执行结束，正在同步最新状态'
     case 'awaiting_confirmation':
-      return '已到达确认点，等待用户决定'
+      return '已准备好确认信息，等待你的决定'
     case 'run_status_changed':
-      return STATUS_TEXT[e.status] || `任务状态更新：${e.status}`
+      return STATUS_TEXT[e.status] || '任务状态已更新'
     case 'run_published':
-      return '报告与结构化产物已通过硬门禁，原子发布'
+      return '报告与结构化产物已通过校验并发布'
     case 'run_failed':
-      return `任务失败：${e.error || e.error_code || '未知错误'}`
+      return `任务失败：${clipped(e.error || e.error_code || '未知错误', 96)}`
     case 'budget_exhausted':
-      return '研究预算耗尽，以部分完成发布已有成果'
+      return '研究预算耗尽，已发布当前已有成果'
     case 'call_attempt_started':
       if (e.provider_kind === 'tavily') {
-        return `${node} · 发起 Tavily 检索${e.query ? `「${e.query}」` : ''}`
+        const query = e.query ? `「${clipped(e.query, 54)}」` : ''
+        return `${node} · 正在检索公开资料${query}`
       }
-      return `${node} · 调用 ${e.provider}/${e.model}${e.fallback ? '（备用）' : ''}`
+      return `${node} · 正在调用${providerLabel(e)}`
     case 'call_attempt_succeeded':
       if (e.provider_kind === 'tavily') {
-        return `${node} · 检索完成，消耗 ${e.tavily_calls} 次额度`
+        return `${node} · 公开资料检索完成，消耗 ${e.tavily_calls || 0} 次额度`
       }
-      return `${node} · 响应完成，输出 ${fmtTokens(e.output_tokens)} tokens`
+      return `${node} · 模型响应完成，输出 ${fmtTokens(e.output_tokens)} tokens`
     case 'call_attempt_failed':
-      return `${node} · 调用失败：${e.error_message || e.error_type || '未知错误'}`
+      return `${node} · 调用失败：${clipped(e.error_message || e.error_type || '未知错误', 96)}`
     case 'call_attempt_cancelled_before_send':
       return `${node} · 调用在发送前被取消，未消耗额度`
     case 'model_retry_scheduled': {
-      const action = e.next_fallback && !e.fallback ? '切换备用模型' : '重新连接'
+      const action = e.next_fallback && !e.fallback ? '切换备用模型' : '重新连接模型'
       const wait = e.delay_seconds ? `${e.delay_seconds} 秒后` : '立即'
-      return `${action} ${e.next_attempt}/${e.total_attempts}（${wait}）→ ${e.next_provider}/${e.next_model}`
+      return `${action} ${e.next_attempt}/${e.total_attempts}（${wait}）`
     }
     default:
-      return e.event
+      return '已记录一条后台执行事件'
   }
 }
 </script>
@@ -98,7 +112,7 @@ function describe(e) {
         </span>
       </div>
     </TransitionGroup>
-    <div v-if="!events.length" class="feed-empty">等待事件流…</div>
+    <div v-if="!events.length" class="feed-empty">{{ emptyLabel }}</div>
   </div>
 </template>
 

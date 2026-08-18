@@ -58,7 +58,7 @@ const track = TRACK
         :class="`unit--${stateOfUnit(unit.unit_id)}`"
       >
         <span class="unit-dot"></span>
-        <span class="unit-topic">{{ unit.topic }}</span>
+        <span class="unit-topic" :title="unit.topic">{{ unit.topic }}</span>
         <span class="unit-state">{{ UNIT_STATE_LABELS[stateOfUnit(unit.unit_id)] }}</span>
       </div>
     </div>
@@ -227,6 +227,7 @@ const track = TRACK
 
 .unit-topic {
   flex: 1;
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;

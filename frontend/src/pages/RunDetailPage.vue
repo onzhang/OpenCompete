@@ -218,6 +218,113 @@ const connectionLabel = computed(() => {
   if (!isLiveRun.value) return null
   return live.value.connected ? '事件流已连接' : '连接中…'
 })
+
+const isPreparationRun = computed(() => run.value?.status === 'draft')
+
+function preparationStageFor(event) {
+  if (!event) {
+    return {
+      title: live.value.connected
+        ? '已连接研究直播，正在启动后台准备'
+        : '正在连接研究直播，准备研究范围',
+      detail:
+        '任务已经提交成功。系统会先理解研究委托，再按需检索公开资料；这个阶段不需要额外配置或操作。',
+    }
+  }
+
+  if (event.event === 'call_attempt_started') {
+    if (event.provider_kind === 'tavily' || event.node === 'discovery') {
+      return {
+        title: '正在检索公开资料，发现并核验候选竞品',
+        detail: '系统正在为候选对象收集公开来源佐证，完成后会自动切换到候选确认。',
+      }
+    }
+    if (event.node === 'prepare_scope') {
+      return {
+        title: '正在理解研究委托，生成范围建议',
+        detail: '模型正在把研究问题整理成可确认的研究范围，随后会继续处理候选发现。',
+      }
+    }
+  }
+
+  if (event.event === 'call_attempt_succeeded') {
+    if (event.provider_kind === 'tavily' || event.node === 'discovery') {
+      return {
+        title: '候选资料已检索，正在整理候选结果',
+        detail: '公开来源已返回，系统正在核对候选对象并准备确认清单。',
+      }
+    }
+    if (event.node === 'prepare_scope') {
+      return {
+        title: '范围建议已生成，正在准备候选确认',
+        detail: '研究委托已经完成初步规划，接下来会把候选对象和来源整理到确认页。',
+      }
+    }
+  }
+
+  if (event.event === 'model_retry_scheduled') {
+    return {
+      title: live.value.retryNotice?.switching ? '正在切换备用模型' : '正在重新连接模型',
+      detail: '本次等待不会丢失任务；执行记录会继续同步，完成后页面会自动更新。',
+    }
+  }
+
+  if (event.event === 'graph_execution_started') {
+    return {
+      title: '正在启动研究范围准备',
+      detail: '后台执行已经开始，系统会实时同步模型调用和公开检索进度。',
+    }
+  }
+
+  if (event.event === 'run_created') {
+    return {
+      title: '任务已提交，正在启动后台准备',
+      detail: '系统正在建立研究范围。你可以留在本页查看事件流，完成后会自动进入候选确认。',
+    }
+  }
+
+  if (event.event === 'graph_invoked') {
+    return {
+      title: '研究范围准备已完成，正在同步确认信息',
+      detail: '后台准备已经收尾，页面会在确认载荷同步后自动切换。',
+    }
+  }
+
+  return {
+    title: '正在后台准备研究范围',
+    detail: '系统会实时同步模型调用与公开检索进度，完成后自动切换到候选确认。',
+  }
+}
+
+const preparationEvent = computed(() => {
+  if (!isPreparationRun.value) return null
+  return (
+    live.value.events.find((event) =>
+      [
+        'run_created',
+        'graph_execution_started',
+        'call_attempt_started',
+        'call_attempt_succeeded',
+        'model_retry_scheduled',
+        'graph_invoked',
+      ].includes(event.event),
+    ) || null
+  )
+})
+
+const preparationStage = computed(() =>
+  isPreparationRun.value ? preparationStageFor(preparationEvent.value) : null,
+)
+
+const preparationFeedEmpty = computed(() => {
+  if (!isLiveRun.value) return '正在读取后台准备进度…'
+  if (!live.value.connected) return '正在连接事件流，后台研究准备将继续执行…'
+  return '事件流已连接，正在等待后台准备进度…'
+})
+
+const modelIdleLabel = computed(() =>
+  isPreparationRun.value ? '候选准备阶段暂未发起下一次模型调用' : '尚未发起模型调用',
+)
 </script>
 
 <template>
@@ -406,13 +513,11 @@ const connectionLabel = computed(() => {
           </button>
           <span v-if="cancelArmed" class="stop-hint">停止是终态：已产生的调用照常计费，任务不可恢复</span>
         </div>
-        <div v-if="run.status === 'draft'" class="draft-note rise-in">
+        <div v-if="preparationStage" class="draft-note rise-in">
           <div class="stale-copy">
-            <b>正在后台准备研究范围：发现并核验候选竞品、生成范围建议</b>
-            <span>
-              下方实时同步模型调用与检索进度；完成后本页会自动切换到候选确认，无需手动刷新。
-              你也可以先离开处理其他事情——全部执行记录已落盘，回到本卷宗即可续看。
-            </span>
+            <b>{{ preparationStage.title }}</b>
+            <span>{{ preparationStage.detail }}</span>
+            <small>候选确认准备完成后，本页会自动切换；你也可以先离开，执行记录会持续落盘。</small>
           </div>
         </div>
         <section class="live-track sheet rise-in" style="animation-delay: 0.06s">
@@ -441,7 +546,10 @@ const connectionLabel = computed(() => {
               <span class="feed-count mono">{{ isLiveRun ? live.events.length : 0 }} 条</span>
             </div>
             <div class="feed-scroll">
-              <EventFeed :events="isLiveRun ? live.events : []" />
+              <EventFeed
+                :events="isLiveRun ? live.events : []"
+                :empty-label="preparationFeedEmpty"
+              />
             </div>
           </section>
 
@@ -467,7 +575,7 @@ const connectionLabel = computed(() => {
                 </div>
                 <div class="model-name mono">{{ live.currentModel.model }}</div>
               </div>
-              <div v-else class="model-idle">尚未发起模型调用</div>
+              <div v-else class="model-idle">{{ modelIdleLabel }}</div>
 
               <div v-if="live.retryNotice" class="retry-note">
                 <b>
@@ -1015,6 +1123,13 @@ const connectionLabel = computed(() => {
 
 .stale-copy span {
   margin-top: 3px;
+}
+
+.stale-copy small {
+  display: block;
+  margin-top: 5px;
+  color: var(--ink-faint);
+  font-size: 11.5px;
 }
 
 .stale-actions {

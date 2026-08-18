@@ -26,6 +26,7 @@ from opencompete.budget import (
     stable_call_id,
 )
 from opencompete.models import BudgetEstimate
+from opencompete.security import environment_secret_values, redact_text
 
 _CALL_ID_METADATA_KEYS = ("opencompete_call_id", "call_id")
 
@@ -81,6 +82,7 @@ class BudgetCallback(AsyncCallbackHandler):
         self._tavily_tool_names: dict[UUID, str] = {}
         self._chain_parents: dict[UUID, UUID | None] = {}
         self._chain_units: dict[UUID, str] = {}
+        self._chain_unit_summaries: dict[UUID, str] = {}
 
     async def on_chain_start(
         self,
@@ -93,19 +95,24 @@ class BudgetCallback(AsyncCallbackHandler):
         metadata: dict[str, Any] | None = None,
         **kwargs: Any,
     ) -> None:
-        """Track only a hash of a research topic across nested callback runs."""
+        """Track a hashed unit id and bounded topic summary across nested runs."""
         del serialized, tags, metadata, kwargs
         self._chain_parents[run_id] = parent_run_id
         topic = inputs.get("research_topic") if isinstance(inputs, Mapping) else None
         if isinstance(topic, str) and topic.strip():
+            normalized_topic = _unit_summary(topic)
             self._chain_units[run_id] = _research_unit_id(
                 self._budget.run_id,
                 topic,
             )
+            self._chain_unit_summaries[run_id] = normalized_topic
             return
         inherited = self._unit_for(parent_run_id)
         if inherited is not None:
             self._chain_units[run_id] = inherited
+            summary = self._unit_summary_for(parent_run_id)
+            if summary is not None:
+                self._chain_unit_summaries[run_id] = summary
 
     async def on_chain_end(
         self,
@@ -272,6 +279,7 @@ class BudgetCallback(AsyncCallbackHandler):
                 metadata,
                 default_node=self._node,
                 unit_id=self._unit_for(parent_run_id),
+                unit_summary=self._unit_summary_for(parent_run_id),
                 provider_kind="tavily",
                 tags=tags,
             ),
@@ -368,6 +376,7 @@ class BudgetCallback(AsyncCallbackHandler):
                 metadata,
                 default_node=self._node,
                 unit_id=self._unit_for(parent_run_id),
+                unit_summary=self._unit_summary_for(parent_run_id),
                 provider_kind="llm",
                 tags=tags,
             ),
@@ -449,8 +458,20 @@ class BudgetCallback(AsyncCallbackHandler):
             current = self._chain_parents.get(current)
         return None
 
+    def _unit_summary_for(self, run_id: UUID | None) -> str | None:
+        current = run_id
+        visited: set[UUID] = set()
+        while current is not None and current not in visited:
+            visited.add(current)
+            summary = self._chain_unit_summaries.get(current)
+            if summary is not None:
+                return summary
+            current = self._chain_parents.get(current)
+        return None
+
     def _forget_chain(self, run_id: UUID) -> None:
         self._chain_units.pop(run_id, None)
+        self._chain_unit_summaries.pop(run_id, None)
         self._chain_parents.pop(run_id, None)
 
 
@@ -481,6 +502,7 @@ def _attempt_context(
     *,
     default_node: str,
     unit_id: str | None,
+    unit_summary: str | None,
     provider_kind: str,
     tags: Sequence[str] | None,
 ) -> AttemptEventContext:
@@ -490,6 +512,7 @@ def _attempt_context(
     return AttemptEventContext(
         node=node,
         unit_id=unit_id,
+        unit_summary=unit_summary,
         provider_kind=provider_kind,
         retry_number=_retry_number(tags),
         provider=_optional_text(values.get("opencompete_provider")),
@@ -574,6 +597,14 @@ def _research_unit_id(run_id: str, topic: str) -> str:
             separators=(",", ":"),
         )
     )
+
+
+def _unit_summary(topic: str) -> str:
+    """保留经密钥脱敏的截断主题，不把完整研究提示词写入事件。."""
+    normalized = " ".join(redact_text(topic, environment_secret_values()).split())
+    if len(normalized) <= 1:
+        return "研究主题（已脱敏）"
+    return normalized[: min(len(normalized) - 1, 119)] + "…"
 
 
 def _content_fingerprint(values: Sequence[str]) -> str:

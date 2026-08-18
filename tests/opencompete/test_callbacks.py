@@ -484,7 +484,7 @@ async def test_rebuilt_callback_in_a_new_execution_marks_replay() -> None:
 
 
 @pytest.mark.asyncio
-async def test_callback_maps_parent_research_topic_to_redacted_unit_and_retry() -> None:
+async def test_callback_maps_parent_research_topic_to_bounded_unit_summary_and_retry() -> None:
     events: list[dict[str, object]] = []
     guard = BudgetGuard(
         InMemoryBudgetLedger(),
@@ -497,11 +497,11 @@ async def test_callback_maps_parent_research_topic_to_redacted_unit_and_retry() 
     research_run = uuid4()
     node_run = uuid4()
     model_run = uuid4()
-    secret_topic = "Secret competitor topic that must not be logged"
+    topic = "比较 Cursor 与 GitHub Copilot 的代码库上下文能力和定价差异"
 
     await callback.on_chain_start(
         {},
-        {"research_topic": secret_topic},
+        {"research_topic": topic},
         run_id=research_run,
     )
     await callback.on_chain_start(
@@ -532,7 +532,8 @@ async def test_callback_maps_parent_research_topic_to_redacted_unit_and_retry() 
     assert started["retry_number"] == 2
     assert isinstance(started["unit_id"], str)
     assert len(started["unit_id"]) == 64
-    assert secret_topic not in repr(events)
+    assert started["unit_summary"] == topic[:-1] + "…"
+    assert started["unit_summary"] != topic
     assert "provider secret body" not in repr(events)
 
 
@@ -608,4 +609,4 @@ async def test_locked_langgraph_retry_metadata_keeps_retry_in_one_execution() ->
     assert started[0]["call_id"] == started[1]["call_id"]
     assert started[0]["node"] == started[1]["node"] == "researcher"
     assert started[0]["unit_id"] == started[1]["unit_id"]
-    assert "topic that remains hashed" not in repr(events)
+    assert started[0]["unit_summary"] == started[1]["unit_summary"] == "topic that remains hashe…"

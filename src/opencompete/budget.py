@@ -43,10 +43,11 @@ class AttemptOutcome(str, Enum):
 
 @dataclass(frozen=True, slots=True)
 class AttemptEventContext:
-    """Carry only non-sensitive identifiers needed for attempt diagnostics."""
+    """Carry redacted identifiers and a bounded user-facing unit summary."""
 
     node: str = "external_call"
     unit_id: str | None = None
+    unit_summary: str | None = None
     provider_kind: str = "external"
     retry_number: int = 1
     provider: str | None = None
@@ -75,6 +76,9 @@ class AttemptEventContext:
             raise ValueError("模型总尝试次数无效")
         if self.retry_initial_seconds < 0 or self.retry_max_seconds < 0:
             raise ValueError("模型重试等待时间不能为负数")
+        if self.unit_summary is not None:
+            summary = " ".join(self.unit_summary.split())
+            object.__setattr__(self, "unit_summary", summary[:120] or None)
 
 
 AttemptEvent = dict[str, object]
@@ -299,6 +303,7 @@ class BudgetGuard:
             "execution_id": reservation.execution_id or self._execution_id,
             "node": active.context.node,
             "unit_id": active.context.unit_id,
+            "unit_summary": active.context.unit_summary,
             "provider_kind": active.context.provider_kind,
             "call_id": reservation.call_id,
             "attempt_id": reservation.attempt_id,
@@ -371,6 +376,7 @@ class BudgetGuard:
             ),
             "node": context.node,
             "unit_id": context.unit_id,
+            "unit_summary": context.unit_summary,
             "call_id": active.reservation.call_id,
             "attempt": _window_attempt(context),
             "next_attempt": next_attempt,

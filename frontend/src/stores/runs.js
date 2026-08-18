@@ -340,9 +340,16 @@ export const useRunsStore = defineStore('runs', {
 
       // 并行研究单元：从事件流动态发现注册
       if (e.unit_id && (e.node === 'researcher' || e.node === 'compress_research')) {
+        const summary = typeof e.unit_summary === 'string' ? e.unit_summary.trim() : ''
         if (!(e.unit_id in live.unitStates)) {
-          live.units.push({ unit_id: e.unit_id, topic: e.topic || e.unit_id })
+          live.units.push({
+            unit_id: e.unit_id,
+            topic: summary || `研究单元 ${live.units.length + 1}`,
+          })
           live.unitStates[e.unit_id] = 'pending'
+        } else if (summary) {
+          const unit = live.units.find((item) => item.unit_id === e.unit_id)
+          if (unit && unit.topic.startsWith('研究单元 ')) unit.topic = summary
         }
         if (e.event === 'call_attempt_started') {
           live.unitStates[e.unit_id] =

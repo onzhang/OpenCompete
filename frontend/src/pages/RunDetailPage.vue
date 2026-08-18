@@ -669,10 +669,20 @@ const modelIdleLabel = computed(() =>
           <h2>任务执行失败</h2>
         </div>
         <p class="fail-msg">{{ run.error?.message || '发生未知错误' }}</p>
-        <div class="fail-hint">
-          任务状态已保存在本地，修复问题后可恢复执行：
-          <code class="mono">uv run opencompete resume {{ shortId(run.run_id) }}…</code>
+        <div v-if="run.recoverable" class="fail-recovery">
+          <p>检查点仍可继续。恢复会使用当前模型与连接设置，并继续消耗本任务剩余预算。</p>
+          <button
+            type="button"
+            class="btn btn--primary"
+            :disabled="actionBusy"
+            @click="resumeResearch"
+          >{{ actionBusy ? '正在恢复…' : '恢复研究' }}</button>
         </div>
+        <div v-else class="fail-hint">
+          当前检查点无法安全继续。可在命令行复核本地任务：
+          <code class="mono">uv run opencompete resume {{ run.run_id }}</code>
+        </div>
+        <p v-if="actionError" class="settings-error" role="alert">{{ actionError }}</p>
       </section>
 
       <section v-else-if="viewMode === 'cancelled'" class="cancel-zone sheet rise-in" style="animation-delay: 0.08s">
@@ -1484,6 +1494,22 @@ const modelIdleLabel = computed(() =>
   margin-top: 10px;
   font-size: 14.5px;
   color: var(--ink-soft);
+}
+
+.fail-recovery {
+  display: grid;
+  gap: 12px;
+  margin-top: 18px;
+  padding: 14px;
+  border: 1px solid var(--line-strong);
+  background: var(--paper-raised);
+}
+
+.fail-recovery p {
+  margin: 0;
+  color: var(--ink-soft);
+  font-size: 13px;
+  line-height: 1.6;
 }
 
 .fail-hint {

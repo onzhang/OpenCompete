@@ -63,6 +63,10 @@ export const useSettingsStore = defineStore('settings', {
       }
     },
 
+    async revealConnectionKey(role) {
+      return api.revealConnectionKey(role)
+    },
+
     async testConnection(target) {
       return api.testConnection(target)
     },

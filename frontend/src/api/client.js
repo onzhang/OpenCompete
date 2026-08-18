@@ -64,6 +64,7 @@ export const api = {
   updateSettings: (body) => request('/settings', { method: 'PUT', body, timeoutMs: ACTION_TIMEOUT_MS }),
   updateCredential: (body) => request('/settings/credentials', { method: 'PUT', body, timeoutMs: ACTION_TIMEOUT_MS }),
   testConnection: (target) => request(`/settings/connections/${target}/test`, { method: 'POST', timeoutMs: ACTION_TIMEOUT_MS }),
+  revealConnectionKey: (role) => request(`/settings/connections/${role}/api-key`),
   listRuns: () => request('/runs'),
   getRun: (runId) => request(`/runs/${runId}`),
   getBundle: (runId) => request(`/runs/${runId}/bundle`),

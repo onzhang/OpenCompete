@@ -15,6 +15,11 @@ const credentialBusy = ref('')
 const credentialError = ref('')
 const testState = reactive({})
 const clearTarget = ref(null)
+const revealedKeys = reactive({})
+const connectionKeys = reactive({})
+const newConnectionKeys = reactive({})
+const connectionBaseUrls = reactive({})
+const connectionErrors = reactive({})
 
 const sections = [
   { id: 'models', label: '模型与连接' },
@@ -24,19 +29,33 @@ const sections = [
 ]
 
 const modelFields = [
-  { name: 'research_model', label: '研究模型', target: 'research' },
-  { name: 'summarization_model', label: '摘要模型', target: 'summarization' },
-  { name: 'compression_model', label: '压缩模型', target: 'compression' },
-  { name: 'final_report_model', label: '最终报告模型', target: 'final_report' },
-  { name: 'fallback_model', label: '备用模型', target: 'fallback', optional: true },
+  { name: 'research_model', label: '研究模型' },
+  { name: 'summarization_model', label: '摘要模型' },
+  { name: 'compression_model', label: '压缩模型' },
+  { name: 'final_report_model', label: '最终报告模型' },
+]
+
+const connections = [
+  {
+    role: 'primary',
+    label: '主连接',
+    formatField: 'primary_connection_format',
+    modelField: 'research_model',
+  },
+  {
+    role: 'fallback',
+    label: '备用连接',
+    formatField: 'fallback_connection_format',
+    modelField: 'fallback_model',
+  },
+]
+
+const FORMAT_OPTIONS = [
+  { value: 'openai_chat_completions', label: 'OpenAI Chat Completions' },
+  { value: 'anthropic_messages', label: 'Anthropic Messages' },
 ]
 
 const credentialCards = [
-  { name: 'OPENAI_API_KEY', label: 'OpenAI 兼容 API Key' },
-  { name: 'OPENAI_BASE_URL', label: 'OpenAI 兼容 Base URL' },
-  { name: 'ANTHROPIC_API_KEY', label: 'Anthropic 兼容 API Key' },
-  { name: 'ANTHROPIC_BASE_URL', label: 'Anthropic 兼容 Base URL' },
-  { name: 'GOOGLE_API_KEY', label: 'Google API Key' },
   { name: 'TAVILY_API_KEY', label: 'Tavily 搜索 API Key', target: 'tavily' },
 ]
 
@@ -145,6 +164,9 @@ function hydrate() {
   for (const [name, item] of Object.entries(view.value.fields)) {
     form[name] = cloneValue(item.value)
   }
+  for (const connection of connections) {
+    connectionBaseUrls[connection.role] = connectionView(connection.role)?.base_url || ''
+  }
 }
 
 function cloneValue(value) {
@@ -187,6 +209,32 @@ async function save() {
   }
 }
 
+function credentialName(role, kind) {
+  const connection = connectionView(role)
+  if (kind === 'key') return connection?.api_key_name
+  return connection?.base_url_name
+}
+
+async function saveConnectionCredential(role, kind) {
+  const value = kind === 'key' ? newConnectionKeys[role]?.trim() : connectionBaseUrls[role]?.trim()
+  if (!value || credentialBusy.value || credentialChangeBlocked.value) return
+  const name = credentialName(role, kind)
+  credentialBusy.value = name
+  credentialError.value = ''
+  try {
+    await settingsStore.changeCredential({ name, operation: 'set', value })
+    if (kind === 'key') {
+      connectionKeys[role] = ''
+      newConnectionKeys[role] = ''
+      revealedKeys[role] = false
+    }
+  } catch (err) {
+    credentialError.value = err.message
+  } finally {
+    credentialBusy.value = ''
+  }
+}
+
 function credentialStatus(name) {
   return view.value?.credentials.find((item) => item.name === name)
 }
@@ -220,6 +268,26 @@ async function clearCredential() {
   }
 }
 
+function connectionView(role) {
+  return view.value?.connections?.find((item) => item.role === role)
+}
+
+async function revealKey(role) {
+  if (revealedKeys[role]) {
+    revealedKeys[role] = false
+    connectionKeys[role] = ''
+    return
+  }
+  connectionErrors[role] = ''
+  try {
+    const result = await settingsStore.revealConnectionKey(role)
+    connectionKeys[role] = result.api_key || ''
+    revealedKeys[role] = Boolean(result.api_key)
+  } catch (err) {
+    connectionErrors[role] = err.message
+  }
+}
+
 async function testConnection(target) {
   testState[target] = { pending: true, message: '' }
   try {
@@ -244,7 +312,7 @@ async function testConnection(target) {
       </div>
     </header>
 
-    <p class="settings-intro">模型、预算和研究参数会在新建任务时冻结；已创建任务继续按创建时的设置运行。</p>
+    <p class="settings-intro">新建任务使用当前设置；可恢复任务在你主动恢复时使用当前模型与连接。范围、预算和已完成进度仍属于原任务契约。</p>
 
     <div v-if="settingsStore.loading && !view" class="loading-sheet sheet">正在读取本地设置…</div>
     <p v-else-if="settingsStore.error && !view" class="settings-error" role="alert">{{ settingsStore.error }}</p>
@@ -267,8 +335,66 @@ async function testConnection(target) {
         <section v-show="activeSection === 'models'" class="settings-section">
           <div class="rule-heading"><span class="overline">MODELS AND CONNECTIONS</span></div>
           <h2>模型与连接</h2>
-          <p>模型采用 <span class="mono">provider:model</span> 标识。DeepSeek 兼容路由的 Thinking 会由系统自动关闭；无需手动设置。</p>
+          <p>主连接和备用连接分别配置兼容格式、公开 Base URL、API Key 与模型。可恢复任务在你主动点击恢复时使用当前连接设置；Thinking 由系统按模型路由处理。</p>
 
+          <div class="connection-grid">
+            <section v-for="connection in connections" :key="connection.role" class="connection-card">
+              <div class="connection-card__head">
+                <div>
+                  <span class="overline">{{ connection.role === 'primary' ? 'PRIMARY ROUTE' : 'FALLBACK ROUTE' }}</span>
+                  <h3>{{ connection.label }}</h3>
+                </div>
+                <span class="credential-state" :class="{ 'credential-state--ready': connectionView(connection.role)?.api_key_configured }">
+                  {{ connectionView(connection.role)?.api_key_configured ? '已配置' : '未配置' }}
+                </span>
+              </div>
+              <label class="field">
+                <span class="field-label-row">兼容格式</span>
+                <select v-model="form[connection.formatField]" class="input">
+                  <option v-for="option in FORMAT_OPTIONS" :key="option.value" :value="option.value">{{ option.label }}</option>
+                </select>
+              </label>
+              <label class="field">
+                <span class="field-label-row">Base URL</span>
+                <input v-model="connectionBaseUrls[connection.role]" class="input mono" type="url" placeholder="https://api.example.com/v1" />
+                <div class="credential-actions">
+                  <span class="field-hint">{{ connectionView(connection.role)?.base_url_name }}</span>
+                  <button type="button" class="text-action" :disabled="credentialChangeBlocked || !connectionBaseUrls[connection.role] || credentialBusy === connectionView(connection.role)?.base_url_name" @click="saveConnectionCredential(connection.role, 'base')">保存 Base URL</button>
+                </div>
+              </label>
+              <label class="field">
+                <span class="field-label-row">API Key</span>
+                <div class="model-input-row">
+                  <input
+                    class="input mono"
+                    :type="revealedKeys[connection.role] ? 'text' : 'password'"
+                    :value="revealedKeys[connection.role] ? connectionKeys[connection.role] : '••••••••••••••••'"
+                    readonly
+                    autocomplete="off"
+                  />
+                  <button type="button" class="icon-action" :title="revealedKeys[connection.role] ? '隐藏当前 API Key' : '显示当前 API Key'" :aria-label="revealedKeys[connection.role] ? '隐藏当前 API Key' : '显示当前 API Key'" @click="revealKey(connection.role)">{{ revealedKeys[connection.role] ? '◉' : '◌' }}</button>
+                </div>
+                <p v-if="connectionErrors[connection.role]" class="settings-error" role="alert">{{ connectionErrors[connection.role] }}</p>
+                <div class="credential-input-row">
+                  <input v-model="newConnectionKeys[connection.role]" class="input mono" type="password" placeholder="输入新 Key 以替换" autocomplete="off" />
+                  <button type="button" class="btn btn--ink" :disabled="credentialChangeBlocked || !newConnectionKeys[connection.role]?.trim() || credentialBusy === connectionView(connection.role)?.api_key_name" @click="saveConnectionCredential(connection.role, 'key')">{{ credentialBusy === connectionView(connection.role)?.api_key_name ? '保存中…' : '替换 Key' }}</button>
+                </div>
+              </label>
+              <label class="field">
+                <span class="field-label-row">模型名称</span>
+                <input v-model="form[connection.modelField]" class="input mono" type="text" :placeholder="connection.role === 'fallback' ? '留空则不启用备用连接' : '例如 gpt-4.1'" />
+              </label>
+              <div class="connection-card__actions">
+                <button type="button" class="btn btn--ink" :disabled="testState[connection.role]?.pending || (connection.role === 'fallback' && !form[connection.modelField])" @click="testConnection(connection.role)">
+                  {{ testState[connection.role]?.pending ? '测试中…' : '测试连接' }}
+                </button>
+                <span v-if="testState[connection.role]?.message" class="test-result" :class="{ 'test-result--ok': testState[connection.role]?.ok }">{{ testState[connection.role].message }}</span>
+              </div>
+            </section>
+          </div>
+
+          <div class="settings-divider"></div>
+          <h3 class="subheading">模型角色</h3>
           <div class="model-grid">
             <label v-for="item in modelFields" :key="item.name" class="field">
               <span class="field-label-row">
@@ -278,23 +404,8 @@ async function testConnection(target) {
                   <span class="info-bubble" role="tooltip">{{ fieldMeta(item.name).tip }}</span>
                 </span>
               </span>
-              <div class="model-input-row">
-                <input
-                  v-model="form[item.name]"
-                  class="input mono"
-                  type="text"
-                  :placeholder="item.optional ? '留空则不启用' : 'provider:model'"
-                />
-                <button
-                  type="button"
-                  class="icon-action"
-                  :title="`测试${item.label}连接（会产生少量调用成本）`"
-                  :aria-label="`测试${item.label}连接`"
-                  :disabled="testState[item.target]?.pending || !form[item.name]"
-                  @click="testConnection(item.target)"
-                >↗</button>
-              </div>
-              <span class="field-hint">{{ fields[item.name]?.source }} <span v-if="testState[item.target]?.message" class="test-result" :class="{ 'test-result--ok': testState[item.target]?.ok }">· {{ testState[item.target].message }}</span></span>
+              <input v-model="form[item.name]" class="input mono" type="text" :placeholder="item.name === 'fallback_model' ? '留空则不启用' : '模型名称，不填写 provider 前缀'" />
+              <span class="field-hint">{{ fields[item.name]?.source }}</span>
             </label>
           </div>
 
@@ -443,8 +554,13 @@ async function testConnection(target) {
 .settings-section > p, .section-note { color: var(--ink-soft); font-size: 13.5px; margin-bottom: 22px; }
 .subheading { margin: 0 0 14px; font-family: var(--font-serif); font-size: 18px; }
 .settings-divider { height: 1px; margin: 26px 0 22px; background: var(--line); }
+.connection-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.connection-card { display: grid; gap: 14px; min-width: 0; padding: 18px; border: 1px solid var(--line-strong); background: var(--paper-dim); }
+.connection-card__head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; padding-bottom: 12px; border-bottom: 1px solid var(--line); }
+.connection-card__head h3 { margin-top: 5px; font-family: var(--font-serif); font-size: 19px; }
+.connection-card__actions { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; padding-top: 2px; }
+
 .field-grid, .model-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px 16px; }
-.field { min-width: 0; }
 .field-label-row, .credential-title { display: flex; align-items: center; gap: 7px; min-width: 0; margin-bottom: 6px; font-size: 14px; overflow-wrap: anywhere; }
 .info-tip { position: relative; display: inline-flex; flex: 0 0 auto; }
 .info-button { display: grid; place-items: center; width: 17px; height: 17px; padding: 0; border: 1px solid var(--ink-faint); border-radius: 50%; background: var(--paper-raised); color: var(--ink-soft); font-family: var(--font-sans); font-size: 11px; font-weight: 800; line-height: 1; cursor: help; }
@@ -476,7 +592,7 @@ async function testConnection(target) {
   .settings-layout { grid-template-columns: 1fr; }
   .settings-nav { position: static; grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .settings-sheet { padding: 20px 16px; }
-  .field-grid, .model-grid { grid-template-columns: 1fr; }
+  .connection-grid, .field-grid, .model-grid { grid-template-columns: 1fr; }
   .credential-input-row { grid-template-columns: 1fr; }
   .save-bar { align-items: stretch; flex-direction: column; }
   .info-bubble { top: calc(100% + 8px); bottom: auto; left: 0; right: auto; width: min(270px, calc(100vw - 76px)); transform: translateX(0) translateY(-3px); }

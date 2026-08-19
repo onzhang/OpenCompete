@@ -703,6 +703,7 @@ class RunManifest(FrozenModel):
     budget_summary: BudgetSnapshot = Field(default_factory=BudgetSnapshot)
     file_hashes: Mapping[str, str] = Field(default_factory=dict)
     errors: tuple[ErrorRecord, ...] = ()
+    partial_reason: str | None = Field(default=None, max_length=500)
     created_at: datetime = Field(default_factory=utc_now)
     updated_at: datetime = Field(default_factory=utc_now)
 

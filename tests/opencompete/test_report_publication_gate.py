@@ -7,6 +7,7 @@ from pathlib import Path
 
 import pytest
 
+from opencompete.api.schemas import _refs_from_report
 from opencompete.extractors import ArtifactExtraction, StaticArtifactExtractor
 from opencompete.materialize import materialize_bundle
 from opencompete.models import (
@@ -55,8 +56,11 @@ Unknown
 Only English internal enums capabilities user_experience technology_integrations service_support product_service without Chinese body text enough.
 """.strip()
 
+def test_numbered_source_list_is_resolvable_by_bundle_reference_parser() -> None:
+    markdown = "- [1] 官方定价 — <https://example.com/pricing>\n"
+    assert _refs_from_report(markdown) == {"https://example.com/pricing": 1}
 
-def test_publication_gate_flags_known_bad_fixture_codes() -> None:
+
     result = evaluate_report_publication_gate(BAD_REPORT, output_language="zh-CN")
     assert result.ok is False
     codes = set(result.error_codes)
@@ -156,6 +160,23 @@ def test_resolve_accepts_clean_candidate() -> None:
     assert resolution.partial is False
     assert resolution.used_fallback is False
     assert resolution.markdown == clean.strip()
+
+
+def test_gate_diagnostics_do_not_replace_successful_upstream_report() -> None:
+    candidate = (
+        "# 上游完整报告\n\n"
+        "## 结论摘要\n\n"
+        "建议先核验两家产品的公开价格，再按团队迁移成本选择。"
+    )
+    resolution = resolve_published_report(
+        candidate=candidate,
+        fallback_markdown="# 不应发布的保底模板",
+        preserve_candidate_on_gate_failure=True,
+    )
+    assert resolution.partial is True
+    assert resolution.used_fallback is False
+    assert resolution.markdown == candidate
+    assert MISSING_RESOLVABLE_SOURCES in resolution.error_codes
 
 
 @pytest.mark.asyncio

@@ -1,6 +1,6 @@
 import asyncio
 from typing import Any
-from uuid import uuid4
+from uuid import UUID, uuid4
 
 import pytest
 from langchain_core.callbacks import AsyncCallbackManager
@@ -610,3 +610,30 @@ async def test_locked_langgraph_retry_metadata_keeps_retry_in_one_execution() ->
     assert started[0]["node"] == started[1]["node"] == "researcher"
     assert started[0]["unit_id"] == started[1]["unit_id"]
     assert started[0]["unit_summary"] == started[1]["unit_summary"] == "topic that remains hashe…"
+
+
+@pytest.mark.asyncio
+async def test_model_event_provider_follows_actual_connection_format() -> None:
+    events: list[dict[str, object]] = []
+    guard = BudgetGuard(
+        InMemoryBudgetLedger(),
+        BudgetEstimate(input_tokens=100, output_tokens=100),
+        run_id="run-format",
+        event_sink=events.append,
+    )
+    callback = BudgetCallback(guard, default_max_output_tokens=10)
+    await callback.on_llm_start(
+        {},
+        ["model input"],
+        run_id=UUID("00000000-0000-0000-0000-000000000010"),
+        metadata={
+            "langgraph_node": "materialize",
+            "opencompete_provider": "DeepSeek",
+            "opencompete_model": "openai:gpt-5.6-terra",
+            "opencompete_connection_role": "primary",
+        },
+    )
+    started = events[0]
+    assert started["provider"] == "OpenAI Chat Completions"
+    assert started["connection_format"] == "openai_chat_completions"
+    assert started["connection_role"] == "primary"

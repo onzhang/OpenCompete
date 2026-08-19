@@ -62,7 +62,16 @@ def render_validated_report(
     claims_by_id = {claim.claim_id: claim for claim in claims}
     evidence_by_id = {item.evidence_id: item for item in evidence}
     sources_by_id = {source.source_id: source for source in sources}
-    title = " 与 ".join(entity_names.values()) or "OpenCompete"
+    names = tuple(entity_names.values())
+    title = (
+        " 与 ".join(names[:3]) + " 等"
+        if len(names) > 4
+        else " 与 ".join(names) or "OpenCompete"
+    )
+    source_refs = {
+        source.source_id: index
+        for index, source in enumerate(sources, start=1)
+    }
     lines = [
         f"# {title} 竞品分析",
         "",
@@ -113,6 +122,7 @@ def render_validated_report(
                     entity_names=entity_names,
                     evidence_by_id=evidence_by_id,
                     sources_by_id=sources_by_id,
+                    source_refs=source_refs,
                 )
             )
         if not comparison.claim_ids:
@@ -129,6 +139,7 @@ def render_validated_report(
                     entity_names=entity_names,
                     evidence_by_id=evidence_by_id,
                     sources_by_id=sources_by_id,
+                    source_refs=source_refs,
                 )
             )
         lines.append("")
@@ -141,9 +152,9 @@ def render_validated_report(
 
     lines.extend(["", "## 来源", ""])
     if sources:
-        for source in sources:
+        for index, source in enumerate(sources, start=1):
             lines.append(
-                f"- {_markdown_text(source.title)} — "
+                f"- [{index}] {_markdown_text(source.title)} — "
                 f"<{_markdown_url(source.url)}>"
             )
     else:
@@ -157,6 +168,7 @@ def _render_claim(
     entity_names: Mapping[str, str],
     evidence_by_id: Mapping[str, Evidence],
     sources_by_id: Mapping[str, Source],
+    source_refs: Mapping[str, int],
 ) -> list[str]:
     entity = entity_names.get(claim.entity_id, _markdown_text(claim.entity_id))
     status = _CLAIM_STATUS_LABELS[claim.status]
@@ -168,18 +180,18 @@ def _render_claim(
     lines = [f"- **{entity}**（{status}）：{_markdown_text(text)}"]
     if claim.evidence_ids:
         citations: list[str] = []
-        seen_urls: set[str] = set()
+        seen_refs: set[int] = set()
         for evidence_id in claim.evidence_ids:
             item = evidence_by_id.get(evidence_id)
             source = sources_by_id.get(item.source_id) if item is not None else None
-            if source is None or source.url in seen_urls:
+            if source is None:
                 continue
-            seen_urls.add(source.url)
-            citations.append(
-                f"{_markdown_text(source.title)}：<{_markdown_url(source.url)}>"
-            )
+            ref = source_refs.get(source.source_id)
+            if ref is not None and ref not in seen_refs:
+                seen_refs.add(ref)
+                citations.append(f"[{ref}]")
         if citations:
-            lines.append(f"  - 来源：{'；'.join(citations)}")
+            lines.append(f"  - 来源：{'、'.join(citations)}")
     elif claim.uncertainty:
         # Unknown 空缺是研究结论：用与 claim 绑定的可读说明，而不是全篇复用
         # 同一句模板，避免发布门禁把大量重复句判为 excessive_repetition。

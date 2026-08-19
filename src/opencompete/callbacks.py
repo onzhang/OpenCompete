@@ -515,8 +515,12 @@ def _attempt_context(
         unit_summary=unit_summary,
         provider_kind=provider_kind,
         retry_number=_retry_number(tags),
-        provider=_optional_text(values.get("opencompete_provider")),
+        provider=_display_provider(
+            _optional_text(values.get("opencompete_model")),
+            _optional_text(values.get("opencompete_provider")),
+        ),
         model=_optional_text(values.get("opencompete_model")),
+        connection_role=_optional_text(values.get("opencompete_connection_role")),
         fallback=bool(values.get("opencompete_fallback", False)),
         route_attempts=_positive_int(
             values.get("opencompete_route_attempts"),
@@ -540,8 +544,9 @@ def _attempt_context(
         retry_max_seconds=_nonnegative_float(
             values.get("opencompete_retry_max_seconds"),
         ),
-        fallback_provider=_optional_text(
-            values.get("opencompete_fallback_provider")
+        fallback_provider=_display_provider(
+            _optional_text(values.get("opencompete_fallback_model")),
+            _optional_text(values.get("opencompete_fallback_provider")),
         ),
         fallback_model=_optional_text(values.get("opencompete_fallback_model")),
     )
@@ -549,6 +554,17 @@ def _attempt_context(
 
 def _optional_text(value: object) -> str | None:
     return value if isinstance(value, str) and value.strip() else None
+
+
+def _display_provider(model: str | None, configured: str | None) -> str | None:
+    """以实际模型路由推导用户可见连接格式，避免复用旧 Provider 标签。."""
+    if model is not None:
+        provider, separator, _model_name = model.partition(":")
+        if separator and provider == "openai":
+            return "OpenAI Chat Completions"
+        if separator and provider == "anthropic":
+            return "Anthropic Messages"
+    return configured
 
 
 def _positive_int(value: Any, *, default: int) -> int:

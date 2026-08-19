@@ -49,6 +49,7 @@ class AttemptEventContext:
     unit_id: str | None = None
     unit_summary: str | None = None
     provider_kind: str = "external"
+    connection_role: str | None = None
     retry_number: int = 1
     provider: str | None = None
     model: str | None = None
@@ -383,8 +384,13 @@ class BudgetGuard:
             "total_attempts": context.total_attempts,
             "provider": context.provider,
             "model": context.model,
+            "connection_format": _connection_format(context.model),
+            "connection_role": context.connection_role,
             "fallback": context.fallback,
             "next_provider": next_provider,
+            "next_connection_role": (
+                "fallback" if next_fallback else "primary"
+            ),
             "next_model": next_model,
             "next_fallback": next_fallback,
             "delay_seconds": delay,
@@ -407,6 +413,19 @@ def _window_attempt(context: AttemptEventContext) -> int:
     return context.retry_number
 
 
+def _connection_format(model: str | None) -> str | None:
+    if model is None:
+        return None
+    provider, separator, _model_name = model.partition(":")
+    if not separator:
+        return None
+    if provider == "openai":
+        return "openai_chat_completions"
+    if provider == "anthropic":
+        return "anthropic_messages"
+    return None
+
+
 def _route_event_values(context: AttemptEventContext) -> AttemptEvent:
     """只输出非秘密模型身份和当前执行窗口信息。."""
     if context.provider_kind != "llm":
@@ -414,6 +433,8 @@ def _route_event_values(context: AttemptEventContext) -> AttemptEvent:
     return {
         "provider": context.provider,
         "model": context.model,
+        "connection_format": _connection_format(context.model),
+        "connection_role": context.connection_role,
         "fallback": context.fallback,
         "route_attempt": context.retry_number,
         "window_attempt": _window_attempt(context),

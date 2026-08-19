@@ -196,7 +196,13 @@ def run_list_item(
         "budget_spent_usd": round(manifest.budget_summary.spent.cost_usd, 2),
         "budget_limit_usd": manifest.budget_summary.limit.cost_usd,
         "partial_reason": (
-            last_error.message if status == "partial" and last_error else None
+            manifest.partial_reason
+            if status == "partial"
+            else None
+        ) or (
+            "研究部分完成，已发布可用成果"
+            if status == "partial"
+            else None
         ),
         "error": (
             error_view(last_error) if status == "failed" and last_error else None
@@ -247,7 +253,7 @@ _SOURCE_LINE = re.compile(
 
 def _normalize_url(url: str) -> str:
     """宽松比较用的 URL 归一：统一 https、小写主机、去尾斜杠。."""
-    normalized = url.strip().rstrip("/")
+    normalized = url.strip().strip("<>").rstrip("/")
     if normalized.startswith("http://"):
         normalized = "https://" + normalized[len("http://") :]
     scheme, _, rest = normalized.partition("://")

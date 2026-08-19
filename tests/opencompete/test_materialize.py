@@ -938,6 +938,9 @@ def test_fallback_report_fields_are_prefixed_and_markdown_escaped() -> None:
     assert r"\[产品 B\]" in markdown
     assert r"\[pricing\]" in markdown
     assert claim.claim_id not in markdown
+    assert "## 来源" in markdown
+    assert "- [1]" in markdown
+    assert "来源：**伪造标题**" not in markdown
 
 
 def test_upstream_error_report_cannot_be_marked_completed() -> None:

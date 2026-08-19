@@ -3,6 +3,7 @@ from datetime import UTC, datetime
 import pytest
 from pydantic import ValidationError
 
+from opencompete.api.schemas import run_list_item
 from opencompete.models import (
     AnalysisLevel,
     BudgetEstimate,
@@ -19,6 +20,23 @@ from opencompete.models import (
     ScopeSpec,
     Source,
 )
+
+
+def test_partial_reason_does_not_reuse_historical_error_message() -> None:
+    manifest = RunManifest(
+        run_id="run-partial",
+        status=RunStatus.PARTIAL,
+        scope_revision=1,
+        artifact_revision=1,
+        errors=(),
+    )
+    view = run_list_item(manifest, {}, active=False)
+    assert view["partial_reason"] == "研究部分完成，已发布可用成果"
+
+    explicit = manifest.model_copy(update={"partial_reason": "预算已停止后续调用"})
+    assert run_list_item(explicit, {}, active=False)["partial_reason"] == (
+        "预算已停止后续调用"
+    )
 
 
 def test_manifest_allows_token_budget_names_but_rejects_credentials() -> None:

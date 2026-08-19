@@ -50,6 +50,13 @@ HARD_FAIL_CODES = frozenset(
     {
         INTERNAL_SCHEMA_LEAK,
         LITERAL_UNKNOWN_LEAK,
+    }
+)
+
+# 这些问题保留为诊断并将任务标记为 partial，但不能静默替换已经
+# 成功生成的用户叙事正文；结构化 Bundle 仍单独承担 FACT 门禁。
+QUALITY_DIAGNOSTIC_CODES = frozenset(
+    {
         MISSING_RESOLVABLE_SOURCES,
         DECISION_SUMMARY_MISSING,
         EXCESSIVE_REPETITION,
@@ -181,8 +188,9 @@ def resolve_published_report(
     output_language: str = "zh-CN",
     decision_task: bool = True,
     repaired_candidate: str | None = None,
+    preserve_candidate_on_gate_failure: bool = False,
 ) -> PublicationResolution:
-    """发布决议：首次门禁 → 可选一次修复 → fallback。."""
+    """发布决议：门禁诊断，可选修复，必要时才使用保底正文。."""
     if not candidate or not candidate.strip():
         return PublicationResolution(
             markdown=fallback_markdown,
@@ -220,12 +228,35 @@ def resolve_published_report(
                 used_fallback=False,
                 repair_attempted=True,
             )
+        if preserve_candidate_on_gate_failure and not (
+            set(first.error_codes) | set(second.error_codes)
+        ) & HARD_FAIL_CODES:
+            return PublicationResolution(
+                markdown=candidate,
+                partial=True,
+                error_codes=tuple(
+                    dict.fromkeys([*first.error_codes, *second.error_codes])
+                ),
+                used_fallback=False,
+                repair_attempted=True,
+            )
         return PublicationResolution(
             markdown=fallback_markdown,
             partial=True,
             error_codes=tuple(dict.fromkeys([*first.error_codes, *second.error_codes])),
             used_fallback=True,
             repair_attempted=True,
+        )
+
+    if preserve_candidate_on_gate_failure and not (
+        set(first.error_codes) & HARD_FAIL_CODES
+    ):
+        return PublicationResolution(
+            markdown=candidate,
+            partial=True,
+            error_codes=first.error_codes,
+            used_fallback=False,
+            repair_attempted=False,
         )
 
     return PublicationResolution(

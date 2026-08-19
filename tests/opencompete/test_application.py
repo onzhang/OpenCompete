@@ -952,6 +952,49 @@ async def test_awaiting_checkpoint_rejects_self_consistent_published_artifacts(
     assert checkpoint_index.scope_revision == pending.scope.revision
 
 
+
+
+@pytest.mark.asyncio
+async def test_rematerialize_report_uses_checkpoint_without_new_research_call(
+    tmp_path: Path,
+) -> None:
+    calls: list[str] = []
+    first_process = _sqlite_runner(
+        tmp_path,
+        research_graph=_offline_research_graph(calls),
+    )
+    pending = await first_process.create_run(_request())
+    assert pending.scope is not None
+    original = await first_process.resume_run(
+        pending.run_id,
+        ScopeConfirmation(
+            accepted=True,
+            expected_revision=pending.scope.revision,
+        ),
+    )
+    assert original.bundle is not None
+    assert original.status is RunStatus.PARTIAL
+    assert calls == ["research"]
+
+    repository = RunRepository(tmp_path)
+    published_before = repository.load_verified(pending.run_id)
+    budget_before = published_before.manifest.budget_summary
+
+    repaired = await _sqlite_runner(tmp_path).rematerialize_report(pending.run_id)
+
+    assert repaired.status is RunStatus.PARTIAL
+    assert repaired.bundle is not None
+    assert repaired.bundle.artifact_revision == (
+        published_before.bundle.artifact_revision + 1
+    )
+    assert repaired.bundle.report.markdown == "# Alpha 与 Beta\n\n离线研究已完成。"
+    assert calls == ["research"]
+    published_after = repository.load_verified(pending.run_id)
+    assert published_after.manifest.scope_revision == pending.scope.revision + 1
+    assert published_after.manifest.budget_summary == budget_before
+    assert published_after.bundle.budget == published_before.bundle.budget
+
+
 @pytest.mark.asyncio
 async def test_manifest_revision_ahead_is_conflict_without_manifest_rewrite(
     tmp_path: Path,

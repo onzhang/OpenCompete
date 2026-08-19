@@ -581,6 +581,7 @@ async def materialize_bundle(
         output_language="zh-CN",
         decision_task=True,
         repaired_candidate=None,
+        preserve_candidate_on_gate_failure=bool(candidate),
     )
     published_markdown = resolution.markdown
     if resolution.partial:

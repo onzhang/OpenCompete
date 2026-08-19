@@ -34,7 +34,12 @@ from opencompete.extractors import (
     LangChainArtifactExtractor,
     StaticArtifactExtractor,
 )
-from opencompete.materialize import materialize_bundle
+from opencompete.materialize import (
+    _final_report_stop_reason,
+    _is_error_report,
+    _looks_truncated,
+    materialize_bundle,
+)
 from opencompete.models import (
     BudgetEstimate,
     BudgetSnapshot,
@@ -514,6 +519,78 @@ class ApplicationRunner:
     async def project_confirmation(self, run_id: str) -> RunHandle:
         """兼容旧调用方的确认点只读投影。."""
         return (await self.inspect_run(run_id)).handle
+
+    async def rematerialize_report(self, run_id: str) -> RunHandle:
+        """从同一 Checkpoint 离线修复报告，不重新调用外部 Provider。."""
+        published = self._repository.load_verified(run_id)
+        current = self._repository.load_manifest(run_id)
+        if current.status not in _PUBLISHED_STATUSES:
+            raise DataValidationError("只有已发布任务才能离线重物化报告")
+
+        settings = self._settings_for_run(run_id)
+        budget_guard = self._budget_guard(run_id, settings=settings)
+        config = self._runnable_config(run_id, budget_guard, settings=settings)
+        async with self._checkpoint_store.open_saver() as saver:
+            graph = self._build_graph(saver, budget_guard, settings=settings)
+            snapshot = await graph.aget_state(config)
+        values = _state_values(snapshot)
+        if not values:
+            raise PersistenceError(f"任务 {run_id} 没有可读取的 Checkpoint")
+        scope = _state_scope(values)
+        if scope is None or not scope.frozen:
+            raise DataValidationError("Checkpoint 没有可用于重物化的冻结范围")
+        original_report = str(values.get("final_report") or "").strip()
+        stop_reason = _final_report_stop_reason(values)
+        if (
+            not original_report
+            or _is_error_report(original_report)
+            or stop_reason in {"max_tokens", "length"}
+            or (stop_reason is None and _looks_truncated(original_report))
+        ):
+            raise DataValidationError("Checkpoint 没有可安全离线发布的完整最终报告")
+
+        extraction = ArtifactExtraction(
+            claims=published.bundle.claims,
+            comparisons=published.bundle.comparisons,
+            limitations=published.bundle.report.limitations,
+        )
+        repaired = await materialize_bundle(
+            run_id=run_id,
+            scope=scope,
+            upstream_state=values,
+            budget=published.bundle.budget,
+            extractor=StaticArtifactExtractor(extraction),
+            config=config,
+        )
+        repaired = repaired.model_copy(
+            update={
+                "status": current.status,
+                "artifact_revision": current.artifact_revision + 1,
+            }
+        )
+        manifest = current.model_copy(
+            update={
+                "status": current.status,
+                "artifact_revision": repaired.artifact_revision,
+                "budget_summary": published.bundle.budget,
+                "file_hashes": {},
+                "partial_reason": (
+                    current.partial_reason
+                    or "研究部分完成，已发布可用成果"
+                    if current.status is RunStatus.PARTIAL
+                    else None
+                ),
+                "updated_at": utc_now(),
+            }
+        )
+        result = self._repository.publish(repaired, manifest)
+        self._append_event(
+            run_id,
+            "report_rematerialized",
+            status=result.manifest.status,
+            artifact_revision=result.manifest.artifact_revision,
+        )
+        return self._handle_from_published(run_id, result)
 
     async def freeze_confirmed_scope(
         self,
@@ -1247,6 +1324,14 @@ class ApplicationRunner:
                 )
             if bundle.run_id != run_id or bundle.status is not status:
                 raise DataValidationError("Graph 终态与 Bundle 契约不一致")
+            partial_reason = None
+            if status is RunStatus.PARTIAL:
+                limitations = bundle.report.limitations
+                partial_reason = (
+                    "剩余预算不足以完成后续调用，已发布已有研究成果"
+                    if any("预算已耗尽" in item for item in limitations)
+                    else "研究部分完成，已发布可用成果"
+                )
             manifest = current.model_copy(
                 update={
                     "status": status,
@@ -1254,6 +1339,7 @@ class ApplicationRunner:
                     "artifact_revision": bundle.artifact_revision,
                     "budget_summary": bundle.budget,
                     "file_hashes": {},
+                    "partial_reason": partial_reason,
                     "updated_at": utc_now(),
                 }
             )

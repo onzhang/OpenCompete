@@ -31,6 +31,21 @@ function normalizeUsage(u) {
   u.cost_usd = Math.max(0, Number(u.cost_usd.toFixed(4)))
 }
 
+function displayModelName(value) {
+  if (typeof value !== 'string') return value
+  const separator = value.indexOf(':')
+  return separator > 0 ? value.slice(separator + 1) : value
+}
+
+function modelProviderLabel(event) {
+  if (event.connection_format === 'openai_chat_completions') return 'OpenAI Chat Completions'
+  if (event.connection_format === 'anthropic_messages') return 'Anthropic Messages'
+  const model = typeof event.model === 'string' ? event.model : ''
+  if (model.startsWith('openai:')) return 'OpenAI Chat Completions'
+  if (model.startsWith('anthropic:')) return 'Anthropic Messages'
+  return event.provider || '模型'
+}
+
 // 一次调用的预留登记键：同一节点 + 同一研究单元 + 同一供应商类型
 function holdKey(e) {
   return `${e.node || '-'}|${e.unit_id || '-'}|${e.provider_kind || '-'}`
@@ -394,8 +409,9 @@ export const useRunsStore = defineStore('runs', {
       // 当前模型与重试提示
       if (e.provider_kind === 'llm' && e.event === 'call_attempt_started') {
         live.currentModel = {
-          provider: e.provider,
-          model: e.model,
+          provider: modelProviderLabel(e),
+          model: displayModelName(e.model),
+          connectionRole: e.connection_role || (e.fallback ? 'fallback' : 'primary'),
           fallback: !!e.fallback,
         }
         live.retryNotice = null

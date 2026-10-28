@@ -90,3 +90,6 @@ frontend/.dist-*/
 
 # 本地浏览器验证截图
 gui-test-screenshots/
+
+# 架构图仅在本地保留
+/docs/架构图/
